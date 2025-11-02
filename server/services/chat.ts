@@ -10,7 +10,7 @@ const openai = new OpenAI({
 });
 
 export interface ChatMessage {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
@@ -101,7 +101,7 @@ ${context}`;
   // Step 5: Generate AI response
   try {
     const messages: ChatMessage[] = [
-      { role: 'user', content: systemPrompt },
+      { role: 'system', content: systemPrompt },
       ...conversationHistory,
       { role: 'user', content: userPrompt },
     ];

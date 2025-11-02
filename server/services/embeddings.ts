@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { db } from '../db';
 import { itemEmbeddings, items, summaries } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, isNull } from 'drizzle-orm';
 
 const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
@@ -88,7 +88,7 @@ export async function generateMissingEmbeddings(): Promise<number> {
     .select({ itemId: summaries.itemId })
     .from(summaries)
     .leftJoin(itemEmbeddings, eq(summaries.itemId, itemEmbeddings.itemId))
-    .where(eq(itemEmbeddings.itemId, null as any));
+    .where(isNull(itemEmbeddings.itemId));
   
   console.log(`Found ${itemsWithSummaries.length} items missing embeddings`);
   

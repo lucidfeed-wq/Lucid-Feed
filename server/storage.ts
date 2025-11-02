@@ -1,8 +1,8 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users, userPreferences, savedItems } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem } from "@shared/schema";
-import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
+import { items, summaries, digests, users, userPreferences, savedItems, feedCatalog, userFeedSubmissions } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission } from "@shared/schema";
+import { eq, and, gte, lte, desc, inArray, or, like, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Items
@@ -36,6 +36,13 @@ export interface IStorage {
   unsaveItem(userId: string, itemId: string): Promise<void>;
   getSavedItemsByUser(userId: string): Promise<Item[]>;
   isItemSaved(userId: string, itemId: string): Promise<boolean>;
+  
+  // Feed Catalog
+  getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string }): Promise<FeedCatalog[]>;
+  submitFeed(submission: InsertUserFeedSubmission): Promise<UserFeedSubmission>;
+  getUserFeedSubmissions(userId: string): Promise<UserFeedSubmission[]>;
+  getPendingFeedSubmissions(): Promise<UserFeedSubmission[]>;
+  reviewFeedSubmission(id: string, reviewerId: string, status: 'approved' | 'rejected', reviewNotes?: string): Promise<UserFeedSubmission>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -232,6 +239,114 @@ export class PostgresStorage implements IStorage {
       )
       .limit(1);
     return !!result;
+  }
+
+  // Feed Catalog
+  async getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string }): Promise<FeedCatalog[]> {
+    let query = db.select().from(feedCatalog);
+    
+    const conditions = [];
+    
+    if (filters?.domain) {
+      conditions.push(eq(feedCatalog.domain, filters.domain));
+    }
+    
+    if (filters?.sourceType) {
+      conditions.push(eq(feedCatalog.sourceType, filters.sourceType));
+    }
+    
+    if (filters?.search) {
+      conditions.push(
+        or(
+          like(feedCatalog.name, `%${filters.search}%`),
+          like(feedCatalog.description, `%${filters.search}%`)
+        )
+      );
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    const results = await query.orderBy(feedCatalog.name);
+    return results;
+  }
+
+  async submitFeed(submission: InsertUserFeedSubmission): Promise<UserFeedSubmission> {
+    const id = nanoid();
+    const now = new Date();
+    
+    const [result] = await db
+      .insert(userFeedSubmissions)
+      .values({
+        ...submission,
+        id,
+        submittedAt: now,
+      })
+      .returning();
+    
+    return result;
+  }
+
+  async getUserFeedSubmissions(userId: string): Promise<UserFeedSubmission[]> {
+    const results = await db
+      .select()
+      .from(userFeedSubmissions)
+      .where(eq(userFeedSubmissions.userId, userId))
+      .orderBy(desc(userFeedSubmissions.submittedAt));
+    
+    return results;
+  }
+
+  async getPendingFeedSubmissions(): Promise<UserFeedSubmission[]> {
+    const results = await db
+      .select()
+      .from(userFeedSubmissions)
+      .where(eq(userFeedSubmissions.status, 'pending'))
+      .orderBy(userFeedSubmissions.submittedAt);
+    
+    return results;
+  }
+
+  async reviewFeedSubmission(
+    id: string,
+    reviewerId: string,
+    status: 'approved' | 'rejected',
+    reviewNotes?: string
+  ): Promise<UserFeedSubmission> {
+    const now = new Date();
+    
+    const [result] = await db
+      .update(userFeedSubmissions)
+      .set({
+        status,
+        reviewedBy: reviewerId,
+        reviewedAt: now,
+        reviewNotes,
+      })
+      .where(eq(userFeedSubmissions.id, id))
+      .returning();
+    
+    if (!result) {
+      throw new Error(`Feed submission not found: ${id}`);
+    }
+    
+    // If approved, add to feed catalog
+    if (status === 'approved') {
+      const catalogId = nanoid();
+      await db.insert(feedCatalog).values({
+        id: catalogId,
+        name: result.feedName,
+        url: result.feedUrl,
+        domain: result.domain,
+        sourceType: result.sourceType,
+        description: result.description || '',
+        isApproved: true,
+        submittedBy: result.userId,
+      });
+    }
+    
+    return result;
   }
 }
 
