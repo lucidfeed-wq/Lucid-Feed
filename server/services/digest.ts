@@ -8,9 +8,21 @@ import type { InsertDigest, DigestSectionItem, Item, Summary, CategorySummary } 
 export async function generateWeeklyDigest(): Promise<{ id: string; slug: string }> {
   console.log("Starting weekly digest generation...");
 
-  // Define 7-day window
-  const windowEnd = new Date();
-  const windowStart = subDays(windowEnd, 7);
+  // Create job run for observability
+  const jobRun = await storage.createJobRun({
+    jobName: 'digest',
+    status: 'success',
+    itemsIngested: 0,
+    dedupeHits: 0,
+    tokenSpend: 0,
+  });
+
+  let totalTokenSpend = 0;
+
+  try {
+    // Define 7-day window
+    const windowEnd = new Date();
+    const windowStart = subDays(windowEnd, 7);
 
   // Fetch items from the past week
   const items = await storage.getItemsInWindow(
@@ -133,10 +145,37 @@ export async function generateWeeklyDigest(): Promise<{ id: string; slug: string
     } as any,
   };
 
-  const created = await storage.createDigest(digest);
-  console.log(`Digest created: ${created.id} (${slug})`);
+    const created = await storage.createDigest(digest);
+    console.log(`Digest created: ${created.id} (${slug})`);
 
-  return { id: created.id, slug };
+    // Estimate token spend (rough: ~500 tokens per summary, ~300 per category summary)
+    const itemSummariesCount = itemsNeedingSummaries.length;
+    const categorySummariesCount = [researchHighlightsSummary, communityTrendsSummary, expertCommentarySummary].filter(Boolean).length;
+    totalTokenSpend = (itemSummariesCount * 500) + (categorySummariesCount * 300);
+
+    // Finish job run with success
+    await storage.finishJobRun(jobRun.id, {
+      status: 'success',
+      itemsIngested: allTopItems.length,
+      dedupeHits: 0,
+      tokenSpend: totalTokenSpend,
+    });
+
+    return { id: created.id, slug };
+  } catch (error) {
+    console.error("Error generating digest:", error);
+    
+    // Finish job run with error
+    await storage.finishJobRun(jobRun.id, {
+      status: 'error',
+      itemsIngested: 0,
+      dedupeHits: 0,
+      tokenSpend: totalTokenSpend,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+    });
+    
+    throw error;
+  }
 }
 
 function buildDigestItem(item: Item, summary?: Summary): DigestSectionItem {
