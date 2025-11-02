@@ -13,8 +13,10 @@ Production-ready web application that aggregates, deduplicates, ranks, and publi
 - ✅ Quality/recency/engagement-based ranking algorithm
 - ✅ Weekly digest generation with 3 sections (research highlights, community trends, expert commentary)
 - ✅ AI-powered summary generation using OpenAI (key insights + clinical takeaways)
-- ✅ PostgreSQL database persistence (items, summaries, digests, users, sessions)
+- ✅ PostgreSQL database persistence (items, summaries, digests, users, sessions, user_preferences, saved_items)
 - ✅ User authentication via Replit Auth (Google/GitHub/email login)
+- ✅ Personalized topic preferences (users select favorite topics from 32 options)
+- ✅ Saved items bookmarking (users can save/unsave items, view saved items page)
 - ✅ Export capabilities (JSON, Markdown, RSS)
 - ✅ Automated scheduling (daily ingestion, weekly digest generation)
 - ✅ Complete frontend UI with Material Design + Linear-inspired aesthetic
@@ -22,6 +24,19 @@ Production-ready web application that aggregates, deduplicates, ranks, and publi
 - ✅ Digest archive view
 
 ## Recent Changes
+**2025-11-02 (Session 3 - Personalization Features):**
+- Implemented personalized topic preferences: users select from 32 topics, preferences persist to database
+- Created user_preferences table with cascade delete and efficient upsert operations
+- Built Preferences page (/preferences) with multi-select topic UI showing checkmarks and count
+- Added Topic Preferences link to user dropdown menu in Header
+- Implemented saved items feature: bookmark button on all item cards, save/unsave API endpoints
+- Created saved_items table with composite index on (userId, itemId) for efficient lookups
+- Built SavedItems page (/saved) displaying bookmarked content with empty state
+- Added SaveButton component with filled/unfilled bookmark icon and toast notifications
+- E2E tested both features: topic selection/persistence and save/unsave/view flow
+- **Known Limitation:** Saved state uses local component state; enhancement needed to fetch from API for consistent UI across pages
+- **Known Issue:** Saved items page missing summary data (methodology, evidence badges); requires join with summaries table
+
 **2025-11-02 (Session 2 - Authentication):**
 - Implemented complete user authentication system using Replit Auth (OpenID Connect)
 - Created users and sessions tables in PostgreSQL with proper indexes
@@ -72,12 +87,15 @@ Production-ready web application that aggregates, deduplicates, ranks, and publi
 - `pages/Home.tsx` - Latest digest view with topic filtering
 - `pages/Archive.tsx` - Grid view of historical digests
 - `pages/DigestView.tsx` - Individual digest detail view
+- `pages/Preferences.tsx` - Topic preferences selection (32 topics with checkmarks)
+- `pages/SavedItems.tsx` - Bookmarked items display with empty state
 
 **Components:**
-- `components/Header.tsx` - Navigation with export dropdown, login/logout UI, user avatar
+- `components/Header.tsx` - Navigation with export dropdown, login/logout UI, user avatar, saved items link
 - `components/DigestHeader.tsx` - Digest metadata and date range
 - `components/DigestSection.tsx` - Section wrapper for research/community/expert
-- `components/ItemCard.tsx` - Individual content item display
+- `components/ItemCard.tsx` - Individual content item display with save button
+- `components/SaveButton.tsx` - Bookmark toggle button with filled/unfilled states
 - `components/TopicFilter.tsx` - Filterable topic badge panel
 - `components/SourceBadge.tsx` - Source type indicator (journal/reddit/substack/youtube)
 - `components/MethodologyBadge.tsx` - Study methodology indicator
@@ -88,7 +106,7 @@ Production-ready web application that aggregates, deduplicates, ranks, and publi
 - `hooks/useAuth.ts` - Authentication state management using React Query
 
 ### Shared (`shared/`)
-- `schema.ts` - Drizzle ORM schemas and TypeScript types for Items, Summaries, Digests, Users, Sessions
+- `schema.ts` - Drizzle ORM schemas and TypeScript types for Items, Summaries, Digests, Users, Sessions, UserPreferences, SavedItems
 
 ## API Endpoints
 
@@ -105,6 +123,16 @@ Production-ready web application that aggregates, deduplicates, ranks, and publi
 - `GET /api/callback` - OAuth callback handler (processes login, creates session)
 - `GET /api/logout` - Logs out user and destroys session
 - `GET /api/auth/user` - Returns current authenticated user (protected)
+
+### User Preferences Endpoints
+- `GET /api/preferences/topics` - Returns user's selected topic preferences (protected)
+- `PUT /api/preferences/topics` - Updates user's topic preferences (protected, expects {topics: Topic[]})
+
+### Saved Items Endpoints
+- `GET /api/saved-items` - Returns all items saved by user (protected)
+- `POST /api/saved-items/:itemId` - Saves an item for user (protected)
+- `DELETE /api/saved-items/:itemId` - Unsaves an item for user (protected)
+- `GET /api/saved-items/:itemId/status` - Checks if item is saved by user (protected)
 
 ### Admin Endpoints
 - `POST /admin/run/ingest` - Manually trigger RSS ingestion
