@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { FileJson, FileText, Rss, LogIn, LogOut, Settings, Bookmark } from "lucide-react";
+import { FileJson, FileText, Rss, LogIn, LogOut, Settings, Bookmark, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -48,6 +48,10 @@ export function Header() {
               </Link>
               <Link href="/archive" className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-archive">
                 Archive
+              </Link>
+              <Link href="/chat" className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md flex items-center gap-2" data-testid="link-chat">
+                <MessageSquare className="w-4 h-4" />
+                Chat
               </Link>
             </nav>
           </div>
