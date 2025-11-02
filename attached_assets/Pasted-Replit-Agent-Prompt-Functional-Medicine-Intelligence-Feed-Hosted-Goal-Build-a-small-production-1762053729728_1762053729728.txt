@@ -1,0 +1,150 @@
+Replit Agent Prompt — Functional Medicine Intelligence Feed (Hosted)
+
+Goal
+Build a small, production-ready web app that ingests weekly items from Journals (Crossref/PubMed RSS), Reddit (listed subreddits), Substack (RSS for listed writers), and YouTube (channel uploads via RSS), dedupes and merges cross-source references (same DOI/URL), ranks them, and publishes a weekly digest at a permanent URL with JSON/Markdown exports.
+
+Constraints
+	•	Language: Python 3.11
+	•	Web: FastAPI + Jinja2 (server-rendered), HTMX for interactivity
+	•	DB: SQLite (via SQLModel or SQLAlchemy); one file data/app.db
+	•	Scheduler: APScheduler (interval + cron)
+	•	Sources: RSS feeds only (no API keys needed)
+	•	Deployable on Replit; single repository
+
+⸻
+
+Data Model
+
+Item
+	•	id (uuid)
+	•	source_type (journal|reddit|substack|youtube)
+	•	source_id (DOI or canonical URL)
+	•	url, title, author_or_channel
+	•	published_at (UTC), ingested_at (UTC)
+	•	raw_excerpt
+	•	engagement (JSON: {comments, upvotes, views})
+	•	topics (comma string)
+	•	is_preprint (bool)
+	•	journal_name (nullable)
+	•	hash_dedupe (sha256 of source_type|doi/url/title) — unique
+
+Summary
+	•	item_id (fk unique)
+	•	key_insights (≤120 words)
+	•	clinical_takeaway (≤60 words)
+	•	methodology (RCT|Cohort|Case|Review|Meta|Preprint|NA)
+	•	level_of_evidence (A|B|C)
+
+Digest
+	•	id (uuid)
+	•	window_start, window_end (date)
+	•	generated_at (UTC)
+	•	sections (JSON): {research_highlights:[], community_trends:[], expert_commentary:[]}
+	•	public_slug (unique, e.g. 2025w44)
+	•	version (int)
+
+⸻
+
+Sources
+
+Use RSS feeds for:
+	•	Journals: Nature, Cell Metabolism, The Lancet Metabolism, JAMA Network Open, BMJ, Frontiers in Endocrinology, Science Advances, Cell Reports.
+	•	Reddit: provided subreddit list.
+	•	Substack: provided writer list.
+	•	YouTube: provided channels via RSS.
+
+⸻
+
+Topics to Tag
+
+metabolic, chronic_fatigue, chronic_EBV, autoimmune, leaky_gut, carnivore, keto, IV_therapy, HRT, TRT, mold_CIRS, weight_loss, PANS_PANDAS, insulin_resistance, gut_health, hormone_optimization, biohacking, mitochondrial_health, thyroid_health, adrenal_fatigue, brain_fog, inflammation, SIBO, candida, histamine_DAO, NAD_therapy, ozone_therapy, red_light_therapy, cold_exposure, sauna_therapy, fasting, autophagy
+
+Topic Tagger
+
+Create core/topics.py with regex maps. Up to 5 tags per item. No LLM calls.
+
+⸻
+
+Deduping & Merge
+	•	UNIQUE on hash_dedupe.
+	•	If a social item links to a DOI/URL already in DB, merge engagement totals instead of new insert.
+
+⸻
+
+Ranking
+
+quality = 1.0 if journal; 0.7 substack; 0.6 youtube; 0.5 reddit
+recency = inverse days since publication
+engagement_z = z-score across week
+score = 0.35*quality + 0.25*recency + 0.25*engagement_z + 0.15*topic_weight
+subtract 0.1 if is_preprint
+
+
+⸻
+
+Digest Composer
+	•	Window: 7 days UTC
+	•	Sections:
+	•	research_highlights: top journal/preprint items
+	•	community_trends: top Reddit/Substack not merged into journal
+	•	expert_commentary: top YouTube; merge with journal if matching DOI
+	•	Save digest as public_slug (e.g. YYYYwWW).
+
+⸻
+
+UI
+	•	Home: latest digest
+	•	Archive: past digests
+	•	Item Card: Title → Source → Date → Key insights → Clinical takeaway → badges
+	•	Styling: Tailwind; responsive
+	•	HTMX filtering by topic
+
+⸻
+
+Exports
+	•	/export/weekly.json → latest digest JSON
+	•	/export/weekly.md → Markdown digest
+	•	/rss/weekly.xml → RSS feed
+
+⸻
+
+Scheduler
+	•	Daily ingest job
+	•	Weekly digest build (Mon 06:00 CST)
+
+POST /admin/run/ingest
+POST /admin/run/digest
+
+
+⸻
+
+Structure
+
+/app
+  main.py
+  core/{config,db,topics,ranking,dedupe}.py
+  sources/{journals,reddit,substack,youtube}.py
+  services/{ingest,summarize,digest,exports}.py
+  models/{item,summary,digest}.py
+  templates/{base,home,digest,_card}.html
+  static/
+data/app.db
+
+
+⸻
+
+Tests
+	1.	uvicorn app.main:app runs server and / renders.
+	2.	POST /admin/run/ingest inserts ≥10 items.
+	3.	POST /admin/run/digest creates 1 digest with 3 sections.
+	4.	GET /export/weekly.json valid JSON.
+	5.	Duplicates skipped (UNIQUE ok).
+	6.	hash_dedupe always stored.
+
+⸻
+
+Run Config
+
+.replit / replit.nix → poetry install && uvicorn app.main:app --host 0.0.0.0 --port 8000
+Document cron in core/config.py.
+scripts/seed.py for demo items.
