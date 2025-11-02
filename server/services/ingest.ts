@@ -18,6 +18,15 @@ export async function runIngestJob(options: IngestOptions = {}): Promise<{ inser
   let merged = 0;
   let filtered = 0;
 
+  // Create job run for observability
+  const jobRun = await storage.createJobRun({
+    jobName: 'ingest',
+    status: 'success',
+    itemsIngested: 0,
+    dedupeHits: 0,
+    tokenSpend: 0,
+  });
+
   try {
     // Fetch from all sources in parallel
     const [journals, reddit, substack, youtube] = await Promise.all([
@@ -62,9 +71,28 @@ export async function runIngestJob(options: IngestOptions = {}): Promise<{ inser
     }
 
     console.log(`Ingestion complete: ${inserted} inserted, ${skipped} skipped, ${merged} merged, ${filtered} filtered`);
+    
+    // Finish job run with success
+    await storage.finishJobRun(jobRun.id, {
+      status: 'success',
+      itemsIngested: inserted,
+      dedupeHits: skipped + merged,
+      tokenSpend: 0, // Ingestion doesn't use AI
+    });
+    
     return { inserted, skipped, merged, filtered };
   } catch (error) {
     console.error("Error during ingestion:", error);
+    
+    // Finish job run with error
+    await storage.finishJobRun(jobRun.id, {
+      status: 'error',
+      itemsIngested: inserted,
+      dedupeHits: skipped + merged,
+      tokenSpend: 0,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+    });
+    
     throw error;
   }
 }

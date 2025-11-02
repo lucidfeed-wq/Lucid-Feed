@@ -25,7 +25,7 @@ export async function fetchJournalFeeds(): Promise<InsertItem[]> {
         const rawExcerpt = entry.contentSnippet || entry.content || "";
         
         // Extract DOI from entry or content
-        const doi = extractDOI(entry.link || "") || extractDOI(rawExcerpt) || url;
+        const doi = extractDOI(entry.link || "") || extractDOI(rawExcerpt) || null;
         
         const searchText = `${title} ${rawExcerpt}`;
         const topics = tagTopics(searchText);
@@ -34,7 +34,8 @@ export async function fetchJournalFeeds(): Promise<InsertItem[]> {
 
         items.push({
           sourceType: "journal",
-          sourceId: doi,
+          sourceId: doi || url, // Use DOI as sourceId if available, otherwise URL
+          doi,
           url,
           title,
           authorOrChannel: entry.creator || journal.name,

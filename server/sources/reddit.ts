@@ -31,6 +31,7 @@ export async function fetchRedditFeeds(): Promise<InsertItem[]> {
         items.push({
           sourceType: "reddit",
           sourceId: url,
+          doi: null,
           url,
           title,
           authorOrChannel: subreddit.name,

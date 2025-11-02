@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users, userPreferences, savedItems, feedCatalog, userFeedSubmissions } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission } from "@shared/schema";
+import { items, summaries, digests, users, userPreferences, savedItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef } from "@shared/schema";
 import { eq, and, gte, lte, desc, inArray, or, like, sql } from "drizzle-orm";
 
 export interface IStorage {
@@ -43,6 +43,16 @@ export interface IStorage {
   getUserFeedSubmissions(userId: string): Promise<UserFeedSubmission[]>;
   getPendingFeedSubmissions(): Promise<UserFeedSubmission[]>;
   reviewFeedSubmission(id: string, reviewerId: string, status: 'approved' | 'rejected', reviewNotes?: string): Promise<UserFeedSubmission>;
+  
+  // Job Runs (observability)
+  createJobRun(jobRun: Omit<InsertJobRun, 'startedAt'>): Promise<JobRun>;
+  finishJobRun(id: string, stats: { status: 'success' | 'error'; itemsIngested?: number; dedupeHits?: number; tokenSpend?: number; errorMessage?: string }): Promise<void>;
+  getJobRuns(filters?: { jobName?: string; days?: number }): Promise<JobRun[]>;
+  
+  // Related Refs (cross-source linking)
+  createRelatedRef(ref: InsertRelatedRef): Promise<RelatedRef>;
+  getRelatedRefsByItemId(itemId: string): Promise<RelatedRef[]>;
+  getItemByDOI(doi: string): Promise<Item | undefined>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -206,6 +216,7 @@ export class PostgresStorage implements IStorage {
         id: items.id,
         sourceType: items.sourceType,
         sourceId: items.sourceId,
+        doi: items.doi,
         url: items.url,
         title: items.title,
         authorOrChannel: items.authorOrChannel,
@@ -348,6 +359,90 @@ export class PostgresStorage implements IStorage {
     }
     
     return result;
+  }
+
+  // Job Runs (observability)
+  async createJobRun(insertJobRun: Omit<InsertJobRun, 'startedAt'>): Promise<JobRun> {
+    const id = nanoid();
+    const [jobRun] = await db
+      .insert(jobRuns)
+      .values({
+        ...insertJobRun,
+        id,
+        startedAt: new Date(),
+      })
+      .returning();
+    return jobRun;
+  }
+
+  async finishJobRun(
+    id: string,
+    stats: { status: 'success' | 'error'; itemsIngested?: number; dedupeHits?: number; tokenSpend?: number; errorMessage?: string }
+  ): Promise<void> {
+    await db
+      .update(jobRuns)
+      .set({
+        finishedAt: new Date(),
+        status: stats.status,
+        itemsIngested: stats.itemsIngested ?? 0,
+        dedupeHits: stats.dedupeHits ?? 0,
+        tokenSpend: stats.tokenSpend ?? 0,
+        errorMessage: stats.errorMessage,
+      })
+      .where(eq(jobRuns.id, id));
+  }
+
+  async getJobRuns(filters?: { jobName?: string; days?: number }): Promise<JobRun[]> {
+    let query = db.select().from(jobRuns);
+    
+    const conditions = [];
+    
+    if (filters?.jobName) {
+      conditions.push(eq(jobRuns.jobName, filters.jobName));
+    }
+    
+    if (filters?.days) {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - filters.days);
+      conditions.push(gte(jobRuns.startedAt, cutoffDate));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    const results = await query.orderBy(desc(jobRuns.startedAt));
+    return results;
+  }
+
+  // Related Refs (cross-source linking)
+  async createRelatedRef(insertRef: InsertRelatedRef): Promise<RelatedRef> {
+    const id = nanoid();
+    const [ref] = await db
+      .insert(relatedRefs)
+      .values({
+        ...insertRef,
+        id,
+      })
+      .returning();
+    return ref;
+  }
+
+  async getRelatedRefsByItemId(itemId: string): Promise<RelatedRef[]> {
+    return await db
+      .select()
+      .from(relatedRefs)
+      .where(eq(relatedRefs.itemId, itemId));
+  }
+
+  async getItemByDOI(doi: string): Promise<Item | undefined> {
+    if (!doi) return undefined;
+    const [item] = await db
+      .select()
+      .from(items)
+      .where(eq(items.doi, doi))
+      .limit(1);
+    return item;
   }
 }
 

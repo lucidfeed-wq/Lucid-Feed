@@ -27,6 +27,7 @@ export async function fetchSubstackFeeds(): Promise<InsertItem[]> {
         items.push({
           sourceType: "substack",
           sourceId: url,
+          doi: null,
           url,
           title,
           authorOrChannel: writer.name,

@@ -27,6 +27,7 @@ export const items = pgTable('items', {
   id: varchar('id', { length: 255 }).primaryKey(),
   sourceType: varchar('source_type', { length: 50 }).notNull(),
   sourceId: text('source_id').notNull(),
+  doi: text('doi'),
   url: text('url').notNull(),
   title: text('title').notNull(),
   authorOrChannel: text('author_or_channel').notNull(),
@@ -43,6 +44,7 @@ export const items = pgTable('items', {
   hashIdx: index('items_hash_idx').on(table.hashDedupe),
   sourceTypeIdx: index('items_source_type_idx').on(table.sourceType),
   publishedAtIdx: index('items_published_at_idx').on(table.publishedAt),
+  doiIdx: index('items_doi_idx').on(table.doi),
 }));
 
 export const summaries = pgTable('summaries', {
@@ -70,6 +72,7 @@ export const itemSchema = z.object({
   id: z.string(),
   sourceType: z.enum(sourceTypes),
   sourceId: z.string(),
+  doi: z.string().nullable(),
   url: z.string().url(),
   title: z.string(),
   authorOrChannel: z.string(),
@@ -325,3 +328,67 @@ export const insertItemEmbeddingSchema = createInsertSchema(itemEmbeddings).omit
 
 export type ItemEmbedding = typeof itemEmbeddings.$inferSelect;
 export type InsertItemEmbedding = z.infer<typeof insertItemEmbeddingSchema>;
+
+// Job runs table - tracks ingestion and digest generation metrics
+export const jobRuns = pgTable("job_runs", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  jobName: varchar("job_name", { length: 100 }).notNull(),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  finishedAt: timestamp("finished_at"),
+  status: varchar("status", { length: 20 }).notNull().default('success'),
+  itemsIngested: integer("items_ingested").notNull().default(0),
+  dedupeHits: integer("dedupe_hits").notNull().default(0),
+  tokenSpend: integer("token_spend").notNull().default(0),
+  errorMessage: text("error_message"),
+}, (table) => ({
+  jobNameIdx: index("job_runs_job_name_idx").on(table.jobName),
+  startedAtIdx: index("job_runs_started_at_idx").on(table.startedAt),
+}));
+
+export const jobRunSchema = z.object({
+  id: z.string(),
+  jobName: z.string(),
+  startedAt: z.date(),
+  finishedAt: z.date().nullable().optional(),
+  status: z.enum(['success', 'error']),
+  itemsIngested: z.number(),
+  dedupeHits: z.number(),
+  tokenSpend: z.number(),
+  errorMessage: z.string().nullable().optional(),
+});
+
+export const insertJobRunSchema = createInsertSchema(jobRuns).omit({ id: true });
+
+export type JobRun = typeof jobRuns.$inferSelect;
+export type InsertJobRun = z.infer<typeof insertJobRunSchema>;
+
+// Related refs table - links social/expert discussions to primary research items
+export const relatedRefs = pgTable("related_refs", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  itemId: varchar("item_id", { length: 255 }).notNull().references(() => items.id, { onDelete: 'cascade' }),
+  platform: varchar("platform", { length: 50 }).notNull(),
+  label: text("label").notNull(),
+  url: text("url").notNull(),
+  counts: json("counts").$type<{ comments?: number; upvotes?: number; views?: number }>().notNull().default(sql`'{}'::json`),
+}, (table) => ({
+  itemIdIdx: index("related_refs_item_id_idx").on(table.itemId),
+  uniqueRef: index("related_refs_unique_idx").on(table.itemId, table.platform, table.url),
+}));
+
+export const relatedRefSchema = z.object({
+  id: z.string(),
+  itemId: z.string(),
+  platform: z.string(),
+  label: z.string(),
+  url: z.string(),
+  counts: z.object({
+    comments: z.number().optional(),
+    upvotes: z.number().optional(),
+    views: z.number().optional(),
+  }),
+});
+
+export const insertRelatedRefSchema = createInsertSchema(relatedRefs).omit({ id: true });
+
+export type RelatedRef = typeof relatedRefs.$inferSelect;
+export type InsertRelatedRef = z.infer<typeof insertRelatedRefSchema>;

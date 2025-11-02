@@ -34,6 +34,7 @@ export async function fetchYouTubeFeeds(): Promise<InsertItem[]> {
         items.push({
           sourceType: "youtube",
           sourceId: url,
+          doi: null,
           url,
           title,
           authorOrChannel: channel.name,
