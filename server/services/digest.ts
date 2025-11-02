@@ -2,7 +2,8 @@ import { nanoid } from "nanoid";
 import { format, subDays } from "date-fns";
 import { storage } from "../storage";
 import { rankItems } from "../core/ranking";
-import type { InsertDigest, DigestSectionItem } from "@shared/schema";
+import { generateBatchSummaries } from "./summary";
+import type { InsertDigest, DigestSectionItem, Item, Summary } from "@shared/schema";
 
 export async function generateWeeklyDigest(): Promise<{ id: string; slug: string }> {
   console.log("Starting weekly digest generation...");
@@ -28,47 +29,45 @@ export async function generateWeeklyDigest(): Promise<{ id: string; slug: string
   const substackItems = rankedItems.filter(i => i.sourceType === 'substack');
   const youtubeItems = rankedItems.filter(i => i.sourceType === 'youtube');
 
-  // Build digest sections
-  const researchHighlights: DigestSectionItem[] = journalItems.slice(0, 10).map(item => ({
-    itemId: item.id,
-    title: item.title,
-    url: item.url,
-    sourceType: item.sourceType,
-    publishedAt: item.publishedAt,
-    topics: item.topics,
-    keyInsights: generateKeyInsights(item.rawExcerpt),
-    clinicalTakeaway: generateClinicalTakeaway(item.rawExcerpt),
-    methodology: selectMethodology(item.rawExcerpt, item.isPreprint),
-    levelOfEvidence: selectEvidenceLevel(item.rawExcerpt),
-    journalName: item.journalName,
-    authorOrChannel: item.authorOrChannel,
-  }));
+  // Select top items for each section
+  const topJournals = journalItems.slice(0, 10);
+  const topCommunity = [...redditItems, ...substackItems].slice(0, 10);
+  const topExperts = youtubeItems.slice(0, 8);
 
-  const communityTrends: DigestSectionItem[] = [...redditItems, ...substackItems]
-    .slice(0, 10)
-    .map(item => ({
-      itemId: item.id,
-      title: item.title,
-      url: item.url,
-      sourceType: item.sourceType,
-      publishedAt: item.publishedAt,
-      topics: item.topics,
-      keyInsights: generateKeyInsights(item.rawExcerpt),
-      authorOrChannel: item.authorOrChannel,
-      engagement: item.engagement,
-    }));
+  // Generate AI summaries for all top items
+  const allTopItems = [...topJournals, ...topCommunity, ...topExperts];
+  const allItemIds = allTopItems.map(i => i.id);
 
-  const expertCommentary: DigestSectionItem[] = youtubeItems.slice(0, 8).map(item => ({
-    itemId: item.id,
-    title: item.title,
-    url: item.url,
-    sourceType: item.sourceType,
-    publishedAt: item.publishedAt,
-    topics: item.topics,
-    keyInsights: generateKeyInsights(item.rawExcerpt),
-    authorOrChannel: item.authorOrChannel,
-    engagement: item.engagement,
-  }));
+  console.log(`Generating AI summaries for ${allTopItems.length} items...`);
+  
+  // Check if summaries already exist
+  const existingSummaries = await storage.getSummariesByItemIds(allItemIds);
+  const existingSummaryMap = new Map(existingSummaries.map(s => [s.itemId, s]));
+  
+  // Generate summaries only for items that don't have them
+  const itemsNeedingSummaries = allTopItems.filter(item => !existingSummaryMap.has(item.id));
+  
+  if (itemsNeedingSummaries.length > 0) {
+    console.log(`Generating ${itemsNeedingSummaries.length} new summaries...`);
+    const newSummaries = await generateBatchSummaries(itemsNeedingSummaries, 5);
+    await storage.createBatchSummaries(newSummaries);
+    
+    // Add new summaries to the map
+    newSummaries.forEach(s => existingSummaryMap.set(s.itemId, s));
+  }
+
+  // Build digest sections with summaries
+  const researchHighlights: DigestSectionItem[] = topJournals.map(item => 
+    buildDigestItem(item, existingSummaryMap.get(item.id))
+  );
+
+  const communityTrends: DigestSectionItem[] = topCommunity.map(item => 
+    buildDigestItem(item, existingSummaryMap.get(item.id))
+  );
+
+  const expertCommentary: DigestSectionItem[] = topExperts.map(item => 
+    buildDigestItem(item, existingSummaryMap.get(item.id))
+  );
 
   // Generate public slug (format: 2025w-3)
   const year = windowEnd.getFullYear();
@@ -92,30 +91,28 @@ export async function generateWeeklyDigest(): Promise<{ id: string; slug: string
   return { id: created.id, slug };
 }
 
-function generateKeyInsights(excerpt: string): string {
-  // Simple extraction - take first 120 words
-  const words = excerpt.split(/\s+/).slice(0, 20).join(' ');
-  return words + (excerpt.split(/\s+/).length > 20 ? '...' : '');
-}
+function buildDigestItem(item: Item, summary?: Summary): DigestSectionItem {
+  const base = {
+    itemId: item.id,
+    title: item.title,
+    url: item.url,
+    sourceType: item.sourceType as any,
+    publishedAt: item.publishedAt,
+    topics: item.topics as any,
+    authorOrChannel: item.authorOrChannel,
+    engagement: item.engagement,
+  };
 
-function generateClinicalTakeaway(excerpt: string): string {
-  // Simple extraction - take a snippet
-  const words = excerpt.split(/\s+/).slice(0, 12).join(' ');
-  return words + (excerpt.split(/\s+/).length > 12 ? '...' : '');
-}
+  if (summary) {
+    return {
+      ...base,
+      keyInsights: summary.keyInsights,
+      clinicalTakeaway: summary.clinicalTakeaway,
+      methodology: summary.methodology as any,
+      levelOfEvidence: summary.levelOfEvidence as any,
+      journalName: item.journalName,
+    };
+  }
 
-function selectMethodology(excerpt: string, isPreprint: boolean): any {
-  if (isPreprint) return 'Preprint';
-  if (/randomized|RCT/i.test(excerpt)) return 'RCT';
-  if (/cohort/i.test(excerpt)) return 'Cohort';
-  if (/meta-analysis|meta analysis/i.test(excerpt)) return 'Meta';
-  if (/case study|case report/i.test(excerpt)) return 'Case';
-  if (/review/i.test(excerpt)) return 'Review';
-  return 'NA';
-}
-
-function selectEvidenceLevel(excerpt: string): any {
-  if (/high quality|strong evidence|RCT|meta-analysis/i.test(excerpt)) return 'A';
-  if (/moderate|cohort|case-control/i.test(excerpt)) return 'B';
-  return 'C';
+  return base;
 }

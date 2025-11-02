@@ -2,7 +2,7 @@ import { nanoid } from "nanoid";
 import { db } from "./db";
 import { items, summaries, digests } from "@shared/schema";
 import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest } from "@shared/schema";
-import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // Items
@@ -14,6 +14,8 @@ export interface IStorage {
   // Summaries
   createSummary(summary: InsertSummary): Promise<Summary>;
   getSummaryByItemId(itemId: string): Promise<Summary | undefined>;
+  getSummariesByItemIds(itemIds: string[]): Promise<Summary[]>;
+  createBatchSummaries(summaries: InsertSummary[]): Promise<Summary[]>;
   
   // Digests
   createDigest(digest: InsertDigest): Promise<Digest>;
@@ -76,6 +78,16 @@ export class PostgresStorage implements IStorage {
   async getSummaryByItemId(itemId: string): Promise<Summary | undefined> {
     const [summary] = await db.select().from(summaries).where(eq(summaries.itemId, itemId)).limit(1);
     return summary;
+  }
+
+  async getSummariesByItemIds(itemIds: string[]): Promise<Summary[]> {
+    if (itemIds.length === 0) return [];
+    return await db.select().from(summaries).where(inArray(summaries.itemId, itemIds));
+  }
+
+  async createBatchSummaries(insertSummaries: InsertSummary[]): Promise<Summary[]> {
+    if (insertSummaries.length === 0) return [];
+    return await db.insert(summaries).values(insertSummaries).returning();
   }
 
   // Digests
