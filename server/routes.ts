@@ -144,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin endpoints
-  app.post("/admin/run/ingest", async (req, res) => {
+  app.post("/admin/run/ingest", isAuthenticated, isAdmin, async (req, res) => {
     try {
       // Validate request body with Zod
       const ingestRequestSchema = z.object({
@@ -180,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/admin/run/digest", async (req, res) => {
+  app.post("/admin/run/digest", isAuthenticated, isAdmin, async (req, res) => {
     try {
       const result = await generateWeeklyDigest();
       res.json({

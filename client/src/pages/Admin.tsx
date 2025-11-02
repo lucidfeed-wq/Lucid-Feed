@@ -37,6 +37,49 @@ export default function AdminPage() {
     refetchInterval: 60000, // Refresh every minute
   });
 
+  const runIngestMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', '/admin/run/ingest', {});
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Ingestion started',
+        description: `Processing ${data.itemsIngested || 0} items. Check metrics below for progress.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/metrics/jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/digest/latest'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Ingestion failed',
+        description: error.message || 'Failed to run ingestion job',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const runDigestMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', '/admin/run/digest', {});
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Digest generated',
+        description: 'Weekly digest has been successfully generated.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/metrics/jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/digest/latest'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/digest/archive'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Digest generation failed',
+        description: error.message || 'Failed to generate digest',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const reviewMutation = useMutation({
     mutationFn: async ({ id, status, notes }: { id: string; status: 'approved' | 'rejected'; notes?: string }) => {
       return await apiRequest('PATCH', `/api/feeds/submissions/${id}/review`, {
@@ -85,6 +128,38 @@ export default function AdminPage() {
           Monitor system performance and review feed submissions
         </p>
       </div>
+
+      {/* Manual Job Triggers */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Manual Job Triggers</CardTitle>
+          <CardDescription>
+            Force run ingestion or digest generation jobs manually
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button 
+              onClick={() => runIngestMutation.mutate()}
+              disabled={runIngestMutation.isPending}
+              data-testid="button-trigger-ingest"
+            >
+              {runIngestMutation.isPending ? 'Running...' : 'Run Ingestion'}
+            </Button>
+            <Button 
+              onClick={() => runDigestMutation.mutate()}
+              disabled={runDigestMutation.isPending}
+              variant="secondary"
+              data-testid="button-trigger-digest"
+            >
+              {runDigestMutation.isPending ? 'Generating...' : 'Generate Digest'}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            Note: Ingestion fetches new content from RSS feeds. Digest generation creates a weekly summary from ingested items.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Job Observability Metrics */}
       {metrics && (
