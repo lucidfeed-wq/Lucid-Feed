@@ -1,14 +1,16 @@
 import { ItemCard } from "./ItemCard";
-import type { DigestSectionItem, Topic } from "@shared/schema";
+import { CategorySummary } from "./CategorySummary";
+import type { DigestSectionItem, Topic, CategorySummary as CategorySummaryType } from "@shared/schema";
 
 interface DigestSectionProps {
   title: string;
   description: string;
   items: DigestSectionItem[];
+  categorySummary?: CategorySummaryType;
   onTopicClick?: (topic: Topic) => void;
 }
 
-export function DigestSection({ title, description, items, onTopicClick }: DigestSectionProps) {
+export function DigestSection({ title, description, items, categorySummary, onTopicClick }: DigestSectionProps) {
   if (!items || items.length === 0) {
     return null;
   }
@@ -19,6 +21,13 @@ export function DigestSection({ title, description, items, onTopicClick }: Diges
         <h2 className="text-2xl font-semibold mb-2">{title}</h2>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
+
+      {categorySummary && (
+        <div className="mb-6">
+          <CategorySummary summary={categorySummary} />
+        </div>
+      )}
+
       <div className="space-y-6">
         {items.map((item) => (
           <ItemCard key={item.itemId} item={item} onTopicClick={onTopicClick} />

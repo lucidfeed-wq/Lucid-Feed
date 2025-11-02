@@ -2,8 +2,8 @@ import { nanoid } from "nanoid";
 import { format, subDays } from "date-fns";
 import { storage } from "../storage";
 import { rankItems } from "../core/ranking";
-import { generateBatchSummaries } from "./summary";
-import type { InsertDigest, DigestSectionItem, Item, Summary } from "@shared/schema";
+import { generateBatchSummaries, generateCategorySummary } from "./summary";
+import type { InsertDigest, DigestSectionItem, Item, Summary, CategorySummary } from "@shared/schema";
 
 export async function generateWeeklyDigest(): Promise<{ id: string; slug: string }> {
   console.log("Starting weekly digest generation...");
@@ -69,6 +69,51 @@ export async function generateWeeklyDigest(): Promise<{ id: string; slug: string
     buildDigestItem(item, existingSummaryMap.get(item.id))
   );
 
+  // Generate category summaries for each section
+  console.log('Generating category summaries...');
+  
+  let researchHighlightsSummary: CategorySummary | undefined;
+  let communityTrendsSummary: CategorySummary | undefined;
+  let expertCommentarySummary: CategorySummary | undefined;
+
+  try {
+    // Generate summaries in parallel (pass aligned arrays - keep undefined entries for index alignment)
+    const [resSummary, commSummary, expSummary] = await Promise.all([
+      topJournals.length > 0 
+        ? generateCategorySummary(
+            'Research Articles & Scientific Journals',
+            topJournals,
+            topJournals.map(item => existingSummaryMap.get(item.id)) as Array<Summary | undefined>
+          )
+        : Promise.resolve(undefined),
+      
+      topCommunity.length > 0
+        ? generateCategorySummary(
+            'Community Discussions & Expert Newsletters',
+            topCommunity,
+            topCommunity.map(item => existingSummaryMap.get(item.id)) as Array<Summary | undefined>
+          )
+        : Promise.resolve(undefined),
+      
+      topExperts.length > 0
+        ? generateCategorySummary(
+            'Expert Commentary & Educational Videos',
+            topExperts,
+            topExperts.map(item => existingSummaryMap.get(item.id)) as Array<Summary | undefined>
+          )
+        : Promise.resolve(undefined),
+    ]);
+
+    researchHighlightsSummary = resSummary;
+    communityTrendsSummary = commSummary;
+    expertCommentarySummary = expSummary;
+    
+    console.log('Category summaries generated');
+  } catch (error) {
+    console.error('Error generating category summaries:', error);
+    // Continue without category summaries if they fail
+  }
+
   // Generate public slug (format: 2025w-3)
   const year = windowEnd.getFullYear();
   const week = Math.ceil((new Date().getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
@@ -82,7 +127,10 @@ export async function generateWeeklyDigest(): Promise<{ id: string; slug: string
       researchHighlights,
       communityTrends,
       expertCommentary,
-    },
+      researchHighlightsSummary,
+      communityTrendsSummary,
+      expertCommentarySummary,
+    } as any,
   };
 
   const created = await storage.createDigest(digest);

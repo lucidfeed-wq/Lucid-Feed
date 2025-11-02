@@ -22,9 +22,11 @@ export default function Home() {
   const [selectedTopics, setSelectedTopics] = useState<Topic[]>([]);
   const [selectedSourceTypes, setSelectedSourceTypes] = useState<SourceType[]>([]);
 
-  const { data: digest, isLoading, error } = useQuery<Digest>({
+  const { data: rawDigest, isLoading, error } = useQuery({
     queryKey: ['/api/digest/latest'],
   });
+
+  const digest = rawDigest as Digest | undefined;
 
   const handleTopicToggle = (topic: Topic) => {
     setSelectedTopics(prev =>
@@ -185,6 +187,7 @@ export default function Home() {
                   title="Research Highlights"
                   description="Top peer-reviewed studies and preprints from leading medical journals."
                   items={filteredSections.researchHighlights}
+                  categorySummary={(digest.sections as any)?.researchHighlightsSummary}
                   onTopicClick={handleTopicToggle}
                 />
 
@@ -192,6 +195,7 @@ export default function Home() {
                   title="Community Trends"
                   description="Trending discussions and insights from functional medicine communities on Reddit and Substack."
                   items={filteredSections.communityTrends}
+                  categorySummary={(digest.sections as any)?.communityTrendsSummary}
                   onTopicClick={handleTopicToggle}
                 />
 
@@ -199,6 +203,7 @@ export default function Home() {
                   title="Expert Commentary"
                   description="Educational videos and analysis from leading functional medicine practitioners."
                   items={filteredSections.expertCommentary}
+                  categorySummary={(digest.sections as any)?.expertCommentarySummary}
                   onTopicClick={handleTopicToggle}
                 />
               </>

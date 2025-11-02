@@ -59,11 +59,7 @@ export const digests = pgTable('digests', {
   windowStart: text('window_start').notNull(),
   windowEnd: text('window_end').notNull(),
   generatedAt: text('generated_at').notNull(),
-  sections: json('sections').$type<{
-    researchHighlights: DigestSectionItem[];
-    communityTrends: DigestSectionItem[];
-    expertCommentary: DigestSectionItem[];
-  }>().notNull(),
+  sections: json('sections').notNull(),
 }, (table) => ({
   slugIdx: index('digests_slug_idx').on(table.slug),
   generatedAtIdx: index('digests_generated_at_idx').on(table.generatedAt),
@@ -130,6 +126,13 @@ export const digestSectionItemSchema = z.object({
   }).optional(),
 });
 
+export const categorySummarySchema = z.object({
+  category: z.string(),
+  summary: z.string(),
+  keyThemes: z.array(z.string()),
+  clinicalImplications: z.string(),
+});
+
 export const digestSchema = z.object({
   id: z.string(),
   slug: z.string(),
@@ -140,6 +143,9 @@ export const digestSchema = z.object({
     researchHighlights: z.array(digestSectionItemSchema),
     communityTrends: z.array(digestSectionItemSchema),
     expertCommentary: z.array(digestSectionItemSchema),
+    researchHighlightsSummary: categorySummarySchema.optional(),
+    communityTrendsSummary: categorySummarySchema.optional(),
+    expertCommentarySummary: categorySummarySchema.optional(),
   }),
 });
 
@@ -148,6 +154,7 @@ export const insertDigestSchema = createInsertSchema(digests).omit({ id: true, g
 export type Digest = typeof digests.$inferSelect;
 export type InsertDigest = z.infer<typeof insertDigestSchema>;
 export type DigestSectionItem = z.infer<typeof digestSectionItemSchema>;
+export type CategorySummary = z.infer<typeof categorySummarySchema>;
 
 // Session storage table (required for Replit Auth)
 export const sessions = pgTable(

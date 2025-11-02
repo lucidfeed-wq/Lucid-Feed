@@ -9,12 +9,12 @@ const openai = new OpenAI({
 export async function generateSummary(item: Item): Promise<InsertSummary> {
   const systemPrompt = `You are a functional medicine expert who summarizes scientific articles and health content for medical practitioners.
 
-Your task: Extract key insights and clinical takeaways from content, and classify the methodology and evidence level.
+Your task: Extract comprehensive insights and detailed clinical takeaways from content, and classify the methodology and evidence level.
 
 Response format (JSON):
 {
-  "keyInsights": "2-3 sentence summary of the main findings or discussion points",
-  "clinicalTakeaway": "1 sentence actionable insight for clinicians",
+  "keyInsights": "Provide 5-7 distinct, actionable insights as a detailed paragraph (150-200 words). Include: main findings, mechanisms of action, population studied, effect sizes, clinical relevance, limitations, and future directions.",
+  "clinicalTakeaway": "Provide 2-3 sentences (50-75 words) with specific, actionable recommendations for clinicians. Include: patient selection criteria, dosing/protocol details where applicable, monitoring parameters, and potential contraindications or precautions.",
   "methodology": "RCT|Cohort|Case|Review|Meta|Preprint|NA",
   "levelOfEvidence": "A|B|C"
 }
@@ -31,7 +31,9 @@ Methodology types:
 - Review: Literature review or systematic review
 - Meta: Meta-analysis
 - Preprint: Preprint (not yet peer-reviewed)
-- NA: Not applicable (for social media, YouTube, general discussions)`;
+- NA: Not applicable (for social media, YouTube, general discussions)
+
+Focus on extracting maximum clinical value from the content.`;
 
   const userPrompt = `Source: ${item.sourceType}
 Title: ${item.title}
@@ -53,7 +55,7 @@ Generate a summary with key insights, clinical takeaway, methodology classificat
       ],
       response_format: { type: 'json_object' },
       temperature: 0.3,
-      max_tokens: 500,
+      max_tokens: 800, // Increased for more detailed insights
     });
 
     const content = completion.choices[0]?.message?.content;
@@ -134,4 +136,82 @@ export async function generateBatchSummaries(items: Item[], batchSize: number = 
   }
   
   return summaries;
+}
+
+interface CategorySummary {
+  category: string;
+  summary: string;
+  keyThemes: string[];
+  clinicalImplications: string;
+}
+
+export async function generateCategorySummary(
+  categoryName: string,
+  items: Array<{ title: string; authorOrChannel: string; rawExcerpt: string }>,
+  existingSummaries?: Array<{ keyInsights: string; clinicalTakeaway: string } | undefined>
+): Promise<CategorySummary> {
+  const systemPrompt = `You are a functional medicine expert analyzing trends across multiple research articles, community discussions, or expert content.
+
+Your task: Synthesize key themes and clinical implications across a collection of content from the same source category.
+
+Response format (JSON):
+{
+  "summary": "2-3 sentence overview of the main patterns and trends across all items (75-100 words)",
+  "keyThemes": ["Theme 1", "Theme 2", "Theme 3", "Theme 4", "Theme 5"],
+  "clinicalImplications": "2-3 sentences describing how these collective insights inform clinical practice, what practitioners should pay attention to, and emerging patterns worth monitoring (75-100 words)"
+}
+
+Focus on: emerging patterns, contradictory findings, consensus areas, and practical clinical relevance.`;
+
+  // Build content summary from items (maintain index alignment)
+  const contentSummary = items.slice(0, 10).map((item, idx) => {
+    const summary = existingSummaries?.[idx]; // Aligned index - may be undefined
+    return `${idx + 1}. "${item.title}" by ${item.authorOrChannel}
+${summary ? `Insights: ${summary.keyInsights.slice(0, 200)}` : `Excerpt: ${item.rawExcerpt.slice(0, 200)}`}`;
+  }).join('\n\n');
+
+  const userPrompt = `Category: ${categoryName}
+Number of items: ${items.length}
+
+Items in this category:
+${contentSummary}
+
+Analyze these items collectively and identify the key themes, patterns, and clinical implications across this category.`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.4,
+      max_tokens: 600,
+    });
+
+    const content = completion.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('No response from OpenAI');
+    }
+
+    const parsed = JSON.parse(content);
+    
+    return {
+      category: categoryName,
+      summary: parsed.summary || `Analysis of ${items.length} items in ${categoryName}`,
+      keyThemes: parsed.keyThemes || [],
+      clinicalImplications: parsed.clinicalImplications || 'See individual items for detailed insights.',
+    };
+  } catch (error) {
+    console.error(`Error generating category summary for ${categoryName}:`, error);
+    
+    // Fallback
+    return {
+      category: categoryName,
+      summary: `This section includes ${items.length} items covering various topics in functional medicine.`,
+      keyThemes: [],
+      clinicalImplications: 'Review individual items for specific insights and recommendations.',
+    };
+  }
 }
