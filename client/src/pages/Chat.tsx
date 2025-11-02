@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Send, MessageSquare, ExternalLink, Loader2 } from 'lucide-react';
+import type { Digest } from '@shared/schema';
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -31,11 +32,18 @@ export default function Chat() {
   const [conversationHistory, setConversationHistory] = useState<ChatMessage[]>([]);
   const [sources, setSources] = useState<ChatSource[]>([]);
 
+  // Fetch latest digest to get its ID for filtered search
+  const { data: rawDigest } = useQuery({
+    queryKey: ['/api/digest/latest'],
+  });
+  const digest = rawDigest as Digest | undefined;
+
   const chatMutation = useMutation({
     mutationFn: async ({ message, history }: { message: string; history: ChatMessage[] }): Promise<ChatResponse> => {
       const response = await apiRequest('POST', '/api/chat', {
         query: message,
         conversationHistory: history,
+        digestId: digest?.id, // Filter search to current digest
       });
       return response as unknown as ChatResponse;
     },
@@ -78,7 +86,7 @@ export default function Chat() {
             <div>
               <h1 className="text-2xl font-semibold">Chat with Digest</h1>
               <p className="text-sm text-muted-foreground">
-                Ask questions about research, protocols, and clinical insights
+                Ask questions about research, protocols, and clinical insights from the latest digest
               </p>
             </div>
           </div>
