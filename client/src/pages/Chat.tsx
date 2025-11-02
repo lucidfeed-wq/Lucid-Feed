@@ -57,7 +57,7 @@ export default function Chat() {
   });
 
   const handleSend = () => {
-    if (!query.trim() || chatMutation.isPending) return;
+    if (!query.trim() || chatMutation.isPending || !digest) return;
 
     const userMessage = query.trim();
     const nextHistory: ChatMessage[] = [
@@ -211,7 +211,7 @@ export default function Chat() {
               />
               <Button
                 onClick={handleSend}
-                disabled={!query.trim() || chatMutation.isPending}
+                disabled={!query.trim() || chatMutation.isPending || !digest}
                 size="icon"
                 className="shrink-0"
                 data-testid="button-send-message"
