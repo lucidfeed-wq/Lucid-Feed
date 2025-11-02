@@ -7,6 +7,7 @@ import { exportDigestJSON, exportDigestMarkdown, exportDigestRSS } from "./servi
 import { z } from "zod";
 import { topics, feedDomains, sourceTypes, insertFeedCatalogSchema, insertUserFeedSubmissionSchema } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { isAdmin } from "./middleware/isAdmin";
 import { chatWithDigest } from "./services/chat";
 import { generateMissingEmbeddings } from "./services/embeddings";
 
@@ -268,11 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       
-      const validationResult = insertUserFeedSubmissionSchema.safeParse({
-        ...req.body,
-        userId,
-        status: 'pending',
-      });
+      const validationResult = insertUserFeedSubmissionSchema.safeParse(req.body);
       
       if (!validationResult.success) {
         return res.status(400).json({ 
@@ -281,7 +278,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const submission = await storage.submitFeed(validationResult.data);
+      // Add userId and status after validation
+      const submissionData = {
+        ...validationResult.data,
+        userId,
+        status: 'pending' as const,
+      } as InsertUserFeedSubmission;
+      const submission = await storage.submitFeed(submissionData);
       res.json(submission);
     } catch (error) {
       console.error("Error submitting feed:", error);
@@ -300,9 +303,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/feeds/submissions/pending", isAuthenticated, async (req: any, res) => {
+  app.get("/api/feeds/submissions/pending", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
-      // TODO: Add admin role check
       const pending = await storage.getPendingFeedSubmissions();
       res.json(pending);
     } catch (error) {
@@ -311,7 +313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/feeds/submissions/:id/review", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/feeds/submissions/:id/review", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const reviewerId = req.user.claims.sub;
       const { id } = req.params;

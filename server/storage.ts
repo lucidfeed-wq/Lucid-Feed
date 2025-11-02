@@ -339,6 +339,7 @@ export class PostgresStorage implements IStorage {
         name: result.feedName,
         url: result.feedUrl,
         domain: result.domain,
+        category: result.category,
         sourceType: result.sourceType,
         description: result.description || '',
         isApproved: true,

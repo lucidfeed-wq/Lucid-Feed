@@ -13,17 +13,20 @@ The application features a modern frontend built with React, adhering to a Mater
 
 ### Technical Implementations
 The application is a full-stack JavaScript project utilizing React for the frontend, Express for the backend API, and TypeScript for type safety across both.
-- **Content Ingestion**: RSS feeds from over 130 sources (journals, Reddit, Substack, YouTube) are ingested.
+- **Content Ingestion**: RSS feeds from 126 curated sources (journals, Reddit, Substack, YouTube) are ingested.
 - **Deduplication**: Cross-source deduplication is achieved using SHA-256 hashing after URL canonicalization.
 - **Topic Tagging**: Content is automatically tagged with over 30 functional medicine topics using regex-based matching.
 - **Ranking Algorithm**: Items are ranked based on a weighted score considering quality (40%), recency (30%), and engagement (30%).
 - **AI-Powered Summaries**: OpenAI integration (GPT-4o-mini) generates detailed individual item summaries (5-7 insights, 150-200 words, 50-75 word clinical takeaways) and category-level meta-summaries for digest sections (75-100 word overview, 5 key themes, 75-100 word clinical implications).
+- **RAG Chat Interface**: Semantic search using OpenAI embeddings (text-embedding-3-small) enables users to query curated content with GPT-4o-mini generating contextual responses citing top 5 relevant sources.
 - **Database**: PostgreSQL is used for persistence, managed with Drizzle ORM.
 - **Authentication**: User authentication is implemented via Replit Auth (OpenID Connect) with session management.
+- **Admin Authorization**: Environment-based admin access control (ADMIN_USER_IDS) protects feed approval queue and review endpoints.
 - **Personalization**: Users can select preferred topics and bookmark items.
 - **Digest Generation**: Weekly digests are automatically generated, comprising research highlights, community trends, and expert commentary sections.
 - **Export Capabilities**: Digests can be exported in JSON, Markdown, and RSS formats.
 - **Automated Scheduling**: Daily ingestion and weekly digest generation are managed by `node-cron`.
+- **Feed Catalog**: Browsable feed directory with filters by source type (journal, reddit, substack, youtube) and category. Users can submit new feeds for admin approval.
 
 ### Feature Specifications
 - **RSS Feed Ingestion**: Supports ingestion from journals, Reddit, Substack, and YouTube, with expanded source lists.
@@ -34,8 +37,11 @@ The application is a full-stack JavaScript project utilizing React for the front
 - **AI Summary Generation**: Individual item summaries (insights, clinical takeaways) and category-level summaries (overview, key themes, clinical implications).
 - **PostgreSQL Persistence**: Stores items, summaries, digests, users, sessions, user preferences, and saved items.
 - **User Authentication**: Replit Auth (Google/GitHub/email).
+- **Admin Authorization**: Environment-based admin access control using ADMIN_USER_IDS (comma-separated list of user IDs). Protected routes include feed approval queue (/admin) and review endpoints.
 - **Personalized Topic Preferences**: Users select favorite topics.
 - **Saved Items**: Users can bookmark and view saved content.
+- **Community Feed Submissions**: Authenticated users can submit new RSS feeds for review.
+- **Feed Approval Workflow**: Admins review, approve, or reject user-submitted feeds through /admin panel.
 - **Export Options**: JSON, Markdown, RSS.
 - **Automated Scheduling**: Daily ingestion, weekly digest generation.
 - **Complete Frontend UI**: Material Design + Linear-inspired.
