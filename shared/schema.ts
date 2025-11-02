@@ -292,7 +292,15 @@ export const userFeedSubmissionSchema = z.object({
   reviewedAt: z.date().nullable().optional(),
 });
 
-export const insertUserFeedSubmissionSchema = createInsertSchema(userFeedSubmissions).omit({ id: true, submittedAt: true });
+export const insertUserFeedSubmissionSchema = createInsertSchema(userFeedSubmissions).omit({ 
+  id: true, 
+  userId: true,
+  status: true,
+  submittedAt: true,
+  reviewedBy: true,
+  reviewNotes: true,
+  reviewedAt: true,
+});
 
 export type UserFeedSubmission = typeof userFeedSubmissions.$inferSelect;
 export type InsertUserFeedSubmission = z.infer<typeof insertUserFeedSubmissionSchema>;

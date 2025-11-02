@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ExternalLink, Search, Plus } from 'lucide-react';
+import { ExternalLink, Search } from 'lucide-react';
+import { FeedSubmissionDialog } from '@/components/FeedSubmissionDialog';
 import type { FeedCatalog } from '@shared/schema';
 
 export default function FeedCatalogPage() {
@@ -52,10 +53,7 @@ export default function FeedCatalogPage() {
               Browse {feeds.filter(f => f.isApproved).length} curated RSS feeds across journals, communities, and expert commentary
             </p>
           </div>
-          <Button variant="default" data-testid="button-submit-feed">
-            <Plus className="h-4 w-4 mr-2" />
-            Submit Feed
-          </Button>
+          <FeedSubmissionDialog />
         </div>
 
         {/* Filters */}
