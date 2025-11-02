@@ -7,8 +7,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Check, X, ExternalLink } from 'lucide-react';
-import type { UserFeedSubmission } from '@shared/schema';
+import { Check, X, ExternalLink, Activity, TrendingUp, Hash, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
+import type { UserFeedSubmission, JobRun } from '@shared/schema';
+import { formatDistanceToNow } from 'date-fns';
+
+interface MetricsData {
+  jobs: JobRun[];
+  summary: {
+    totalJobs: number;
+    successfulJobs: number;
+    failedJobs: number;
+    totalItemsIngested: number;
+    totalDedupeHits: number;
+    totalTokenSpend: number;
+    avgDedupeRate: string;
+  };
+}
 
 export default function AdminPage() {
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
@@ -16,6 +30,11 @@ export default function AdminPage() {
 
   const { data: submissions = [], isLoading } = useQuery<UserFeedSubmission[]>({
     queryKey: ['/api/feeds/submissions/pending'],
+  });
+
+  const { data: metrics } = useQuery<MetricsData>({
+    queryKey: ['/api/admin/metrics/jobs'],
+    refetchInterval: 60000, // Refresh every minute
   });
 
   const reviewMutation = useMutation({
@@ -60,9 +79,135 @@ export default function AdminPage() {
     <div className="container mx-auto py-8 px-4 max-w-7xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2" data-testid="heading-admin">
-          Feed Submissions Review
+          Admin Dashboard
         </h1>
         <p className="text-muted-foreground">
+          Monitor system performance and review feed submissions
+        </p>
+      </div>
+
+      {/* Job Observability Metrics */}
+      {metrics && (
+        <div className="mb-12">
+          <h2 className="text-xl font-semibold mb-4">Job Observability (Last 7 Days)</h2>
+          
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="metric-total-jobs">{metrics.summary.totalJobs}</div>
+                <p className="text-xs text-muted-foreground">
+                  {metrics.summary.successfulJobs} successful, {metrics.summary.failedJobs} failed
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Items Ingested</CardTitle>
+                <Hash className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="metric-items-ingested">{metrics.summary.totalItemsIngested}</div>
+                <p className="text-xs text-muted-foreground">
+                  New content items
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Dedupe Rate</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="metric-dedupe-rate">{metrics.summary.avgDedupeRate}%</div>
+                <p className="text-xs text-muted-foreground">
+                  {metrics.summary.totalDedupeHits} duplicates blocked
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Token Spend</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold" data-testid="metric-token-spend">{metrics.summary.totalTokenSpend.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">
+                  AI tokens consumed
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Job Runs Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Job Runs</CardTitle>
+              <CardDescription>Latest system job executions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 font-medium">Job</th>
+                      <th className="text-left py-2 font-medium">Status</th>
+                      <th className="text-right py-2 font-medium">Items</th>
+                      <th className="text-right py-2 font-medium">Dedupes</th>
+                      <th className="text-right py-2 font-medium">Tokens</th>
+                      <th className="text-left py-2 font-medium">Started</th>
+                      <th className="text-left py-2 font-medium">Duration</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {metrics.jobs.slice(0, 10).map((job) => {
+                      const duration = job.finishedAt 
+                        ? Math.round((new Date(job.finishedAt).getTime() - new Date(job.startedAt).getTime()) / 1000)
+                        : null;
+                      
+                      return (
+                        <tr key={job.id} className="border-b" data-testid={`row-job-${job.id}`}>
+                          <td className="py-2">{job.jobName}</td>
+                          <td className="py-2">
+                            {job.status === 'success' ? (
+                              <Badge variant="default" className="gap-1">
+                                <CheckCircle className="h-3 w-3" />
+                                Success
+                              </Badge>
+                            ) : (
+                              <Badge variant="destructive" className="gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                Error
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="py-2 text-right">{job.itemsIngested}</td>
+                          <td className="py-2 text-right">{job.dedupeHits}</td>
+                          <td className="py-2 text-right">{job.tokenSpend.toLocaleString()}</td>
+                          <td className="py-2">{formatDistanceToNow(new Date(job.startedAt), { addSuffix: true })}</td>
+                          <td className="py-2">{duration ? `${duration}s` : '-'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Feed Submissions Section */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Feed Submissions Review</h2>
+        <p className="text-muted-foreground mb-6">
           Review and approve pending feed submissions from the community
         </p>
       </div>

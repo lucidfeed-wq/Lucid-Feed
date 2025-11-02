@@ -5,7 +5,7 @@ import { runIngestJob } from "./services/ingest";
 import { generateWeeklyDigest } from "./services/digest";
 import { exportDigestJSON, exportDigestMarkdown, exportDigestRSS } from "./services/exports";
 import { z } from "zod";
-import { topics, feedDomains, sourceTypes, insertFeedCatalogSchema, insertUserFeedSubmissionSchema } from "@shared/schema";
+import { topics, feedDomains, sourceTypes, insertFeedCatalogSchema, insertUserFeedSubmissionSchema, type InsertUserFeedSubmission } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { isAdmin } from "./middleware/isAdmin";
 import { chatWithDigest } from "./services/chat";
@@ -328,6 +328,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error reviewing submission:", error);
       res.status(500).json({ error: "Failed to review submission" });
+    }
+  });
+
+  // Admin metrics endpoint - job observability
+  app.get("/api/admin/metrics/jobs", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { days } = req.query;
+      const daysFilter = days ? parseInt(days as string) : 7;
+      
+      const jobs = await storage.getJobRuns({ days: daysFilter });
+      
+      // Calculate summary stats
+      const totalJobs = jobs.length;
+      const successfulJobs = jobs.filter(j => j.status === 'success').length;
+      const failedJobs = jobs.filter(j => j.status === 'error').length;
+      const totalItemsIngested = jobs.reduce((sum, j) => sum + (j.itemsIngested || 0), 0);
+      const totalDedupeHits = jobs.reduce((sum, j) => sum + (j.dedupeHits || 0), 0);
+      const totalTokenSpend = jobs.reduce((sum, j) => sum + (j.tokenSpend || 0), 0);
+      const avgDedupeRate = totalItemsIngested + totalDedupeHits > 0
+        ? (totalDedupeHits / (totalItemsIngested + totalDedupeHits) * 100).toFixed(1)
+        : 0;
+      
+      res.json({
+        jobs,
+        summary: {
+          totalJobs,
+          successfulJobs,
+          failedJobs,
+          totalItemsIngested,
+          totalDedupeHits,
+          totalTokenSpend,
+          avgDedupeRate,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching job metrics:", error);
+      res.status(500).json({ error: "Failed to fetch metrics" });
     }
   });
 

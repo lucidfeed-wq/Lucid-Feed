@@ -1,4 +1,4 @@
-import { MessageSquare, ThumbsUp, Eye, ExternalLink } from "lucide-react";
+import { MessageSquare, ThumbsUp, Eye, ExternalLink, Link2 } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { SourceBadge } from "./SourceBadge";
 import { MethodologyBadge } from "./MethodologyBadge";
@@ -7,6 +7,19 @@ import { TopicTag } from "./TopicTag";
 import { SaveButton } from "./SaveButton";
 import type { DigestSectionItem, Topic } from "@shared/schema";
 import { format } from "date-fns";
+
+// UTM tracking utility
+function addUTMParams(url: string, source: string = 'digest', medium: string = 'web', campaign: string = 'weekly_digest'): string {
+  try {
+    const urlObj = new URL(url);
+    urlObj.searchParams.set('utm_source', source);
+    urlObj.searchParams.set('utm_medium', medium);
+    urlObj.searchParams.set('utm_campaign', campaign);
+    return urlObj.toString();
+  } catch {
+    return url;
+  }
+}
 
 interface ItemCardProps {
   item: DigestSectionItem;
@@ -17,6 +30,9 @@ interface ItemCardProps {
 export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps) {
   const publishedDate = format(new Date(item.publishedAt), "MMM d, yyyy");
   const hasEngagement = item.engagement && (item.engagement.comments > 0 || item.engagement.upvotes > 0 || item.engagement.views > 0);
+  
+  // Add UTM tracking to all outbound links
+  const trackedUrl = addUTMParams(item.url);
 
   return (
     <Card className="hover-elevate transition-shadow" data-testid={`card-item-${item.itemId}`}>
@@ -35,7 +51,7 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
           </div>
         </div>
         <a
-          href={item.url}
+          href={trackedUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="group"
@@ -81,7 +97,7 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
       <CardFooter className="flex-col items-start gap-4 pt-4 border-t">
         <div className="w-full">
           <a
-            href={item.url}
+            href={trackedUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
