@@ -41,15 +41,15 @@ export default function FeedCatalogPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-7xl">
+    <div className="container mx-auto py-4 md:py-8 px-4 max-w-7xl">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+      <div className="mb-6 md:mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2" data-testid="heading-feed-catalog">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2" data-testid="heading-feed-catalog">
               Feed Catalog
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               Browse {feeds.filter(f => f.isApproved).length} curated RSS feeds across journals, communities, and expert commentary
             </p>
           </div>
@@ -57,8 +57,8 @@ export default function FeedCatalogPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-4">
-          <div className="flex-1 min-w-[200px]">
+        <div className="flex flex-col md:flex-row flex-wrap gap-3 md:gap-4">
+          <div className="flex-1 min-w-full md:min-w-[200px]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -73,7 +73,7 @@ export default function FeedCatalogPage() {
           </div>
 
           <Select value={selectedSourceType} onValueChange={setSelectedSourceType}>
-            <SelectTrigger className="w-[200px]" data-testid="select-source-type">
+            <SelectTrigger className="w-full md:w-[200px]" data-testid="select-source-type">
               <SelectValue placeholder="All Sources" />
             </SelectTrigger>
             <SelectContent>
@@ -87,7 +87,7 @@ export default function FeedCatalogPage() {
           </Select>
 
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-[250px]" data-testid="select-category">
+            <SelectTrigger className="w-full md:w-[250px]" data-testid="select-category">
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
