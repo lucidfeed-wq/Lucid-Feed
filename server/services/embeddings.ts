@@ -145,16 +145,38 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 
 /**
  * Finds items most similar to query text
+ * @param digestId - Optional digest ID to limit search to items in that digest
  */
 export async function semanticSearch(
   queryText: string,
-  limit: number = 10
+  limit: number = 10,
+  digestId?: string
 ): Promise<Array<{ itemId: string; similarity: number }>> {
   // Generate embedding for query
   const queryEmbedding = await generateEmbedding(queryText);
   
   // Get all embeddings from database
-  const allEmbeddings = await db.select().from(itemEmbeddings);
+  let allEmbeddings = await db.select().from(itemEmbeddings);
+  
+  // If digestId provided, filter to only items in that digest
+  if (digestId) {
+    const { digests } = await import('@shared/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    const [digest] = await db.select().from(digests).where(eq(digests.id, digestId)).limit(1);
+    
+    if (digest) {
+      const sections = digest.sections as any;
+      const digestItemIds = new Set<string>([
+        ...(sections.researchHighlights || []).map((item: any) => item.itemId),
+        ...(sections.communityTrends || []).map((item: any) => item.itemId),
+        ...(sections.expertCommentary || []).map((item: any) => item.itemId),
+      ]);
+      
+      allEmbeddings = allEmbeddings.filter(emb => digestItemIds.has(emb.itemId));
+      console.log(`Filtered to ${allEmbeddings.length} items from digest ${digestId}`);
+    }
+  }
   
   if (allEmbeddings.length === 0) {
     console.warn('No embeddings found in database');

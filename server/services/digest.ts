@@ -5,8 +5,26 @@ import { rankItems } from "../core/ranking";
 import { generateBatchSummaries, generateCategorySummary } from "./summary";
 import type { InsertDigest, DigestSectionItem, Item, Summary, CategorySummary } from "@shared/schema";
 
-export async function generateWeeklyDigest(): Promise<{ id: string; slug: string }> {
+interface DigestGenerationOptions {
+  itemCounts?: {
+    research?: number;
+    community?: number;
+    expert?: number;
+  };
+  windowDays?: number;
+}
+
+export async function generateWeeklyDigest(options: DigestGenerationOptions = {}): Promise<{ id: string; slug: string }> {
   console.log("Starting weekly digest generation...");
+
+  // Default item counts (configurable)
+  const itemCounts = {
+    research: options.itemCounts?.research ?? 15,
+    community: options.itemCounts?.community ?? 15,
+    expert: options.itemCounts?.expert ?? 10,
+  };
+
+  console.log(`Digest configuration: ${itemCounts.research} research, ${itemCounts.community} community, ${itemCounts.expert} expert videos`);
 
   // Create job run for observability
   const jobRun = await storage.createJobRun({
@@ -20,9 +38,9 @@ export async function generateWeeklyDigest(): Promise<{ id: string; slug: string
   let totalTokenSpend = 0;
 
   try {
-    // Define 7-day window
+    // Define window (default 7 days, configurable)
     const windowEnd = new Date();
-    const windowStart = subDays(windowEnd, 7);
+    const windowStart = subDays(windowEnd, options.windowDays ?? 7);
 
   // Fetch items from the past week
   const items = await storage.getItemsInWindow(
@@ -41,10 +59,10 @@ export async function generateWeeklyDigest(): Promise<{ id: string; slug: string
   const substackItems = rankedItems.filter(i => i.sourceType === 'substack');
   const youtubeItems = rankedItems.filter(i => i.sourceType === 'youtube');
 
-  // Select top items for each section
-  const topJournals = journalItems.slice(0, 10);
-  const topCommunity = [...redditItems, ...substackItems].slice(0, 10);
-  const topExperts = youtubeItems.slice(0, 8);
+  // Select top items for each section (using configurable counts)
+  const topJournals = journalItems.slice(0, itemCounts.research);
+  const topCommunity = [...redditItems, ...substackItems].slice(0, itemCounts.community);
+  const topExperts = youtubeItems.slice(0, itemCounts.expert);
 
   // Generate AI summaries for all top items
   const allTopItems = [...topJournals, ...topCommunity, ...topExperts];

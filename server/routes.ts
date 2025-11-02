@@ -182,7 +182,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/admin/run/digest", isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const result = await generateWeeklyDigest();
+      const { itemCounts, windowDays } = req.body;
+      
+      const options: any = {};
+      if (itemCounts) options.itemCounts = itemCounts;
+      if (windowDays) options.windowDays = windowDays;
+      
+      const result = await generateWeeklyDigest(options);
       res.json({
         success: true,
         message: "Digest generated",
@@ -233,13 +239,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Chat endpoints (protected)
   app.post("/api/chat", isAuthenticated, async (req, res) => {
     try {
-      const { query, conversationHistory } = req.body;
+      const { query, conversationHistory, digestId } = req.body;
       
       if (!query || typeof query !== 'string') {
         return res.status(400).json({ error: "Query is required" });
       }
       
-      const response = await chatWithDigest(query, conversationHistory || []);
+      const response = await chatWithDigest(query, conversationHistory || [], digestId);
       res.json(response);
     } catch (error) {
       console.error("Error processing chat:", error);

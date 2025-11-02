@@ -26,15 +26,17 @@ export interface ChatResponse {
 
 /**
  * Processes a chat query using RAG (Retrieval Augmented Generation)
+ * @param digestId - Optional digest ID to limit search to specific digest
  */
 export async function chatWithDigest(
   query: string,
-  conversationHistory: ChatMessage[] = []
+  conversationHistory: ChatMessage[] = [],
+  digestId?: string
 ): Promise<ChatResponse> {
-  console.log(`Processing chat query: "${query}"`);
+  console.log(`Processing chat query: "${query}"${digestId ? ` (filtered to digest ${digestId})` : ''}`);
   
-  // Step 1: Semantic search to find relevant items
-  const searchResults = await semanticSearch(query, 10);
+  // Step 1: Semantic search to find relevant items (filtered by digest if provided)
+  const searchResults = await semanticSearch(query, 10, digestId);
   
   if (searchResults.length === 0) {
     return {

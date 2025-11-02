@@ -5,10 +5,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Check, X, ExternalLink, Activity, TrendingUp, Hash, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
-import type { UserFeedSubmission, JobRun } from '@shared/schema';
+import type { UserFeedSubmission, JobRun, Topic } from '@shared/schema';
+import { topics } from '@shared/schema';
 import { formatDistanceToNow } from 'date-fns';
 
 interface MetricsData {
@@ -26,6 +29,10 @@ interface MetricsData {
 
 export default function AdminPage() {
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  const [selectedTopics, setSelectedTopics] = useState<Topic[]>([]);
+  const [researchCount, setResearchCount] = useState('15');
+  const [communityCount, setCommunityCount] = useState('15');
+  const [expertCount, setExpertCount] = useState('10');
   const { toast } = useToast();
 
   const { data: submissions = [], isLoading } = useQuery<UserFeedSubmission[]>({
@@ -38,8 +45,10 @@ export default function AdminPage() {
   });
 
   const runIngestMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest('POST', '/admin/run/ingest', {});
+    mutationFn: async (topicsFilter?: Topic[]) => {
+      return await apiRequest('POST', '/admin/run/ingest', {
+        topics: topicsFilter && topicsFilter.length > 0 ? topicsFilter : undefined,
+      });
     },
     onSuccess: (data) => {
       toast({
@@ -48,6 +57,7 @@ export default function AdminPage() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/metrics/jobs'] });
       queryClient.invalidateQueries({ queryKey: ['/api/digest/latest'] });
+      setSelectedTopics([]);
     },
     onError: (error: Error) => {
       toast({
@@ -60,7 +70,12 @@ export default function AdminPage() {
 
   const runDigestMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('POST', '/admin/run/digest', {});
+      const itemCounts = {
+        research: parseInt(researchCount) || 15,
+        community: parseInt(communityCount) || 15,
+        expert: parseInt(expertCount) || 10,
+      };
+      return await apiRequest('POST', '/admin/run/digest', { itemCounts });
     },
     onSuccess: () => {
       toast({
@@ -134,18 +149,102 @@ export default function AdminPage() {
         <CardHeader>
           <CardTitle>Manual Job Triggers</CardTitle>
           <CardDescription>
-            Force run ingestion or digest generation jobs manually
+            Force run ingestion or digest generation jobs manually with custom settings
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
+        <CardContent className="space-y-6">
+          {/* Ingestion Trigger */}
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium">1. Run Ingestion (Optional: Filter by Topics)</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Fetch new content from RSS feeds. Select topics to limit ingestion, or leave empty for all topics.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {topics.slice(0, 10).map(topic => (
+                <Badge
+                  key={topic}
+                  variant={selectedTopics.includes(topic) ? 'default' : 'outline'}
+                  className="cursor-pointer hover-elevate active-elevate-2"
+                  onClick={() => {
+                    setSelectedTopics(prev =>
+                      prev.includes(topic)
+                        ? prev.filter(t => t !== topic)
+                        : [...prev, topic]
+                    );
+                  }}
+                  data-testid={`badge-topic-${topic}`}
+                >
+                  {topic.replace(/_/g, ' ')}
+                </Badge>
+              ))}
+            </div>
+            {selectedTopics.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {selectedTopics.length} topic{selectedTopics.length !== 1 ? 's' : ''} selected
+              </p>
+            )}
             <Button 
-              onClick={() => runIngestMutation.mutate()}
+              onClick={() => runIngestMutation.mutate(selectedTopics.length > 0 ? selectedTopics : undefined)}
               disabled={runIngestMutation.isPending}
               data-testid="button-trigger-ingest"
             >
-              {runIngestMutation.isPending ? 'Running...' : 'Run Ingestion'}
+              {runIngestMutation.isPending ? 'Running...' : selectedTopics.length > 0 ? `Run Filtered Ingestion (${selectedTopics.length} topics)` : 'Run Full Ingestion'}
             </Button>
+          </div>
+
+          <div className="border-t pt-6" />
+
+          {/* Digest Trigger */}
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium">2. Generate Digest (Configure Item Counts)</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Create a new weekly digest. Customize how many items to include in each section.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="research-count" className="text-xs">Research Articles</Label>
+                <Input
+                  id="research-count"
+                  type="number"
+                  min="5"
+                  max="50"
+                  value={researchCount}
+                  onChange={(e) => setResearchCount(e.target.value)}
+                  data-testid="input-research-count"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="community-count" className="text-xs">Community Posts</Label>
+                <Input
+                  id="community-count"
+                  type="number"
+                  min="5"
+                  max="50"
+                  value={communityCount}
+                  onChange={(e) => setCommunityCount(e.target.value)}
+                  data-testid="input-community-count"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="expert-count" className="text-xs">Expert Videos</Label>
+                <Input
+                  id="expert-count"
+                  type="number"
+                  min="5"
+                  max="50"
+                  value={expertCount}
+                  onChange={(e) => setExpertCount(e.target.value)}
+                  data-testid="input-expert-count"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Total items: {(parseInt(researchCount) || 0) + (parseInt(communityCount) || 0) + (parseInt(expertCount) || 0)}
+            </p>
             <Button 
               onClick={() => runDigestMutation.mutate()}
               disabled={runDigestMutation.isPending}
@@ -155,9 +254,6 @@ export default function AdminPage() {
               {runDigestMutation.isPending ? 'Generating...' : 'Generate Digest'}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-4">
-            Note: Ingestion fetches new content from RSS feeds. Digest generation creates a weekly summary from ingested items.
-          </p>
         </CardContent>
       </Card>
 
