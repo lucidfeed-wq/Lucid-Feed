@@ -1,0 +1,204 @@
+Perfect. Since you’re already mid-build on Node.js / Express / PostgreSQL, here’s a single “UPDATE PROMPT” you can paste into Replit AI (or Cursor/Windsurf) to add just the missing features Replit flagged—without changing your stack.
+
+⸻
+
+🔧 REPLIT “UPDATE” PROMPT — Incremental Enhancements (Node.js + Express + Postgres)
+
+Context
+Repo already has: Items/Summaries/Digests schema, RSS ingestion for journals/reddit/substack/youtube, SHA-256 dedupe, topic tagging, ranking (40/30/30), digest sections, AI summaries (OpenAI), exports (JSON/MD/RSS), Postgres, auth, admin approval, feed filtering, and RAG chat.
+
+Goal
+Add the following seven upgrades with tight diffs and tests:
+	1.	Evidence quality labels (RCT/Meta/Cohort/Case/Preprint)
+	2.	DOI tracking + Preprint flag
+	3.	Cross-source merge (Reddit/Substack/YouTube “discussed on” links attached to the study card)
+	4.	UTM tagging on all outbound links (creator-friendly traffic)
+	5.	Granular engagement tracking per source (comments/upvotes/views)
+	6.	Observability dashboard (ingest counts, dedupe hits, token spend, errors, runtime)
+	7.	Social/creator badges on cards (“Also discussed by…”)
+
+Keep runtime/ops stable. Do not break current routes or digest format—only extend.
+
+⸻
+
+0) Conventions (assume TypeScript)
+	•	Keep existing ORM. If none, use parameterized SQL with pg client.
+	•	Add minimal DB migration (SQL + idempotent).
+	•	Add unit/integration tests for new logic.
+
+⸻
+
+1) DB Migrations (PostgreSQL)
+
+Add provenance + engagement:
+
+-- 001_add_provenance.sql
+ALTER TABLE items ADD COLUMN IF NOT EXISTS doi TEXT;
+ALTER TABLE items ADD COLUMN IF NOT EXISTS is_preprint BOOLEAN DEFAULT FALSE;
+ALTER TABLE items ADD COLUMN IF NOT EXISTS journal_name TEXT;
+ALTER TABLE items ADD COLUMN IF NOT EXISTS source_type TEXT; -- 'journal'|'substack'|'youtube'|'reddit'|'society'
+ALTER TABLE items ADD COLUMN IF NOT EXISTS source_id TEXT;   -- DOI or canonical id
+ALTER TABLE items ADD COLUMN IF NOT EXISTS engagement_json JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE items ADD COLUMN IF NOT EXISTS topics_csv TEXT;
+ALTER TABLE items ADD COLUMN IF NOT EXISTS hash_dedupe TEXT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_items_hash_dedupe_unique ON items(hash_dedupe);
+CREATE INDEX IF NOT EXISTS idx_items_doi ON items(doi);
+CREATE INDEX IF NOT EXISTS idx_items_source_type ON items(source_type);
+
+Add job_runs for observability:
+
+-- 002_job_runs.sql
+CREATE TABLE IF NOT EXISTS job_runs (
+  id BIGSERIAL PRIMARY KEY,
+  job_name TEXT NOT NULL,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  finished_at TIMESTAMPTZ,
+  status TEXT CHECK (status IN ('success','error')) DEFAULT 'success',
+  items_ingested INT DEFAULT 0,
+  dedupe_hits INT DEFAULT 0,
+  token_spend INT DEFAULT 0,
+  error_message TEXT
+);
+
+Optional related refs (if you prefer a table vs joining later):
+
+-- 003_related_refs.sql
+CREATE TABLE IF NOT EXISTS related_refs (
+  id BIGSERIAL PRIMARY KEY,
+  item_id BIGINT REFERENCES items(id) ON DELETE CASCADE,
+  platform TEXT,          -- 'reddit'|'substack'|'youtube'|'society'
+  label TEXT,             -- e.g., 'r/ScientificNutrition', 'Peter Attia'
+  url TEXT,
+  counts JSONB DEFAULT '{}'::jsonb,
+  UNIQUE(item_id, platform, url)
+);
+
+Add a one-time backfill script to compute hash_dedupe:
+
+// scripts/backfillHash.ts
+import crypto from "crypto";
+const h = (s:string)=>crypto.createHash("sha256").update(s).digest("hex");
+
+// SELECT id, source_type, doi, url, title FROM items
+// For each row:
+const key = `${source_type || ''}|${(doi || url || title || '').trim().toLowerCase()}`;
+const hash = h(key);
+// UPDATE items SET hash_dedupe=$1 WHERE id=$2
+
+
+⸻
+
+2) Ingestion: DOI + Preprint + Engagement
+	•	Enhance journal adapters to parse DOI and is_preprint (true for preprint servers or when feed indicates preprint).
+	•	For Reddit/Substack/YouTube adapters, normalize engagement_json:
+
+{"comments": <int>, "upvotes": <int>, "views": <int>}
+
+
+	•	On insert, compute hash:
+
+const key = `${source_type}|${(doi || url || title).trim().toLowerCase()}`;
+const hash_dedupe = sha256(key);
+
+
+	•	If hash exists: merge engagement by summing numeric fields and keep earliest published_at. Do not create a new item.
+
+⸻
+
+3) Cross-Source Merge (“discussed on”)
+
+Rule: If a non-journal item’s outlink or text references a DOI/URL that matches an existing journal item, do not create a new digest card. Instead:
+	•	Either insert a related_refs row tied to the journal item, or
+	•	Collect during digest build by querying items with same DOI/URL and source_type != 'journal'.
+
+Digest composition (research section):
+	•	For each journal item, build discussed_on[] with {platform, label, url, counts} from matched non-journal items.
+
+Community/Expert sections:
+	•	Include non-journal items only if they do not match a DOI/URL already represented in research highlights.
+
+⸻
+
+4) Evidence Labels
+
+Add methodology + evidence_level on summaries.
+	•	methodology: 'RCT'|'Meta'|'Cohort'|'Case'|'Review'|'Preprint'|'NA'
+	•	evidence_level: 'A'|'B'|'C'
+
+Update your summarizer (OpenAI step) to return JSON with these fields; persist on summaries. UI shows badges: RCT, Meta, Cohort, Case, Preprint, Level A/B/C.
+
+⸻
+
+5) UTM Tagging (creator-friendly backlinks)
+
+Add a small helper and use it in templates:
+
+// utils/utm.ts
+import { URL } from "url";
+export function addUTM(rawUrl: string, campaign: string, source="funcmed-digest", medium="referral") {
+  try {
+    const u = new URL(rawUrl);
+    u.searchParams.set("utm_source", source);
+    u.searchParams.set("utm_medium", medium);
+    u.searchParams.set("utm_campaign", campaign);
+    return u.toString();
+  } catch { return rawUrl; }
+}
+
+In digest rendering:
+
+// server-side template or React component
+const href = addUTM(item.url, digest.public_slug);
+<a href={href} target="_blank" rel="noopener noreferrer nofollow">View original</a>
+
+Apply to all external links, including “Also discussed by …”.
+
+⸻
+
+6) Observability Dashboard
+	•	Wrap ingest & digest jobs with a jobRuns logger:
+	•	started_at on start; finished_at, status, items_ingested, dedupe_hits, token_spend, error_message on exit.
+	•	Add route /admin/metrics (auth required) that shows:
+	•	Last 30 days: job counts, avg duration, total items ingested, dedupe rate (dedupe_hits / (ingested + dedupe_hits)), token spend, per-source breakdown.
+	•	Minimal charting: server-render tables now; charts later.
+
+⸻
+
+7) UI polish (cards + badges)
+	•	On Research cards: show badges from methodology and evidence_level (e.g., RCT, Level A, Preprint).
+	•	Add a “Also discussed by:” row: icons + labels (e.g., Substack domain, YouTube channel, r/subreddit) linking out with UTM.
+	•	Tooltip on the footer: “We always link out so original authors/creators get the traffic.”
+
+⸻
+
+8) Tests (Jest or Vitest)
+
+Create tests to enforce new behavior:
+	1.	Migration adds columns, unique hash exists.
+	2.	Deduping merge: inserting two items with same DOI/URL updates engagement instead of new row.
+	3.	Cross-source merge: a Reddit item referencing the study’s DOI does not create a second digest card; appears under discussed_on[].
+	4.	Evidence badges render for an RCT summary; Preprint shows when is_preprint=true.
+	5.	UTM: outbound links include utm_source=funcmed-digest and utm_campaign={slug}.
+	6.	Observability: creating a fake job run appears in /admin/metrics.
+	7.	Exports still valid: JSON/MD/RSS endpoints return 200 with expected schema.
+
+⸻
+
+9) Acceptance checklist
+	•	✅ DB migrated; hash_dedupe unique in Postgres.
+	•	✅ Journals contain doi, is_preprint, journal_name.
+	•	✅ Digest research cards include badges + discussed_on[] when applicable.
+	•	✅ All outbound links use UTM helper.
+	•	✅ /admin/metrics renders job stats.
+	•	✅ Tests green; existing routes unchanged.
+
+⸻
+
+Notes
+	•	Keep ranking weights as you have (40/30/30). If you later want engagement Z-scores, we can add per-source normalization.
+	•	Keep your RAG chat unchanged; these changes make provenance clearer (better answers).
+
+⸻
+
+If you paste that prompt into Replit AI, it should make targeted edits in your current codebase. If you want, I can also generate SQL verification queries or a tiny “post-deploy smoke test” checklist for your admin to run.
