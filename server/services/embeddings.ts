@@ -3,9 +3,9 @@ import { db } from '../db';
 import { itemEmbeddings, items, summaries } from '@shared/schema';
 import { eq, isNull } from 'drizzle-orm';
 
+// Use direct OpenAI API for embeddings (Replit AI Integration doesn't support embeddings)
 const openai = new OpenAI({
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 const EMBEDDING_MODEL = 'text-embedding-3-small';
