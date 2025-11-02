@@ -1,15 +1,26 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Header } from "@/components/Header";
 import { DigestHeader } from "@/components/DigestHeader";
 import { DigestSection } from "@/components/DigestSection";
 import { TopicFilter } from "@/components/TopicFilter";
+import { SourceTypeFilter } from "@/components/SourceTypeFilter";
 import { LoadingState } from "@/components/LoadingState";
 import { EmptyState } from "@/components/EmptyState";
-import type { Digest, Topic } from "@shared/schema";
+import type { Digest, Topic, SourceType } from "@shared/schema";
 
 export default function Home() {
   const [selectedTopics, setSelectedTopics] = useState<Topic[]>([]);
+  const [selectedSourceTypes, setSelectedSourceTypes] = useState<SourceType[]>([]);
 
   const { data: digest, isLoading, error } = useQuery<Digest>({
     queryKey: ['/api/digest/latest'],
@@ -23,15 +34,41 @@ export default function Home() {
     );
   };
 
+  const handleSourceTypeToggle = (type: SourceType) => {
+    setSelectedSourceTypes(prev =>
+      prev.includes(type)
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
+  };
+
   const handleClearFilters = () => {
     setSelectedTopics([]);
+    setSelectedSourceTypes([]);
+  };
+
+  const handleClearSourceTypes = () => {
+    setSelectedSourceTypes([]);
   };
 
   const filterItems = (items: any[]) => {
-    if (selectedTopics.length === 0) return items;
-    return items.filter(item =>
-      item.topics?.some((topic: Topic) => selectedTopics.includes(topic))
-    );
+    let filtered = items;
+
+    // Filter by topic
+    if (selectedTopics.length > 0) {
+      filtered = filtered.filter(item =>
+        item.topics?.some((topic: Topic) => selectedTopics.includes(topic))
+      );
+    }
+
+    // Filter by source type
+    if (selectedSourceTypes.length > 0) {
+      filtered = filtered.filter(item =>
+        selectedSourceTypes.includes(item.sourceType)
+      );
+    }
+
+    return filtered;
   };
 
   if (isLoading) {
@@ -69,16 +106,59 @@ export default function Home() {
     filteredSections.communityTrends.length > 0 ||
     filteredSections.expertCommentary.length > 0;
 
+  const totalFilters = selectedSourceTypes.length + selectedTopics.length;
+
+  const FilterContent = () => (
+    <div className="space-y-8">
+      <SourceTypeFilter
+        selectedTypes={selectedSourceTypes}
+        onTypeToggle={handleSourceTypeToggle}
+        onClearTypes={handleClearSourceTypes}
+      />
+      <div className="border-t pt-8">
+        <TopicFilter
+          selectedTopics={selectedTopics}
+          onTopicToggle={handleTopicToggle}
+          onClearFilters={handleClearFilters}
+        />
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
         <div className="flex gap-8">
-          <TopicFilter
-            selectedTopics={selectedTopics}
-            onTopicToggle={handleTopicToggle}
-            onClearFilters={handleClearFilters}
-          />
+          {/* Desktop Sidebar */}
+          <aside className="hidden lg:block w-64 sticky top-20 h-[calc(100vh-6rem)] overflow-y-auto pr-6">
+            <FilterContent />
+          </aside>
+
+          {/* Mobile Filter Button */}
+          <div className="lg:hidden fixed bottom-6 right-6 z-40">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button size="lg" className="rounded-full shadow-lg" data-testid="button-filter-mobile">
+                  <Filter className="w-5 h-5 mr-2" />
+                  Filters
+                  {totalFilters > 0 && (
+                    <span className="ml-2 bg-primary-foreground text-primary rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                      {totalFilters}
+                    </span>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80 overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Filters</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6">
+                  <FilterContent />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
 
           <div className="flex-1 max-w-4xl">
             <DigestHeader

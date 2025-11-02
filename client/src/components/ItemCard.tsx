@@ -79,6 +79,19 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
       </CardContent>
 
       <CardFooter className="flex-col items-start gap-4 pt-4 border-t">
+        <div className="w-full">
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+            data-testid="link-view-source"
+          >
+            <ExternalLink className="w-4 h-4" />
+            View Original Source
+          </a>
+        </div>
+
         {item.topics && item.topics.length > 0 && (
           <div className="flex flex-wrap gap-2 w-full">
             {item.topics.slice(0, 5).map((topic) => (

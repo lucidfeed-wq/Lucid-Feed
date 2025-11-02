@@ -39,21 +39,15 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/">
-              <a className="flex items-center gap-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2" data-testid="link-home">
-                <span className="text-xl font-semibold tracking-tight">FM Intelligence</span>
-              </a>
+            <Link href="/" className="flex items-center gap-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2" data-testid="link-home">
+              <span className="text-xl font-semibold tracking-tight">FM Intelligence</span>
             </Link>
             <nav className="hidden md:flex items-center gap-6">
-              <Link href="/">
-                <a className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-latest">
-                  Latest Digest
-                </a>
+              <Link href="/" className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-latest">
+                Latest Digest
               </Link>
-              <Link href="/archive">
-                <a className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-archive">
-                  Archive
-                </a>
+              <Link href="/archive" className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-archive">
+                Archive
               </Link>
             </nav>
           </div>
@@ -114,19 +108,15 @@ export function Header() {
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link href="/saved">
-                        <a data-testid="link-saved">
-                          <Bookmark className="w-4 h-4 mr-2" />
-                          Saved Items
-                        </a>
+                      <Link href="/saved" data-testid="link-saved">
+                        <Bookmark className="w-4 h-4 mr-2" />
+                        Saved Items
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/preferences">
-                        <a data-testid="link-preferences">
-                          <Settings className="w-4 h-4 mr-2" />
-                          Topic Preferences
-                        </a>
+                      <Link href="/preferences" data-testid="link-preferences">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Topic Preferences
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
