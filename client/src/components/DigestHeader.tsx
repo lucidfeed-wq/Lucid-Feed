@@ -18,11 +18,11 @@ export function DigestHeader({ windowStart, windowEnd, generatedAt, itemCounts }
   const generated = format(new Date(generatedAt), "PPpp");
 
   return (
-    <div className="pb-8 mb-12 border-b">
-      <h1 className="text-4xl font-semibold mb-3 tracking-tight" data-testid="text-digest-title">
+    <div className="pb-6 md:pb-8 mb-8 md:mb-12 border-b">
+      <h1 className="text-2xl md:text-4xl font-semibold mb-2 md:mb-3 tracking-tight" data-testid="text-digest-title">
         Weekly Digest: {startDate} – {endDate}
       </h1>
-      <p className="text-sm text-muted-foreground mb-4" data-testid="text-generated">
+      <p className="text-xs md:text-sm text-muted-foreground mb-3 md:mb-4" data-testid="text-generated">
         Generated on {generated}
       </p>
       <div className="flex flex-wrap gap-2">

@@ -76,20 +76,20 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2" data-testid="heading-admin">
+    <div className="container mx-auto py-4 md:py-8 px-4 max-w-7xl">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold mb-2" data-testid="heading-admin">
           Admin Dashboard
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm md:text-base text-muted-foreground">
           Monitor system performance and review feed submissions
         </p>
       </div>
 
       {/* Job Observability Metrics */}
       {metrics && (
-        <div className="mb-12">
-          <h2 className="text-xl font-semibold mb-4">Job Observability (Last 7 Days)</h2>
+        <div className="mb-8 md:mb-12">
+          <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">Job Observability (Last 7 Days)</h2>
           
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -149,21 +149,21 @@ export default function AdminPage() {
           {/* Recent Job Runs Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Job Runs</CardTitle>
-              <CardDescription>Latest system job executions</CardDescription>
+              <CardTitle className="text-base md:text-lg">Recent Job Runs</CardTitle>
+              <CardDescription className="text-xs md:text-sm">Latest system job executions</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-4 md:mx-0">
+                <table className="w-full text-xs md:text-sm min-w-[600px]">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 font-medium">Job</th>
-                      <th className="text-left py-2 font-medium">Status</th>
-                      <th className="text-right py-2 font-medium">Items</th>
-                      <th className="text-right py-2 font-medium">Dedupes</th>
-                      <th className="text-right py-2 font-medium">Tokens</th>
-                      <th className="text-left py-2 font-medium">Started</th>
-                      <th className="text-left py-2 font-medium">Duration</th>
+                      <th className="text-left py-2 px-2 md:px-0 font-medium">Job</th>
+                      <th className="text-left py-2 px-2 md:px-0 font-medium">Status</th>
+                      <th className="text-right py-2 px-2 md:px-0 font-medium">Items</th>
+                      <th className="text-right py-2 px-2 md:px-0 font-medium">Dedupes</th>
+                      <th className="text-right py-2 px-2 md:px-0 font-medium">Tokens</th>
+                      <th className="text-left py-2 px-2 md:px-0 font-medium">Started</th>
+                      <th className="text-left py-2 px-2 md:px-0 font-medium">Duration</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -174,8 +174,8 @@ export default function AdminPage() {
                       
                       return (
                         <tr key={job.id} className="border-b" data-testid={`row-job-${job.id}`}>
-                          <td className="py-2">{job.jobName}</td>
-                          <td className="py-2">
+                          <td className="py-2 px-2 md:px-0">{job.jobName}</td>
+                          <td className="py-2 px-2 md:px-0">
                             {job.status === 'success' ? (
                               <Badge variant="default" className="gap-1">
                                 <CheckCircle className="h-3 w-3" />
@@ -188,11 +188,11 @@ export default function AdminPage() {
                               </Badge>
                             )}
                           </td>
-                          <td className="py-2 text-right">{job.itemsIngested}</td>
-                          <td className="py-2 text-right">{job.dedupeHits}</td>
-                          <td className="py-2 text-right">{job.tokenSpend.toLocaleString()}</td>
-                          <td className="py-2">{formatDistanceToNow(new Date(job.startedAt), { addSuffix: true })}</td>
-                          <td className="py-2">{duration ? `${duration}s` : '-'}</td>
+                          <td className="py-2 px-2 md:px-0 text-right">{job.itemsIngested}</td>
+                          <td className="py-2 px-2 md:px-0 text-right">{job.dedupeHits}</td>
+                          <td className="py-2 px-2 md:px-0 text-right">{job.tokenSpend.toLocaleString()}</td>
+                          <td className="py-2 px-2 md:px-0">{formatDistanceToNow(new Date(job.startedAt), { addSuffix: true })}</td>
+                          <td className="py-2 px-2 md:px-0">{duration ? `${duration}s` : '-'}</td>
                         </tr>
                       );
                     })}

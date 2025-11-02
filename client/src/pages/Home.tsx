@@ -77,7 +77,7 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-8">
           <LoadingState />
         </main>
       </div>
@@ -88,7 +88,7 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-8">
           <EmptyState
             title="Unable to Load Digest"
             description="There was a problem loading the latest digest. Please try again later."
@@ -130,8 +130,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-8">
+        <div className="flex gap-4 md:gap-8">
           {/* Desktop Sidebar */}
           <aside className="hidden lg:block w-64 sticky top-20 h-[calc(100vh-6rem)] overflow-y-auto pr-6">
             <FilterContent />
@@ -168,9 +168,9 @@ export default function Home() {
               windowEnd={digest.windowEnd}
               generatedAt={digest.generatedAt}
               itemCounts={{
-                research: digest.sections.researchHighlights?.length || 0,
-                community: digest.sections.communityTrends?.length || 0,
-                expert: digest.sections.expertCommentary?.length || 0,
+                research: filteredSections.researchHighlights.length,
+                community: filteredSections.communityTrends.length,
+                expert: filteredSections.expertCommentary.length,
               }}
             />
 

@@ -89,9 +89,9 @@ export default function DigestView() {
               windowEnd={digest.windowEnd}
               generatedAt={digest.generatedAt}
               itemCounts={{
-                research: digest.sections.researchHighlights?.length || 0,
-                community: digest.sections.communityTrends?.length || 0,
-                expert: digest.sections.expertCommentary?.length || 0,
+                research: filteredSections.researchHighlights.length,
+                community: filteredSections.communityTrends.length,
+                expert: filteredSections.expertCommentary.length,
               }}
             />
 

@@ -36,8 +36,8 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
 
   return (
     <Card className="hover-elevate transition-shadow" data-testid={`card-item-${item.itemId}`}>
-      <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-4 mb-3">
+      <CardHeader className="pb-3 md:pb-4">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 md:gap-4 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
             <SourceBadge sourceType={item.sourceType} />
             {item.methodology && <MethodologyBadge methodology={item.methodology} />}
@@ -45,7 +45,7 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
           </div>
           <div className="flex items-center gap-2">
             <SaveButton itemId={item.itemId} isSaved={isSaved} />
-            <span className="text-sm text-muted-foreground whitespace-nowrap" data-testid="text-date">
+            <span className="text-xs md:text-sm text-muted-foreground whitespace-nowrap" data-testid="text-date">
               {publishedDate}
             </span>
           </div>
@@ -57,7 +57,7 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
           className="group"
           data-testid="link-item-title"
         >
-          <h3 className="text-lg font-medium leading-snug group-hover:underline max-w-prose">
+          <h3 className="text-base md:text-lg font-medium leading-snug group-hover:underline max-w-prose">
             {item.title}
             <ExternalLink className="inline-block w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
           </h3>
@@ -74,20 +74,20 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
         )}
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 md:space-y-4">
         {item.keyInsights && (
           <div>
-            <h4 className="text-sm font-medium mb-2">Key Insights</h4>
-            <p className="text-base leading-relaxed" data-testid="text-insights">
+            <h4 className="text-xs md:text-sm font-medium mb-2">Key Insights</h4>
+            <p className="text-sm md:text-base leading-relaxed" data-testid="text-insights">
               {item.keyInsights}
             </p>
           </div>
         )}
 
         {item.clinicalTakeaway && (
-          <div className="border-l-2 border-primary pl-4">
-            <h4 className="text-sm font-medium mb-2">Clinical Takeaway</h4>
-            <p className="text-sm leading-relaxed" data-testid="text-takeaway">
+          <div className="border-l-2 border-primary pl-3 md:pl-4">
+            <h4 className="text-xs md:text-sm font-medium mb-2">Clinical Takeaway</h4>
+            <p className="text-xs md:text-sm leading-relaxed" data-testid="text-takeaway">
               {item.clinicalTakeaway}
             </p>
           </div>
