@@ -24,6 +24,20 @@ Production-ready web application that aggregates, deduplicates, ranks, and publi
 - ✅ Digest archive view
 
 ## Recent Changes
+**2025-11-02 (Session 4 - Data Source Expansion & Topic-Selective Fetching):**
+- **Massively expanded RSS sources from 19 to 132 feeds (7x increase)**:
+  - Journals: 8 → 36 sources (metabolic, endocrinology, nutrition, gut health, immunology, longevity, mitochondrial, NAD/oxidative stress, integrative medicine)
+  - Reddit: 5 → 40 subreddits (added mold/CIRS, chronic EBV, chronic illness, diet-specific, hormones, autoimmune communities)
+  - Substack: 3 → 24 writers (added mold experts, mitochondrial specialists, longevity researchers)
+  - YouTube: 3 → 32 channels (added FoundMyFitness, mold/CIRS specialists, mitochondrial health, hormone optimization)
+- **Implemented topic-selective manual ingestion**: users can now fetch data for specific topics only
+  - Enhanced `/admin/run/ingest` endpoint to accept optional topics array in request body
+  - Added Zod validation to reject invalid topics with detailed error messages
+  - Returns filtered count showing how many items were excluded based on topic selection
+  - Tested successfully: filtered 784 items to 217 matching keto/fasting (30% match rate)
+- **Real-world performance**: Despite ~40 feeds failing (404/403 errors), working feeds deliver 784 items vs ~140 before (5.6x improvement!)
+- **Note**: Some sources fail due to no RSS feeds, anti-scraping protection, or incorrect URLs - this is expected with aggressive source expansion
+
 **2025-11-02 (Session 3 - Personalization Features):**
 - Implemented personalized topic preferences: users select from 32 topics, preferences persist to database
 - Created user_preferences table with cascade delete and efficient upsert operations

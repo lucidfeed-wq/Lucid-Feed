@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { runIngestJob } from "./services/ingest";
 import { generateWeeklyDigest } from "./services/digest";
 import { exportDigestJSON, exportDigestMarkdown, exportDigestRSS } from "./services/exports";
+import { z } from "zod";
+import { topics } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -141,10 +143,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin endpoints
   app.post("/admin/run/ingest", async (req, res) => {
     try {
-      const result = await runIngestJob();
+      // Validate request body with Zod
+      const ingestRequestSchema = z.object({
+        topics: z.array(z.enum(topics)).optional(),
+      });
+      
+      const validationResult = ingestRequestSchema.safeParse(req.body || {});
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid request", 
+          details: validationResult.error.errors,
+          validTopics: topics 
+        });
+      }
+      
+      const { topics: requestTopics } = validationResult.data;
+      const options = requestTopics && requestTopics.length > 0 
+        ? { topics: requestTopics } 
+        : {};
+      
+      const result = await runIngestJob(options);
       res.json({
         success: true,
-        message: "Ingestion completed",
+        message: requestTopics && requestTopics.length > 0 
+          ? `Ingestion completed (filtered for ${requestTopics.length} topics)` 
+          : "Ingestion completed",
         ...result,
       });
     } catch (error) {
