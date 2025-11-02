@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser } from "@shared/schema";
+import { items, summaries, digests, users, userPreferences } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences } from "@shared/schema";
 import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
 
 export interface IStorage {
@@ -26,6 +26,10 @@ export interface IStorage {
   // Users (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  
+  // User Preferences
+  getUserPreferences(userId: string): Promise<UserPreferences | undefined>;
+  upsertUserPreferences(prefs: InsertUserPreferences): Promise<UserPreferences>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -139,6 +143,27 @@ export class PostgresStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  // User Preferences
+  async getUserPreferences(userId: string): Promise<UserPreferences | undefined> {
+    const [prefs] = await db.select().from(userPreferences).where(eq(userPreferences.userId, userId)).limit(1);
+    return prefs;
+  }
+
+  async upsertUserPreferences(prefsData: InsertUserPreferences): Promise<UserPreferences> {
+    const [prefs] = await db
+      .insert(userPreferences)
+      .values(prefsData)
+      .onConflictDoUpdate({
+        target: userPreferences.userId,
+        set: {
+          favoriteTopics: prefsData.favoriteTopics,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return prefs;
   }
 }
 

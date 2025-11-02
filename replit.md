@@ -4,7 +4,7 @@
 Production-ready web application that aggregates, deduplicates, ranks, and publishes weekly content digests from multiple sources in the functional medicine space. Built with modern full-stack JavaScript using React, Express, and TypeScript.
 
 ## Current State
-**Status:** ✅ MVP Complete and Production-Ready
+**Status:** ✅ Production-Ready with PostgreSQL and Authentication
 
 ### Features Implemented
 - ✅ RSS feed ingestion from 4 source types (journals, Reddit, Substack, YouTube)
@@ -12,6 +12,9 @@ Production-ready web application that aggregates, deduplicates, ranks, and publi
 - ✅ Automated topic tagging for 30+ functional medicine topics
 - ✅ Quality/recency/engagement-based ranking algorithm
 - ✅ Weekly digest generation with 3 sections (research highlights, community trends, expert commentary)
+- ✅ AI-powered summary generation using OpenAI (key insights + clinical takeaways)
+- ✅ PostgreSQL database persistence (items, summaries, digests, users, sessions)
+- ✅ User authentication via Replit Auth (Google/GitHub/email login)
 - ✅ Export capabilities (JSON, Markdown, RSS)
 - ✅ Automated scheduling (daily ingestion, weekly digest generation)
 - ✅ Complete frontend UI with Material Design + Linear-inspired aesthetic
@@ -19,13 +22,24 @@ Production-ready web application that aggregates, deduplicates, ranks, and publi
 - ✅ Digest archive view
 
 ## Recent Changes
-**2025-11-02:**
-- Fixed critical cross-source deduplication bug by redesigning hash generation to canonicalize URLs without source type prefix
-- URL normalization now removes query parameters/fragments BEFORE trimming trailing slashes
-- All parsers updated to use new dedupe function signature: `generateHashDedupe(url, title)`
-- Confirmed all export endpoints work correctly (JSON, Markdown, RSS)
-- Verified digest generation creates proper three-section structure
-- Tested complete ingestion → digest → export pipeline with real RSS data
+**2025-11-02 (Session 2 - Authentication):**
+- Implemented complete user authentication system using Replit Auth (OpenID Connect)
+- Created users and sessions tables in PostgreSQL with proper indexes
+- Added authentication middleware with token refresh and session management
+- Integrated PostgreSQL session store using connect-pg-simple
+- Created Header component with login/logout UI showing user avatar and profile dropdown
+- Built useAuth hook for managing authentication state in frontend
+- E2E tested full authentication flow: login, profile display, logout
+- Note: Hardcoded HTTPS callbacks work perfectly in Replit hosted environment
+
+**2025-11-02 (Session 1 - Database & AI):**
+- Migrated from in-memory storage to PostgreSQL with Drizzle ORM
+- Completed database migration: 140 items ingested, digest generation working
+- Implemented AI-powered summary generation using Replit OpenAI integration
+- Batch processing with rate limiting (10 concurrent, 1s delay between batches)
+- Summaries display key insights, clinical takeaways, methodology, evidence levels
+- Fixed critical cross-source deduplication bug with URL canonicalization
+- Tested complete pipeline: ingestion → AI summaries → digest → export
 
 ## Project Architecture
 
@@ -47,8 +61,10 @@ Production-ready web application that aggregates, deduplicates, ranks, and publi
 - `sources/youtube.ts` - Fetches from health/wellness YouTube channels
 
 **Infrastructure:**
-- `storage.ts` - In-memory storage layer (MemStorage) for Items, Summaries, Digests
-- `routes.ts` - Express API routes for digest retrieval, admin jobs, exports
+- `storage.ts` - PostgreSQL storage layer (DbStorage) with Drizzle ORM for Items, Summaries, Digests, Users
+- `db.ts` - Drizzle database connection and query client
+- `routes.ts` - Express API routes for digest retrieval, admin jobs, exports, authentication
+- `replitAuth.ts` - Replit Auth (OIDC) integration with Passport.js, session management, token refresh
 - `scheduler.ts` - node-cron jobs for automated ingestion (daily midnight UTC) and digest generation (Monday 06:00 CST / 12:00 UTC)
 
 ### Frontend (`client/src/`)
@@ -58,7 +74,7 @@ Production-ready web application that aggregates, deduplicates, ranks, and publi
 - `pages/DigestView.tsx` - Individual digest detail view
 
 **Components:**
-- `components/Header.tsx` - Navigation with export dropdown
+- `components/Header.tsx` - Navigation with export dropdown, login/logout UI, user avatar
 - `components/DigestHeader.tsx` - Digest metadata and date range
 - `components/DigestSection.tsx` - Section wrapper for research/community/expert
 - `components/ItemCard.tsx` - Individual content item display
@@ -68,18 +84,27 @@ Production-ready web application that aggregates, deduplicates, ranks, and publi
 - `components/EvidenceBadge.tsx` - Evidence level indicator
 - `components/TopicTag.tsx` - Individual topic badge
 
+**Hooks:**
+- `hooks/useAuth.ts` - Authentication state management using React Query
+
 ### Shared (`shared/`)
-- `schema.ts` - TypeScript types and Zod schemas for Items, Summaries, Digests
+- `schema.ts` - Drizzle ORM schemas and TypeScript types for Items, Summaries, Digests, Users, Sessions
 
 ## API Endpoints
 
 ### Public Endpoints
 - `GET /api/digest/latest` - Returns most recent digest
 - `GET /api/digest/archive` - Returns list of all digests
-- `GET /api/digest/:id` - Returns specific digest by ID
+- `GET /api/digest/:slug` - Returns specific digest by slug
 - `GET /export/weekly.json` - Download latest digest as JSON
 - `GET /export/weekly.md` - Download latest digest as Markdown
 - `GET /rss/weekly.xml` - Subscribe to weekly digest RSS feed
+
+### Authentication Endpoints
+- `GET /api/login` - Initiates Replit Auth login flow (redirects to OIDC provider)
+- `GET /api/callback` - OAuth callback handler (processes login, creates session)
+- `GET /api/logout` - Logs out user and destroys session
+- `GET /api/auth/user` - Returns current authenticated user (protected)
 
 ### Admin Endpoints
 - `POST /admin/run/ingest` - Manually trigger RSS ingestion

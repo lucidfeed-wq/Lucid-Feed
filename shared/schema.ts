@@ -175,3 +175,15 @@ export const users = pgTable("users", {
 
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+// User preferences table
+export const userPreferences = pgTable("user_preferences", {
+  userId: varchar("user_id").primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  favoriteTopics: json("favorite_topics").$type<Topic[]>().notNull().default(sql`'[]'::json`),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertUserPreferencesSchema = createInsertSchema(userPreferences);
+
+export type UserPreferences = typeof userPreferences.$inferSelect;
+export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;

@@ -22,6 +22,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User preferences endpoints (protected)
+  app.get('/api/preferences', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const prefs = await storage.getUserPreferences(userId);
+      if (!prefs) {
+        return res.json({ userId, favoriteTopics: [], updatedAt: null });
+      }
+      res.json(prefs);
+    } catch (error) {
+      console.error("Error fetching preferences:", error);
+      res.status(500).json({ message: "Failed to fetch preferences" });
+    }
+  });
+
+  app.put('/api/preferences', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { favoriteTopics } = req.body;
+      const prefs = await storage.upsertUserPreferences({
+        userId,
+        favoriteTopics,
+      });
+      res.json(prefs);
+    } catch (error) {
+      console.error("Error updating preferences:", error);
+      res.status(500).json({ message: "Failed to update preferences" });
+    }
+  });
+
   // Digest endpoints (public)
   app.get("/api/digest/latest", async (req, res) => {
     try {
