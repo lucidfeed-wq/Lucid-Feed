@@ -9,6 +9,7 @@ import DigestView from "@/pages/DigestView";
 import Preferences from "@/pages/Preferences";
 import SavedItems from "@/pages/SavedItems";
 import Chat from "@/pages/Chat";
+import FeedCatalog from "@/pages/FeedCatalog";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/preferences" component={Preferences} />
       <Route path="/saved" component={SavedItems} />
       <Route path="/chat" component={Chat} />
+      <Route path="/feeds" component={FeedCatalog} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -1,0 +1,221 @@
+Perfect—here’s a single “UPDATE” prompt you can drop into Replit’s AI (or Cursor/Windsurf) to modify the in-progress app. It assumes your repo already exists and focuses only on closing feature gaps (dedupe/merge, backlinks/UTM, exports, evidence labels, observability, SEO).
+
+⸻
+
+🔧 Replit “UPDATE” Prompt — Add the Missing Features
+
+Context
+We already have a working ingestion → digest → hosted UI pipeline. Update the codebase to implement the following features without breaking current behavior. Keep diffs tight, add tests, and write small migrations for schema changes (SQLite).
+
+0) Global requirements
+	•	Language: Python 3.11
+	•	FastAPI + Jinja2 + HTMX (already present)
+	•	DB: SQLite (SQLAlchemy/SQLModel)
+	•	Scheduler: APScheduler (keep jobs as-is; just call the updated services)
+	•	All new code must be covered by acceptance tests below.
+
+⸻
+
+1) Schema upgrades (migration)
+
+Goal: Support provenance, dedupe, and later ranking.
+
+Modify models/item.py (or equivalent):
+	•	Add fields:
+	•	doi (nullable string)
+	•	is_preprint (bool, default False)
+	•	journal_name (nullable string)
+	•	source_type (enum/string: journal|substack|youtube|society|reddit)
+	•	source_id (string; DOI or canonical id)
+	•	engagement_json (JSON; keys: comments, upvotes, views)
+	•	topics_csv (string; comma-sep)
+	•	hash_dedupe (string, UNIQUE)
+	•	Create unique index on hash_dedupe.
+
+Add migration (simple script):
+	•	Create missing columns if they don’t exist.
+	•	Backfill hash_dedupe as:
+
+key = f"{row.source_type}|{(row.doi or row.url or row.title).strip().lower()}"
+row.hash_dedupe = sha256(key.encode()).hexdigest()
+
+
+	•	Commit.
+
+⸻
+
+2) Hard dedupe + cross-source merge
+
+Goal: One card per study/post. Social/expert items discussing a DOI/URL attach to the study instead of duplicating.
+
+Create/Update core/dedupe.py:
+
+import hashlib
+
+def dedupe_hash(source_type: str, doi: str|None, url: str|None, title: str) -> str:
+    key = f"{source_type}|{(doi or url or title).strip().lower()}"
+    return hashlib.sha256(key.encode()).hexdigest()
+
+Update services/ingest.py:
+	•	Before inserting an item, compute hash_dedupe; if exists, skip insert and merge engagement (sum counts).
+	•	If a social/expert item links to a known DOI/URL already stored as a journal item, do not create a new Item; instead:
+	•	Store it as a related reference for later digest composition (e.g., add a lightweight related_refs row/table or cache in memory during digest build).
+	•	Minimal approach: extend Summary or add RelatedRef(item_id, platform, label, url, comment_count, upvote_count, view_count).
+
+(If time-boxed, you can skip a new table and, during digest build, resolve “discussed_on” via recent Items that share DOI/URL and source_type != journal.)
+
+⸻
+
+3) Evidence hygiene (labels + levels)
+
+Update models/summary.py:
+	•	Ensure fields exist (and are populated) for:
+	•	methodology one of: RCT|Cohort|Case|Review|Meta|Preprint|NA
+	•	level_of_evidence: A|B|C
+
+Update summarization step (wherever you generate key insights):
+	•	If source is preprint feed or not peer-reviewed → is_preprint=True, methodology="Preprint".
+	•	Badge these in UI.
+
+⸻
+
+4) Ranking function (deterministic, low-cost)
+
+Add core/ranking.py:
+
+def rank_score(item, quality_base: float, recency_norm: float, engagement_z: float, topic_weight: float, preprint_penalty: float=0.1):
+    score = 0.35*quality_base + 0.25*recency_norm + 0.25*engagement_z + 0.15*topic_weight
+    if getattr(item, "is_preprint", False):
+        score -= preprint_penalty
+    return round(score, 5)
+
+def quality_base_for(source_type: str) -> float:
+    return {
+        "journal": 1.0,
+        "society": 0.8,
+        "substack": 0.7,
+        "youtube": 0.6,
+        "reddit": 0.5
+    }.get(source_type, 0.6)
+
+	•	Normalize recency to 0..1 (newer = closer to 1).
+	•	Compute z-scores per source_type weekly for engagement (fallback 0).
+	•	Topic weight = 1.2 if tag in {insulin_resistance, mitochondrial_health, mold_CIRS} else 1.0.
+
+⸻
+
+5) Digest composer (single study, many voices)
+
+Update services/digest.py:
+	•	Window = last 7 days (keep configurable).
+	•	Build research_highlights from journals/preprints only (top N by rank_score).
+	•	Build expert_commentary from expert/social items that do not match a DOI/URL already used in research_highlights.
+	•	For each highlight, append discussed_on: [{"platform":"substack|youtube|reddit|society", "label":"r/... or channel/site", "url":"...", "counts":{...}}] by resolving related items via DOI/URL match.
+
+Persist the digest JSON exactly with:
+
+{
+  "window": {"start": "...", "end": "..."},
+  "sections": {
+    "research_highlights": [ { "item_id": "...", "title": "...", "journal": "...", "doi": "...", "date": "...",
+      "key_insights": "...", "clinical_takeaway": "...",
+      "badges": ["RCT"|"Preprint"|...],
+      "discussed_on": [ { "platform":"youtube", "label":"Peter Attia", "url":"..." } ] } ],
+    "expert_commentary": [ ... ]
+  }
+}
+
+
+⸻
+
+6) Backlinks that send traffic to creators (+ optional UTM)
+
+Add core/links.py:
+
+from urllib.parse import urlencode, urlparse, urlunparse, parse_qsl
+
+def add_utm(url: str, source: str, medium: str, campaign: str) -> str:
+    try:
+        u = urlparse(url)
+        q = dict(parse_qsl(u.query))
+        q.update({"utm_source": source, "utm_medium": medium, "utm_campaign": campaign})
+        return urlunparse((u.scheme, u.netloc, u.path, u.params, urlencode(q), u.fragment))
+    except Exception:
+        return url
+
+Update templates (templates/_card.html):
+	•	For each outbound link (study, Substack, YouTube), render:
+
+<a href="{{ add_utm(item.url, 'weekly-digest', 'referral', digest_slug) }}"
+   target="_blank" rel="noopener noreferrer nofollow">
+   View original
+</a>
+
+
+	•	Add secondary links under “Discussed by …” using the creator’s canonical URL (their post/video), not a cached copy.
+
+SEO/meta:
+	•	On item/digest pages, include <link rel="canonical" href="{{ canonical_url }}"/>.
+	•	OpenGraph/Twitter meta for shareability (title/description/url).
+
+⸻
+
+7) Exports & persistence
+
+Add routes in services/exports.py + FastAPI router:
+	•	GET /export/weekly.json → latest digest JSON.
+	•	GET /export/weekly.md → render digest to Markdown.
+	•	GET /rss/weekly.xml → RSS feed (one entry per digest card).
+	•	GET /sitemap.xml → include /, /archive, /digest/{slug}.
+	•	GET /robots.txt → allow crawling of digest pages (but not admin).
+
+(Email export optional if you already have it—otherwise skip for this update.)
+
+⸻
+
+8) Observability (admin metrics)
+
+Add models/job_run.py with: id, job_name, started_at, finished_at, status, items_ingested, dedupe_hits, errors, token_spend(optional).
+	•	Log an entry for each ingest and digest run.
+	•	GET /admin/metrics page: show counts/time per source for last 7/30 days, plus dedupe rate.
+
+⸻
+
+9) UI tweaks (creator-friendly)
+	•	On each card:
+	•	Badges: RCT, Preprint, High engagement
+	•	“Also discussed by …” with distinct links (Substack/YouTube/Reddit icons).
+	•	Small line: “We link out so original authors & creators get the traffic.” (in footer or About)
+	•	Add topic chips (HTMX filter) without page reload.
+
+⸻
+
+10) Acceptance tests (must pass)
+
+Create tests under tests/ (pytest):
+	1.	Migration test: After migration, all Items have hash_dedupe and unique constraint enforced.
+	2.	Deduping: Two inserts with same DOI/URL produce one DB row; engagement sums.
+	3.	Merge: Social item with outlink matching a journal DOI does not create a new digest card; appears in discussed_on[].
+	4.	Digest: POST /admin/run/digest produces a JSON with both sections; research_highlights contain badges and at least one backlink.
+	5.	Exports: /export/weekly.json returns valid JSON schema; /export/weekly.md and /rss/weekly.xml render without error.
+	6.	Backlinks: Outbound links include utm_source=weekly-digest and utm_campaign={public_slug}.
+	7.	Metrics: After an ingest + digest, /admin/metrics shows non-zero items_ingested and dedupe_hits.
+	8.	SEO: /sitemap.xml lists latest digest; /robots.txt exists.
+
+⸻
+
+11) Notes / Constraints
+	•	Keep all current behavior stable (routes/HTML).
+	•	Make new features configurable via env (e.g., ENABLE_UTM=true, ADMIN_TOKEN=...).
+	•	Keep token usage minimal; no LLM calls required for this update.
+	•	Write or update README with the new endpoints and flags.
+
+⸻
+
+Deliverables:
+	•	Code diffs, migration script, new tests (all green), and short changelog.
+	•	Quick admin screenshot (or CLI log) showing: items ingested, dedupe hits, digest built, exports working.
+
+⸻
+
+Use this prompt as-is in Replit’s AI to guide targeted edits. If you want, I can also generate a tiny PR checklist for Manus so they can review changes quickly.
