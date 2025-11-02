@@ -7,6 +7,7 @@ import Home from "@/pages/Home";
 import Archive from "@/pages/Archive";
 import DigestView from "@/pages/DigestView";
 import Preferences from "@/pages/Preferences";
+import SavedItems from "@/pages/SavedItems";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/archive" component={Archive} />
       <Route path="/digest/:slug" component={DigestView} />
       <Route path="/preferences" component={Preferences} />
+      <Route path="/saved" component={SavedItems} />
       <Route component={NotFound} />
     </Switch>
   );

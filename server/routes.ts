@@ -52,6 +52,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Saved items endpoints (protected)
+  app.get('/api/saved-items', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const savedItemsList = await storage.getSavedItemsByUser(userId);
+      res.json(savedItemsList);
+    } catch (error) {
+      console.error("Error fetching saved items:", error);
+      res.status(500).json({ message: "Failed to fetch saved items" });
+    }
+  });
+
+  app.post('/api/saved-items/:itemId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { itemId } = req.params;
+      const saved = await storage.saveItem(userId, itemId);
+      res.json(saved);
+    } catch (error) {
+      console.error("Error saving item:", error);
+      res.status(500).json({ message: "Failed to save item" });
+    }
+  });
+
+  app.delete('/api/saved-items/:itemId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { itemId } = req.params;
+      await storage.unsaveItem(userId, itemId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error unsaving item:", error);
+      res.status(500).json({ message: "Failed to unsave item" });
+    }
+  });
+
+  app.get('/api/saved-items/:itemId/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { itemId } = req.params;
+      const isSaved = await storage.isItemSaved(userId, itemId);
+      res.json({ isSaved });
+    } catch (error) {
+      console.error("Error checking saved status:", error);
+      res.status(500).json({ message: "Failed to check saved status" });
+    }
+  });
+
   // Digest endpoints (public)
   app.get("/api/digest/latest", async (req, res) => {
     try {

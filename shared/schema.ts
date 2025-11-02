@@ -187,3 +187,18 @@ export const insertUserPreferencesSchema = createInsertSchema(userPreferences);
 
 export type UserPreferences = typeof userPreferences.$inferSelect;
 export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
+
+// Saved items table
+export const savedItems = pgTable("saved_items", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  itemId: varchar("item_id", { length: 255 }).notNull().references(() => items.id, { onDelete: 'cascade' }),
+  savedAt: timestamp("saved_at").defaultNow(),
+}, (table) => ({
+  userItemIdx: index("saved_items_user_item_idx").on(table.userId, table.itemId),
+}));
+
+export const insertSavedItemSchema = createInsertSchema(savedItems).omit({ id: true, savedAt: true });
+
+export type SavedItem = typeof savedItems.$inferSelect;
+export type InsertSavedItem = z.infer<typeof insertSavedItemSchema>;

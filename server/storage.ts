@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users, userPreferences } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences } from "@shared/schema";
+import { items, summaries, digests, users, userPreferences, savedItems } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem } from "@shared/schema";
 import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
 
 export interface IStorage {
@@ -30,6 +30,12 @@ export interface IStorage {
   // User Preferences
   getUserPreferences(userId: string): Promise<UserPreferences | undefined>;
   upsertUserPreferences(prefs: InsertUserPreferences): Promise<UserPreferences>;
+  
+  // Saved Items
+  saveItem(userId: string, itemId: string): Promise<SavedItem>;
+  unsaveItem(userId: string, itemId: string): Promise<void>;
+  getSavedItemsByUser(userId: string): Promise<Item[]>;
+  isItemSaved(userId: string, itemId: string): Promise<boolean>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -164,6 +170,68 @@ export class PostgresStorage implements IStorage {
       })
       .returning();
     return prefs;
+  }
+
+  // Saved Items
+  async saveItem(userId: string, itemId: string): Promise<SavedItem> {
+    const id = nanoid();
+    const [saved] = await db
+      .insert(savedItems)
+      .values({ id, userId, itemId })
+      .returning();
+    return saved;
+  }
+
+  async unsaveItem(userId: string, itemId: string): Promise<void> {
+    await db
+      .delete(savedItems)
+      .where(
+        and(
+          eq(savedItems.userId, userId),
+          eq(savedItems.itemId, itemId)
+        )
+      );
+  }
+
+  async getSavedItemsByUser(userId: string): Promise<Item[]> {
+    const results = await db
+      .select({
+        id: items.id,
+        sourceType: items.sourceType,
+        sourceId: items.sourceId,
+        url: items.url,
+        title: items.title,
+        authorOrChannel: items.authorOrChannel,
+        publishedAt: items.publishedAt,
+        ingestedAt: items.ingestedAt,
+        rawExcerpt: items.rawExcerpt,
+        engagement: items.engagement,
+        topics: items.topics,
+        isPreprint: items.isPreprint,
+        journalName: items.journalName,
+        hashDedupe: items.hashDedupe,
+        score: items.score,
+      })
+      .from(savedItems)
+      .innerJoin(items, eq(savedItems.itemId, items.id))
+      .where(eq(savedItems.userId, userId))
+      .orderBy(desc(savedItems.savedAt));
+    
+    return results;
+  }
+
+  async isItemSaved(userId: string, itemId: string): Promise<boolean> {
+    const [result] = await db
+      .select()
+      .from(savedItems)
+      .where(
+        and(
+          eq(savedItems.userId, userId),
+          eq(savedItems.itemId, itemId)
+        )
+      )
+      .limit(1);
+    return !!result;
   }
 }
 

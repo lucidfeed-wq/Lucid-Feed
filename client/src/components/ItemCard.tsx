@@ -4,15 +4,17 @@ import { SourceBadge } from "./SourceBadge";
 import { MethodologyBadge } from "./MethodologyBadge";
 import { EvidenceBadge } from "./EvidenceBadge";
 import { TopicTag } from "./TopicTag";
+import { SaveButton } from "./SaveButton";
 import type { DigestSectionItem, Topic } from "@shared/schema";
 import { format } from "date-fns";
 
 interface ItemCardProps {
   item: DigestSectionItem;
   onTopicClick?: (topic: Topic) => void;
+  isSaved?: boolean;
 }
 
-export function ItemCard({ item, onTopicClick }: ItemCardProps) {
+export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps) {
   const publishedDate = format(new Date(item.publishedAt), "MMM d, yyyy");
   const hasEngagement = item.engagement && (item.engagement.comments > 0 || item.engagement.upvotes > 0 || item.engagement.views > 0);
 
@@ -25,9 +27,12 @@ export function ItemCard({ item, onTopicClick }: ItemCardProps) {
             {item.methodology && <MethodologyBadge methodology={item.methodology} />}
             {item.levelOfEvidence && <EvidenceBadge level={item.levelOfEvidence} />}
           </div>
-          <span className="text-sm text-muted-foreground whitespace-nowrap" data-testid="text-date">
-            {publishedDate}
-          </span>
+          <div className="flex items-center gap-2">
+            <SaveButton itemId={item.itemId} isSaved={isSaved} />
+            <span className="text-sm text-muted-foreground whitespace-nowrap" data-testid="text-date">
+              {publishedDate}
+            </span>
+          </div>
         </div>
         <a
           href={item.url}

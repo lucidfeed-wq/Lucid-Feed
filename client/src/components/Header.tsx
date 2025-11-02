@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { FileJson, FileText, Rss, LogIn, LogOut, Settings } from "lucide-react";
+import { FileJson, FileText, Rss, LogIn, LogOut, Settings, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -113,6 +113,14 @@ export function Header() {
                       </div>
                     </div>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/saved">
+                        <a data-testid="link-saved">
+                          <Bookmark className="w-4 h-4 mr-2" />
+                          Saved Items
+                        </a>
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/preferences">
                         <a data-testid="link-preferences">
