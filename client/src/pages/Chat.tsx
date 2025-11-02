@@ -53,7 +53,7 @@ export default function Chat() {
         ...prev,
         { role: 'assistant', content: data.response },
       ]);
-      setSources(data.sources);
+      setSources(data.sources || []);
     },
   });
 
@@ -164,7 +164,7 @@ export default function Chat() {
           </ScrollArea>
 
           {/* Sources Panel */}
-          {sources.length > 0 && (
+          {sources && sources.length > 0 && (
             <div className="mt-4 mb-4">
               <Card>
                 <CardHeader>
