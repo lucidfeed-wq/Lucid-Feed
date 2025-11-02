@@ -4,9 +4,25 @@ import { storage } from "./storage";
 import { runIngestJob } from "./services/ingest";
 import { generateWeeklyDigest } from "./services/digest";
 import { exportDigestJSON, exportDigestMarkdown, exportDigestRSS } from "./services/exports";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Digest endpoints
+  // Setup authentication
+  await setupAuth(app);
+
+  // Auth endpoints
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Digest endpoints (public)
   app.get("/api/digest/latest", async (req, res) => {
     try {
       const digest = await storage.getLatestDigest();

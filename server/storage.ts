@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest } from "@shared/schema";
+import { items, summaries, digests, users } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser } from "@shared/schema";
 import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
 
 export interface IStorage {
@@ -22,6 +22,10 @@ export interface IStorage {
   getLatestDigest(): Promise<Digest | undefined>;
   getDigestBySlug(slug: string): Promise<Digest | undefined>;
   getAllDigests(): Promise<Digest[]>;
+  
+  // Users (required for Replit Auth)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -114,6 +118,27 @@ export class PostgresStorage implements IStorage {
 
   async getAllDigests(): Promise<Digest[]> {
     return await db.select().from(digests).orderBy(desc(digests.generatedAt));
+  }
+
+  // Users (required for Replit Auth)
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 }
 
