@@ -26,7 +26,7 @@ export async function fetchRedditFeeds(): Promise<InsertItem[]> {
         const upvoteMatch = rawExcerpt.match(/(\d+) points?/);
         const upvotes = upvoteMatch ? parseInt(upvoteMatch[1]) : Math.floor(Math.random() * 100);
         
-        const hashDedupe = generateHashDedupe("reddit", url, title);
+        const hashDedupe = generateHashDedupe(url, title);
 
         items.push({
           sourceType: "reddit",

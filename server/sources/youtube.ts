@@ -29,7 +29,7 @@ export async function fetchYouTubeFeeds(): Promise<InsertItem[]> {
         const searchText = `${title} ${rawExcerpt}`;
         const topics = tagTopics(searchText);
         
-        const hashDedupe = generateHashDedupe("youtube", url, title);
+        const hashDedupe = generateHashDedupe(url, title);
 
         items.push({
           sourceType: "youtube",

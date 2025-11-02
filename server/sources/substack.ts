@@ -22,7 +22,7 @@ export async function fetchSubstackFeeds(): Promise<InsertItem[]> {
         const searchText = `${title} ${rawExcerpt}`;
         const topics = tagTopics(searchText);
         
-        const hashDedupe = generateHashDedupe("substack", url, title);
+        const hashDedupe = generateHashDedupe(url, title);
 
         items.push({
           sourceType: "substack",
