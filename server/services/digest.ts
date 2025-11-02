@@ -70,28 +70,26 @@ export async function generateWeeklyDigest(): Promise<{ id: string; slug: string
     engagement: item.engagement,
   }));
 
-  // Generate public slug (format: 2025w05)
+  // Generate public slug (format: 2025w-3)
   const year = windowEnd.getFullYear();
-  const week = Math.ceil((windowEnd.getDate() - windowStart.getDate() + 1) / 7);
-  const publicSlug = `${year}w${String(week).padStart(2, '0')}`;
+  const week = Math.ceil((new Date().getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
+  const slug = `${year}w-${week}`;
 
   const digest: InsertDigest = {
+    slug,
     windowStart: windowStart.toISOString(),
     windowEnd: windowEnd.toISOString(),
-    generatedAt: new Date().toISOString(),
     sections: {
       researchHighlights,
       communityTrends,
       expertCommentary,
     },
-    publicSlug,
-    version: 1,
   };
 
   const created = await storage.createDigest(digest);
-  console.log(`Digest created: ${created.id} (${publicSlug})`);
+  console.log(`Digest created: ${created.id} (${slug})`);
 
-  return { id: created.id, slug: publicSlug };
+  return { id: created.id, slug };
 }
 
 function generateKeyInsights(excerpt: string): string {
