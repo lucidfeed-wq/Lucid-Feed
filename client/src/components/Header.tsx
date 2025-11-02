@@ -1,5 +1,6 @@
 import { Link } from "wouter";
-import { FileJson, FileText, Rss, LogIn, LogOut, Settings, Bookmark, MessageSquare, Library, Shield } from "lucide-react";
+import { useState } from "react";
+import { FileJson, FileText, Rss, LogIn, LogOut, Settings, Bookmark, MessageSquare, Library, Shield, Menu, Home, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,11 +9,19 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 
 export function Header() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleExport = (type: 'json' | 'markdown' | 'rss') => {
     const urls = {
@@ -38,7 +47,114 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-4 md:gap-8">
+            {/* Mobile Menu */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden" data-testid="button-mobile-menu">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72">
+                <SheetHeader>
+                  <SheetTitle>Navigation</SheetTitle>
+                </SheetHeader>
+                <nav className="flex flex-col gap-4 mt-6">
+                  <Link 
+                    href="/" 
+                    className="flex items-center gap-3 px-3 py-2 rounded-md hover-elevate active-elevate-2" 
+                    data-testid="mobile-link-latest"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Home className="w-5 h-5" />
+                    <span className="font-medium">Latest Digest</span>
+                  </Link>
+                  <Link 
+                    href="/archive" 
+                    className="flex items-center gap-3 px-3 py-2 rounded-md hover-elevate active-elevate-2" 
+                    data-testid="mobile-link-archive"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Archive className="w-5 h-5" />
+                    <span className="font-medium">Archive</span>
+                  </Link>
+                  <Link 
+                    href="/feeds" 
+                    className="flex items-center gap-3 px-3 py-2 rounded-md hover-elevate active-elevate-2" 
+                    data-testid="mobile-link-feeds"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Library className="w-5 h-5" />
+                    <span className="font-medium">Feeds</span>
+                  </Link>
+                  <Link 
+                    href="/chat" 
+                    className="flex items-center gap-3 px-3 py-2 rounded-md hover-elevate active-elevate-2" 
+                    data-testid="mobile-link-chat"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                    <span className="font-medium">Chat</span>
+                  </Link>
+                  
+                  {isAuthenticated && user && (
+                    <>
+                      <div className="border-t my-2" />
+                      <Link 
+                        href="/saved" 
+                        className="flex items-center gap-3 px-3 py-2 rounded-md hover-elevate active-elevate-2" 
+                        data-testid="mobile-link-saved"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Bookmark className="w-5 h-5" />
+                        <span className="font-medium">Saved Items</span>
+                      </Link>
+                      <Link 
+                        href="/preferences" 
+                        className="flex items-center gap-3 px-3 py-2 rounded-md hover-elevate active-elevate-2" 
+                        data-testid="mobile-link-preferences"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Settings className="w-5 h-5" />
+                        <span className="font-medium">Topic Preferences</span>
+                      </Link>
+                      <Link 
+                        href="/admin" 
+                        className="flex items-center gap-3 px-3 py-2 rounded-md hover-elevate active-elevate-2" 
+                        data-testid="mobile-link-admin"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Shield className="w-5 h-5" />
+                        <span className="font-medium">Admin Panel</span>
+                      </Link>
+                      <a 
+                        href="/api/logout" 
+                        className="flex items-center gap-3 px-3 py-2 rounded-md hover-elevate active-elevate-2 text-destructive" 
+                        data-testid="mobile-link-logout"
+                      >
+                        <LogOut className="w-5 h-5" />
+                        <span className="font-medium">Log Out</span>
+                      </a>
+                    </>
+                  )}
+                  
+                  {!isAuthenticated && !isLoading && (
+                    <>
+                      <div className="border-t my-2" />
+                      <a 
+                        href="/api/login" 
+                        className="flex items-center gap-3 px-3 py-2 rounded-md hover-elevate active-elevate-2" 
+                        data-testid="mobile-link-login"
+                      >
+                        <LogIn className="w-5 h-5" />
+                        <span className="font-medium">Log In</span>
+                      </a>
+                    </>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
+
             <Link href="/" className="flex items-center gap-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2" data-testid="link-home">
               <span className="text-xl font-semibold tracking-tight">FM Intelligence</span>
             </Link>
@@ -64,8 +180,9 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" data-testid="button-export">
-                  <FileJson className="w-4 h-4 mr-2" />
-                  Export
+                  <FileJson className="w-4 h-4 mr-2 hidden sm:block" />
+                  <span className="hidden sm:inline">Export</span>
+                  <FileJson className="w-4 h-4 sm:hidden" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
