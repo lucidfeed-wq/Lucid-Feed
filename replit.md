@@ -28,6 +28,12 @@ The application is a full-stack JavaScript project utilizing React for the front
 - **Automated Scheduling**: Daily ingestion and weekly digest generation are managed by `node-cron`.
 - **Feed Catalog**: Browsable feed directory with filters by source type (journal, reddit, substack, youtube) and category. Users can submit new feeds for admin approval.
 
+#### Recent Enhancements (November 2025)
+- **Job Observability System**: Added job_runs table tracking all automated jobs (ingest, digest) with metrics including items ingested, dedupe hits, token spend, execution time, and error messages. Admin dashboard displays real-time observability data with summary cards (total jobs, items ingested, dedupe rate, token spend) and recent job runs table.
+- **DOI Tracking for Research Quality**: Items table now includes DOI field for journal articles. DOI parsing extracts Digital Object Identifiers from RSS feeds and content, enabling future cross-source reference matching and research quality verification.
+- **UTM Attribution Tracking**: All outbound links in digest items include UTM parameters (utm_source=digest, utm_medium=web, utm_campaign=weekly_digest) for analytics tracking and referral attribution.
+- **Evidence Quality Badges**: Digest items display methodology badges (RCT, Meta-Analysis, Cohort, Case Study, Review, Preprint) and evidence level badges (Level A, B, C) based on AI-generated summary analysis, providing at-a-glance research quality indicators for practitioners.
+
 ### Feature Specifications
 - **RSS Feed Ingestion**: Supports ingestion from journals, Reddit, Substack, and YouTube, with expanded source lists.
 - **Deduplication**: SHA-256 hashing with URL canonicalization.
@@ -35,7 +41,7 @@ The application is a full-stack JavaScript project utilizing React for the front
 - **Ranking Algorithm**: Quality, recency, and engagement-based.
 - **Digest Generation**: Weekly, with 3 sections.
 - **AI Summary Generation**: Individual item summaries (insights, clinical takeaways) and category-level summaries (overview, key themes, clinical implications).
-- **PostgreSQL Persistence**: Stores items, summaries, digests, users, sessions, user preferences, and saved items.
+- **PostgreSQL Persistence**: Stores items, summaries, digests, users, sessions, user preferences, saved items, job runs, and related references.
 - **User Authentication**: Replit Auth (Google/GitHub/email).
 - **Admin Authorization**: Environment-based admin access control using ADMIN_USER_IDS (comma-separated list of user IDs). Protected routes include feed approval queue (/admin) and review endpoints.
 - **Personalized Topic Preferences**: Users select favorite topics.
@@ -51,7 +57,7 @@ The application is a full-stack JavaScript project utilizing React for the front
 ### System Design Choices
 - **Backend Architecture**: Structured with `core/` modules for business logic, `services/` for specific operations (ingest, digest, exports), `sources/` for content fetching, and `infrastructure/` for database, authentication, and scheduling.
 - **Frontend Architecture**: Organized into `pages/` for views, `components/` for reusable UI elements, and `hooks/` for state management.
-- **Data Model**: Clearly defined schemas for `Item`, `Digest`, `User`, `Summary`, `UserPreference`, and `SavedItem` using Drizzle ORM.
+- **Data Model**: Clearly defined schemas for `Item`, `Digest`, `User`, `Summary`, `UserPreference`, `SavedItem`, `JobRun`, and `RelatedRef` using Drizzle ORM.
 - **API Endpoints**: Categorized into public, authentication, user preferences, saved items, and admin endpoints.
 
 ## External Dependencies

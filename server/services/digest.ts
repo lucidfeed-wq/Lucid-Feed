@@ -131,19 +131,19 @@ export async function generateWeeklyDigest(): Promise<{ id: string; slug: string
   const week = Math.ceil((new Date().getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
   const slug = `${year}w-${week}`;
 
-  const digest: InsertDigest = {
-    slug,
-    windowStart: windowStart.toISOString(),
-    windowEnd: windowEnd.toISOString(),
-    sections: {
-      researchHighlights,
-      communityTrends,
-      expertCommentary,
-      researchHighlightsSummary,
-      communityTrendsSummary,
-      expertCommentarySummary,
-    } as any,
-  };
+    const digest: InsertDigest = {
+      slug,
+      windowStart: windowStart.toISOString(),
+      windowEnd: windowEnd.toISOString(),
+      sections: {
+        researchHighlights,
+        communityTrends,
+        expertCommentary,
+        researchHighlightsSummary,
+        communityTrendsSummary,
+        expertCommentarySummary,
+      } as any,
+    };
 
     const created = await storage.createDigest(digest);
     console.log(`Digest created: ${created.id} (${slug})`);
