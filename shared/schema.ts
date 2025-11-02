@@ -209,3 +209,111 @@ export const insertSavedItemSchema = createInsertSchema(savedItems).omit({ id: t
 
 export type SavedItem = typeof savedItems.$inferSelect;
 export type InsertSavedItem = z.infer<typeof insertSavedItemSchema>;
+
+// Feed catalog domains and categories
+export const feedDomains = ['health', 'technology', 'finance', 'science', 'climate', 'general'] as const;
+export type FeedDomain = typeof feedDomains[number];
+
+// Feed catalog table - master list of all available RSS feeds
+export const feedCatalog = pgTable("feed_catalog", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  name: text("name").notNull(),
+  url: text("url").notNull().unique(),
+  domain: varchar("domain", { length: 50 }).notNull(), // health, tech, finance, etc.
+  category: text("category").notNull(), // More specific: journals, reddit, substack, youtube
+  description: text("description"),
+  sourceType: varchar("source_type", { length: 50 }).notNull(), // journal, reddit, substack, youtube
+  isApproved: boolean("is_approved").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  submittedBy: varchar("submitted_by").references(() => users.id, { onDelete: 'set null' }),
+  approvedBy: varchar("approved_by").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow(),
+  approvedAt: timestamp("approved_at"),
+}, (table) => ({
+  domainIdx: index("feed_catalog_domain_idx").on(table.domain),
+  isApprovedIdx: index("feed_catalog_is_approved_idx").on(table.isApproved),
+  sourceTypeIdx: index("feed_catalog_source_type_idx").on(table.sourceType),
+}));
+
+export const feedCatalogSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  url: z.string().url(),
+  domain: z.enum(feedDomains),
+  category: z.string(),
+  description: z.string().optional(),
+  sourceType: z.enum(sourceTypes),
+  isApproved: z.boolean(),
+  isActive: z.boolean(),
+  submittedBy: z.string().nullable().optional(),
+  approvedBy: z.string().nullable().optional(),
+  createdAt: z.date().optional(),
+  approvedAt: z.date().nullable().optional(),
+});
+
+export const insertFeedCatalogSchema = createInsertSchema(feedCatalog).omit({ id: true, createdAt: true });
+
+export type FeedCatalog = typeof feedCatalog.$inferSelect;
+export type InsertFeedCatalog = z.infer<typeof insertFeedCatalogSchema>;
+
+// User feed submissions - pending approval
+export const userFeedSubmissions = pgTable("user_feed_submissions", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  feedUrl: text("feed_url").notNull(),
+  feedName: text("feed_name").notNull(),
+  domain: varchar("domain", { length: 50 }).notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  sourceType: varchar("source_type", { length: 50 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default('pending'), // pending, approved, rejected
+  reviewedBy: varchar("reviewed_by").references(() => users.id, { onDelete: 'set null' }),
+  reviewNotes: text("review_notes"),
+  submittedAt: timestamp("submitted_at").defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+}, (table) => ({
+  userIdIdx: index("user_feed_submissions_user_id_idx").on(table.userId),
+  statusIdx: index("user_feed_submissions_status_idx").on(table.status),
+}));
+
+export const userFeedSubmissionSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  feedUrl: z.string().url(),
+  feedName: z.string(),
+  domain: z.enum(feedDomains),
+  category: z.string(),
+  description: z.string().optional(),
+  sourceType: z.enum(sourceTypes),
+  status: z.enum(['pending', 'approved', 'rejected']),
+  reviewedBy: z.string().nullable().optional(),
+  reviewNotes: z.string().optional(),
+  submittedAt: z.date().optional(),
+  reviewedAt: z.date().nullable().optional(),
+});
+
+export const insertUserFeedSubmissionSchema = createInsertSchema(userFeedSubmissions).omit({ id: true, submittedAt: true });
+
+export type UserFeedSubmission = typeof userFeedSubmissions.$inferSelect;
+export type InsertUserFeedSubmission = z.infer<typeof insertUserFeedSubmissionSchema>;
+
+// Item embeddings table - stores vector representations for semantic search
+// Note: Requires pgvector extension (CREATE EXTENSION IF NOT EXISTS vector;)
+export const itemEmbeddings = pgTable("item_embeddings", {
+  itemId: varchar("item_id", { length: 255 }).primaryKey().references(() => items.id, { onDelete: 'cascade' }),
+  embedding: text("embedding").notNull(), // Stored as JSON array, queried with pgvector
+  model: varchar("model", { length: 100 }).notNull().default('text-embedding-3-small'),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const itemEmbeddingSchema = z.object({
+  itemId: z.string(),
+  embedding: z.string(), // JSON stringified array of floats
+  model: z.string(),
+  createdAt: z.date().optional(),
+});
+
+export const insertItemEmbeddingSchema = createInsertSchema(itemEmbeddings).omit({ createdAt: true });
+
+export type ItemEmbedding = typeof itemEmbeddings.$inferSelect;
+export type InsertItemEmbedding = z.infer<typeof insertItemEmbeddingSchema>;

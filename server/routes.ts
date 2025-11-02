@@ -5,8 +5,10 @@ import { runIngestJob } from "./services/ingest";
 import { generateWeeklyDigest } from "./services/digest";
 import { exportDigestJSON, exportDigestMarkdown, exportDigestRSS } from "./services/exports";
 import { z } from "zod";
-import { topics } from "@shared/schema";
+import { topics, feedDomains, sourceTypes, insertFeedCatalogSchema, insertUserFeedSubmissionSchema } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { chatWithDigest } from "./services/chat";
+import { generateMissingEmbeddings } from "./services/embeddings";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -224,6 +226,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error exporting RSS:", error);
       res.status(500).json({ error: "Export failed" });
+    }
+  });
+
+  // Chat endpoints (protected)
+  app.post("/api/chat", isAuthenticated, async (req, res) => {
+    try {
+      const { query, conversationHistory } = req.body;
+      
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({ error: "Query is required" });
+      }
+      
+      const response = await chatWithDigest(query, conversationHistory || []);
+      res.json(response);
+    } catch (error) {
+      console.error("Error processing chat:", error);
+      res.status(500).json({ error: "Chat failed" });
+    }
+  });
+
+  // Feed catalog endpoints (public browse, protected submit)
+  app.get("/api/feeds", async (req, res) => {
+    try {
+      const { domain, sourceType, search } = req.query;
+      
+      const filters: any = {};
+      if (domain && typeof domain === 'string') filters.domain = domain;
+      if (sourceType && typeof sourceType === 'string') filters.sourceType = sourceType;
+      if (search && typeof search === 'string') filters.search = search;
+      
+      const feeds = await storage.getFeedCatalog(filters);
+      res.json(feeds);
+    } catch (error) {
+      console.error("Error fetching feed catalog:", error);
+      res.status(500).json({ error: "Failed to fetch feeds" });
+    }
+  });
+
+  app.post("/api/feeds/submit", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const validationResult = insertUserFeedSubmissionSchema.safeParse({
+        ...req.body,
+        userId,
+        status: 'pending',
+      });
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid submission", 
+          details: validationResult.error.errors 
+        });
+      }
+      
+      const submission = await storage.submitFeed(validationResult.data);
+      res.json(submission);
+    } catch (error) {
+      console.error("Error submitting feed:", error);
+      res.status(500).json({ error: "Failed to submit feed" });
+    }
+  });
+
+  app.get("/api/feeds/submissions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const submissions = await storage.getUserFeedSubmissions(userId);
+      res.json(submissions);
+    } catch (error) {
+      console.error("Error fetching submissions:", error);
+      res.status(500).json({ error: "Failed to fetch submissions" });
+    }
+  });
+
+  app.get("/api/feeds/submissions/pending", isAuthenticated, async (req: any, res) => {
+    try {
+      // TODO: Add admin role check
+      const pending = await storage.getPendingFeedSubmissions();
+      res.json(pending);
+    } catch (error) {
+      console.error("Error fetching pending submissions:", error);
+      res.status(500).json({ error: "Failed to fetch pending submissions" });
+    }
+  });
+
+  app.patch("/api/feeds/submissions/:id/review", isAuthenticated, async (req: any, res) => {
+    try {
+      const reviewerId = req.user.claims.sub;
+      const { id } = req.params;
+      const { status, reviewNotes } = req.body;
+      
+      if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: "Status must be 'approved' or 'rejected'" });
+      }
+      
+      const reviewed = await storage.reviewFeedSubmission(id, reviewerId, status, reviewNotes);
+      res.json(reviewed);
+    } catch (error) {
+      console.error("Error reviewing submission:", error);
+      res.status(500).json({ error: "Failed to review submission" });
+    }
+  });
+
+  // Admin endpoint to generate embeddings
+  app.post("/admin/run/embeddings", async (req, res) => {
+    try {
+      const count = await generateMissingEmbeddings();
+      res.json({
+        success: true,
+        message: `Generated ${count} embeddings`,
+        count,
+      });
+    } catch (error) {
+      console.error("Error generating embeddings:", error);
+      res.status(500).json({ error: "Embedding generation failed" });
     }
   });
 
