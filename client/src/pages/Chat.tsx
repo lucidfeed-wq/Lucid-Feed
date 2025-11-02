@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Send, MessageSquare, ExternalLink, Loader2 } from 'lucide-react';
+import { Header } from '@/components/Header';
 import type { Digest } from '@shared/schema';
 
 interface ChatMessage {
@@ -77,8 +78,9 @@ export default function Chat() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      {/* Page Header */}
       <div className="border-b px-6 py-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-3">
@@ -93,8 +95,8 @@ export default function Chat() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden">
-        <div className="max-w-4xl mx-auto h-full flex flex-col px-6 py-6">
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="max-w-4xl mx-auto flex-1 flex flex-col px-6 py-6">
           {/* Messages */}
           <ScrollArea className="flex-1 pr-4">
             {conversationHistory.length === 0 ? (

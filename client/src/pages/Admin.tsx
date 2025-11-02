@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Check, X, ExternalLink, Activity, TrendingUp, Hash, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
+import { Header } from '@/components/Header';
 import type { UserFeedSubmission, JobRun, Topic } from '@shared/schema';
 import { topics } from '@shared/schema';
 import { formatDistanceToNow } from 'date-fns';
@@ -50,7 +51,7 @@ export default function AdminPage() {
         topics: topicsFilter && topicsFilter.length > 0 ? topicsFilter : undefined,
       });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: 'Ingestion started',
         description: `Processing ${data.itemsIngested || 0} items. Check metrics below for progress.`,
@@ -134,15 +135,17 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="container mx-auto py-4 md:py-8 px-4 max-w-7xl">
-      <div className="mb-6 md:mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2" data-testid="heading-admin">
-          Admin Dashboard
-        </h1>
-        <p className="text-sm md:text-base text-muted-foreground">
-          Monitor system performance and review feed submissions
-        </p>
-      </div>
+    <>
+      <Header />
+      <div className="container mx-auto py-4 md:py-8 px-4 max-w-7xl">
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2" data-testid="heading-admin">
+            Admin Dashboard
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Monitor system performance and review feed submissions
+          </p>
+        </div>
 
       {/* Manual Job Triggers */}
       <Card className="mb-8">
@@ -494,6 +497,7 @@ export default function AdminPage() {
           </div>
         </>
       )}
-    </div>
+      </div>
+    </>
   );
 }
