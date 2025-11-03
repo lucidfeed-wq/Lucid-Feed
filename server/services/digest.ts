@@ -53,11 +53,30 @@ export async function generateWeeklyDigest(options: DigestGenerationOptions = {}
   // Rank all items
   const rankedItems = rankItems(items);
 
+  // Filter out items with insufficient content
+  // Items with contentQuality < 10 typically have:
+  // - Just graphical abstracts
+  // - Future publication dates
+  // - Minimal/missing content
+  const qualityFilteredItems = rankedItems.filter(item => {
+    if (!item.scoreBreakdown) return true; // Keep unenriched items for now
+    
+    const contentQuality = item.scoreBreakdown.contentQuality || 0;
+    if (contentQuality < 10) {
+      console.log(`Filtered out low-content item: "${item.title}" (content quality: ${contentQuality})`);
+      return false;
+    }
+    
+    return true;
+  });
+
+  console.log(`${rankedItems.length - qualityFilteredItems.length} items filtered for insufficient content`);
+
   // Separate by source type
-  const journalItems = rankedItems.filter(i => i.sourceType === 'journal');
-  const redditItems = rankedItems.filter(i => i.sourceType === 'reddit');
-  const substackItems = rankedItems.filter(i => i.sourceType === 'substack');
-  const youtubeItems = rankedItems.filter(i => i.sourceType === 'youtube');
+  const journalItems = qualityFilteredItems.filter(i => i.sourceType === 'journal');
+  const redditItems = qualityFilteredItems.filter(i => i.sourceType === 'reddit');
+  const substackItems = qualityFilteredItems.filter(i => i.sourceType === 'substack');
+  const youtubeItems = qualityFilteredItems.filter(i => i.sourceType === 'youtube');
 
   // Select top items for each section (using configurable counts)
   const topJournals = journalItems.slice(0, itemCounts.research);

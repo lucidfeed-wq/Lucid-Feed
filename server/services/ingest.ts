@@ -56,6 +56,37 @@ export async function runIngestJob(options: IngestOptions = {}): Promise<{ inser
     if (enrichContent) {
       console.log('\n🔬 Enriching content with full text and quality scoring...');
       allItems = await enrichContentBatch(allItems);
+      
+      // Filter out items with insufficient content after enrichment
+      const beforeContentFilter = allItems.length;
+      allItems = allItems.filter(item => {
+        // Skip items with very short excerpts (likely just metadata)
+        if (!item.rawExcerpt || item.rawExcerpt.length < 100) {
+          console.log(`Filtered out item with minimal excerpt: "${item.title}"`);
+          return false;
+        }
+        
+        // Skip future publications (no content available yet)
+        const publishedDate = new Date(item.publishedAt);
+        if (publishedDate > new Date()) {
+          console.log(`Filtered out future publication: "${item.title}" (${item.publishedAt})`);
+          return false;
+        }
+        
+        // If enriched with quality score, skip items with very low content quality
+        if (item.scoreBreakdown && item.scoreBreakdown.contentQuality < 10) {
+          console.log(`Filtered out low-content item: "${item.title}" (content quality: ${item.scoreBreakdown.contentQuality})`);
+          return false;
+        }
+        
+        return true;
+      });
+      
+      const contentFiltered = beforeContentFilter - allItems.length;
+      filtered += contentFiltered;
+      if (contentFiltered > 0) {
+        console.log(`Filtered ${contentFiltered} items with insufficient content`);
+      }
     }
 
     // Process each item
