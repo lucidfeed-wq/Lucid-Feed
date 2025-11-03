@@ -647,3 +647,70 @@ export const insertFeedDiscoveryCacheSchema = createInsertSchema(feedDiscoveryCa
 
 export type FeedDiscoveryCache = typeof feedDiscoveryCache.$inferSelect;
 export type InsertFeedDiscoveryCache = z.infer<typeof insertFeedDiscoveryCacheSchema>;
+
+// Job queue table - PostgreSQL-based lightweight queue (replaces BullMQ for MVP)
+export const jobQueue = pgTable("job_queue", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  type: varchar("type", { length: 100 }).notNull(), // rssFetch, ytTranscript, metadataEnrich, summaryBuild, digestBuild
+  payload: json("payload").notNull(), // Job-specific data
+  status: varchar("status", { length: 20 }).notNull().default('pending'), // pending, processing, completed, failed, dead_letter
+  priority: integer("priority").notNull().default(5), // 1-10, lower = higher priority
+  retries: integer("retries").notNull().default(0),
+  maxRetries: integer("max_retries").notNull().default(5),
+  nextRunAt: timestamp("next_run_at").notNull().defaultNow(),
+  processingStartedAt: timestamp("processing_started_at"),
+  completedAt: timestamp("completed_at"),
+  failReason: text("fail_reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  typeStatusIdx: index("job_queue_type_status_idx").on(table.type, table.status),
+  nextRunAtIdx: index("job_queue_next_run_at_idx").on(table.nextRunAt),
+  statusIdx: index("job_queue_status_idx").on(table.status),
+}));
+
+export const jobQueueSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  payload: z.any(),
+  status: z.enum(['pending', 'processing', 'completed', 'failed', 'dead_letter']),
+  priority: z.number(),
+  retries: z.number(),
+  maxRetries: z.number(),
+  nextRunAt: z.date(),
+  processingStartedAt: z.date().nullable().optional(),
+  completedAt: z.date().nullable().optional(),
+  failReason: z.string().nullable().optional(),
+  createdAt: z.date().optional(),
+});
+
+export const insertJobQueueSchema = createInsertSchema(jobQueue).omit({ id: true, createdAt: true });
+
+export type JobQueue = typeof jobQueue.$inferSelect;
+export type InsertJobQueue = z.infer<typeof insertJobQueueSchema>;
+
+// Metrics table - daily aggregated metrics (replaces PostHog for MVP)
+export const metricsDaily = pgTable("metrics_daily", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  metric: varchar("metric", { length: 100 }).notNull(), // rss_items_fetched, items_merged, transcripts_ok, etc.
+  value: integer("value").notNull(),
+  metadata: json("metadata"), // Additional context (userId, sourceType, etc.)
+  day: varchar("day", { length: 10 }).notNull(), // YYYY-MM-DD
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  metricDayIdx: index("metrics_daily_metric_day_idx").on(table.metric, table.day),
+  dayIdx: index("metrics_daily_day_idx").on(table.day),
+}));
+
+export const metricsDailySchema = z.object({
+  id: z.string(),
+  metric: z.string(),
+  value: z.number(),
+  metadata: z.any().optional(),
+  day: z.string(),
+  createdAt: z.date().optional(),
+});
+
+export const insertMetricsDailySchema = createInsertSchema(metricsDaily).omit({ id: true, createdAt: true });
+
+export type MetricsDaily = typeof metricsDaily.$inferSelect;
+export type InsertMetricsDaily = z.infer<typeof insertMetricsDailySchema>;

@@ -11,6 +11,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { isAdmin } from "./middleware/isAdmin";
 import { chatWithDigest } from "./services/chat";
 import { generateMissingEmbeddings } from "./services/embeddings";
+import { discoverFeeds, verifyRssFeed } from "./services/feed-discovery/discovery-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -151,6 +152,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching rating stats:", error);
       res.status(500).json({ message: "Failed to fetch rating stats" });
+    }
+  });
+
+  // Feed Discovery endpoints (protected)
+  app.get('/api/discover/feeds', isAuthenticated, async (req: any, res) => {
+    try {
+      const { query, sourceTypes } = req.query;
+      
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({ message: "Query parameter is required" });
+      }
+      
+      const types = sourceTypes ? (typeof sourceTypes === 'string' ? sourceTypes.split(',') : sourceTypes) : undefined;
+      const results = await discoverFeeds(query, types);
+      
+      res.json(results);
+    } catch (error) {
+      console.error("Error discovering feeds:", error);
+      res.status(500).json({ message: "Failed to discover feeds" });
+    }
+  });
+
+  app.post('/api/discover/verify', isAuthenticated, async (req: any, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ message: "URL is required" });
+      }
+      
+      const result = await verifyRssFeed(url);
+      res.json(result);
+    } catch (error) {
+      console.error("Error verifying feed:", error);
+      res.status(500).json({ message: "Failed to verify feed" });
     }
   });
 
