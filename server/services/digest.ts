@@ -206,6 +206,7 @@ function buildDigestItem(item: Item, summary?: Summary): DigestSectionItem {
     topics: item.topics as any,
     authorOrChannel: item.authorOrChannel,
     engagement: item.engagement,
+    scoreBreakdown: item.scoreBreakdown as any,
   };
 
   if (summary) {

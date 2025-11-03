@@ -152,6 +152,15 @@ export const digestSectionItemSchema = z.object({
     upvotes: z.number(),
     views: z.number(),
   }).optional(),
+  scoreBreakdown: z.object({
+    citationScore: z.number(),
+    authorCredibility: z.number(),
+    methodologyQuality: z.number(),
+    communityVerification: z.number(),
+    recencyScore: z.number(),
+    totalScore: z.number(),
+    explanation: z.string(),
+  }).optional(),
 });
 
 export const categorySummarySchema = z.object({

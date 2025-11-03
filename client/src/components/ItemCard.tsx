@@ -1,12 +1,19 @@
-import { MessageSquare, ThumbsUp, Eye, ExternalLink, Link2 } from "lucide-react";
+import { useState } from "react";
+import { MessageSquare, ThumbsUp, Eye, ExternalLink, Link2, Award } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SourceBadge } from "./SourceBadge";
 import { MethodologyBadge } from "./MethodologyBadge";
 import { EvidenceBadge } from "./EvidenceBadge";
 import { TopicTag } from "./TopicTag";
 import { SaveButton } from "./SaveButton";
+import { QualityScoreCard } from "./QualityScoreCard";
+import { CommunityRating } from "./CommunityRating";
 import type { DigestSectionItem, Topic } from "@shared/schema";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/use-auth";
 
 // UTM tracking utility
 function addUTMParams(url: string, source: string = 'digest', medium: string = 'web', campaign: string = 'weekly_digest'): string {
@@ -28,11 +35,19 @@ interface ItemCardProps {
 }
 
 export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps) {
+  const { user } = useAuth();
+  const [qualityDialogOpen, setQualityDialogOpen] = useState(false);
   const publishedDate = format(new Date(item.publishedAt), "MMM d, yyyy");
   const hasEngagement = item.engagement && (item.engagement.comments > 0 || item.engagement.upvotes > 0 || item.engagement.views > 0);
   
   // Add UTM tracking to all outbound links
   const trackedUrl = addUTMParams(item.url);
+
+  const getScoreColor = (score: number) => {
+    if (score >= 75) return "text-green-600 dark:text-green-400";
+    if (score >= 50) return "text-yellow-600 dark:text-yellow-400";
+    return "text-orange-600 dark:text-orange-400";
+  };
 
   return (
     <Card className="hover-elevate transition-shadow" data-testid={`card-item-${item.itemId}`}>
@@ -42,6 +57,40 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
             <SourceBadge sourceType={item.sourceType} />
             {item.methodology && <MethodologyBadge methodology={item.methodology} />}
             {item.levelOfEvidence && <EvidenceBadge level={item.levelOfEvidence} />}
+            {item.scoreBreakdown && (
+              <Dialog open={qualityDialogOpen} onOpenChange={setQualityDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-xs gap-1"
+                    data-testid="button-quality-score"
+                  >
+                    <Award className="h-3 w-3" />
+                    <span className={getScoreColor(item.scoreBreakdown.totalScore)}>
+                      {Math.round(item.scoreBreakdown.totalScore)}
+                    </span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Quality & Community Assessment</DialogTitle>
+                  </DialogHeader>
+                  <Tabs defaultValue="quality" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="quality" data-testid="tab-quality">Quality Score</TabsTrigger>
+                      <TabsTrigger value="community" data-testid="tab-community">Community Rating</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="quality" className="mt-4">
+                      <QualityScoreCard scoreBreakdown={item.scoreBreakdown} />
+                    </TabsContent>
+                    <TabsContent value="community" className="mt-4">
+                      <CommunityRating itemId={item.itemId} isAuthenticated={!!user} />
+                    </TabsContent>
+                  </Tabs>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <SaveButton itemId={item.itemId} isSaved={isSaved} />
