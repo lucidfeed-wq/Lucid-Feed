@@ -34,12 +34,37 @@ export const items = pgTable('items', {
   publishedAt: text('published_at').notNull(),
   ingestedAt: text('ingested_at').notNull(),
   rawExcerpt: text('raw_excerpt').notNull(),
+  fullText: text('full_text'), // Full content: PDF text, transcript, or full post
+  pdfUrl: text('pdf_url'), // Unpaywall PDF URL for open access papers
   engagement: json('engagement').$type<{ comments: number; upvotes: number; views: number }>().notNull(),
   topics: json('topics').$type<Topic[]>().notNull(),
   isPreprint: boolean('is_preprint').notNull().default(false),
   journalName: text('journal_name'),
   hashDedupe: varchar('hash_dedupe', { length: 64 }).notNull().unique(),
   score: integer('score'),
+  // Quality metrics for transparent scoring
+  qualityMetrics: json('quality_metrics').$type<{
+    citationCount?: number;
+    influentialCitations?: number;
+    citationVelocity?: number;
+    authorHIndex?: number;
+    authorCitationCount?: number;
+    fundingSources?: string[];
+    conflictOfInterest?: boolean;
+    biasFlags?: string[];
+    communityRating?: number;
+    communityVoteCount?: number;
+  }>(),
+  // Transparent score breakdown
+  scoreBreakdown: json('score_breakdown').$type<{
+    citationScore: number; // 30%
+    authorCredibility: number; // 25%
+    methodologyQuality: number; // 25%
+    communityVerification: number; // 10%
+    recencyScore: number; // 10%
+    totalScore: number; // 0-100
+    explanation: string;
+  }>(),
 }, (table) => ({
   hashIdx: index('items_hash_idx').on(table.hashDedupe),
   sourceTypeIdx: index('items_source_type_idx').on(table.sourceType),
