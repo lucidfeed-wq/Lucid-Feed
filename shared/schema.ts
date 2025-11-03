@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { pgTable, varchar, text, timestamp, json, integer, boolean, index, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
-export const sourceTypes = ['journal', 'reddit', 'substack', 'youtube'] as const;
+export const sourceTypes = ['journal', 'reddit', 'substack', 'youtube', 'podcast'] as const;
 export const methodologies = ['RCT', 'Cohort', 'Case', 'Review', 'Meta', 'Preprint', 'NA'] as const;
 export const evidenceLevels = ['A', 'B', 'C'] as const;
 
@@ -470,3 +470,180 @@ export const insertRelatedRefSchema = createInsertSchema(relatedRefs).omit({ id:
 
 export type RelatedRef = typeof relatedRefs.$inferSelect;
 export type InsertRelatedRef = z.infer<typeof insertRelatedRefSchema>;
+
+// ========================================
+// MULTI-TENANT SAAS TABLES
+// ========================================
+
+// Subscription tiers for Lucid Feed
+export const subscriptionTiers = ['free', 'premium', 'pro'] as const;
+export type SubscriptionTier = typeof subscriptionTiers[number];
+
+// User subscriptions table - Stripe subscription data
+export const userSubscriptions = pgTable("user_subscriptions", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  tier: varchar("tier", { length: 20 }).notNull().default('free'),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  stripePriceId: varchar("stripe_price_id", { length: 255 }),
+  status: varchar("status", { length: 20 }).notNull().default('active'), // active, canceled, past_due
+  currentPeriodStart: timestamp("current_period_start"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  digestFrequency: varchar("digest_frequency", { length: 20 }).notNull().default('weekly'), // weekly, daily
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("user_subscriptions_user_id_idx").on(table.userId),
+  tierIdx: index("user_subscriptions_tier_idx").on(table.tier),
+  stripeCustomerIdx: index("user_subscriptions_stripe_customer_idx").on(table.stripeCustomerId),
+}));
+
+export const userSubscriptionSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  tier: z.enum(subscriptionTiers),
+  stripeCustomerId: z.string().nullable().optional(),
+  stripeSubscriptionId: z.string().nullable().optional(),
+  stripePriceId: z.string().nullable().optional(),
+  status: z.string(),
+  currentPeriodStart: z.date().nullable().optional(),
+  currentPeriodEnd: z.date().nullable().optional(),
+  cancelAtPeriodEnd: z.boolean(),
+  digestFrequency: z.enum(['weekly', 'daily']),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
+
+export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
+
+// User feed subscriptions - which feeds each user follows
+export const userFeedSubscriptions = pgTable("user_feed_subscriptions", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  feedId: varchar("feed_id", { length: 255 }).notNull().references(() => feedCatalog.id, { onDelete: 'cascade' }),
+  subscribedAt: timestamp("subscribed_at").defaultNow(),
+  isActive: boolean("is_active").notNull().default(true),
+}, (table) => ({
+  userFeedIdx: index("user_feed_subscriptions_user_feed_idx").on(table.userId, table.feedId),
+  userIdIdx: index("user_feed_subscriptions_user_id_idx").on(table.userId),
+  uniqueSubscription: index("user_feed_subscriptions_unique_idx").on(table.userId, table.feedId),
+}));
+
+export const userFeedSubscriptionSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  feedId: z.string(),
+  subscribedAt: z.date().optional(),
+  isActive: z.boolean(),
+});
+
+export const insertUserFeedSubscriptionSchema = createInsertSchema(userFeedSubscriptions).omit({ id: true, subscribedAt: true });
+
+export type UserFeedSubscription = typeof userFeedSubscriptions.$inferSelect;
+export type InsertUserFeedSubscription = z.infer<typeof insertUserFeedSubscriptionSchema>;
+
+// User digests - per-user digest history
+export const userDigests = pgTable("user_digests", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  slug: varchar("slug", { length: 100 }).notNull(),
+  windowStart: text("window_start").notNull(),
+  windowEnd: text("window_end").notNull(),
+  generatedAt: text("generated_at").notNull(),
+  sections: json("sections").notNull(),
+  itemCount: integer("item_count").notNull().default(0),
+}, (table) => ({
+  userSlugIdx: index("user_digests_user_slug_idx").on(table.userId, table.slug),
+  userIdIdx: index("user_digests_user_id_idx").on(table.userId),
+  generatedAtIdx: index("user_digests_generated_at_idx").on(table.generatedAt),
+}));
+
+export const userDigestSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  slug: z.string(),
+  windowStart: z.string(),
+  windowEnd: z.string(),
+  generatedAt: z.string(),
+  sections: z.object({
+    researchHighlights: z.array(digestSectionItemSchema),
+    communityTrends: z.array(digestSectionItemSchema),
+    expertCommentary: z.array(digestSectionItemSchema),
+    researchHighlightsSummary: categorySummarySchema.optional(),
+    communityTrendsSummary: categorySummarySchema.optional(),
+    expertCommentarySummary: categorySummarySchema.optional(),
+  }),
+  itemCount: z.number(),
+});
+
+export const insertUserDigestSchema = createInsertSchema(userDigests).omit({ id: true, generatedAt: true });
+
+export type UserDigest = typeof userDigests.$inferSelect;
+export type InsertUserDigest = z.infer<typeof insertUserDigestSchema>;
+
+// Chat conversations - persist chat history
+export const chatConversations = pgTable("chat_conversations", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text("title"), // Optional conversation title
+  messages: json("messages").$type<Array<{
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    timestamp: string;
+  }>>().notNull().default(sql`'[]'::json`),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("chat_conversations_user_id_idx").on(table.userId),
+  createdAtIdx: index("chat_conversations_created_at_idx").on(table.createdAt),
+}));
+
+export const chatConversationSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  title: z.string().nullable().optional(),
+  messages: z.array(z.object({
+    role: z.enum(['user', 'assistant', 'system']),
+    content: z.string(),
+    timestamp: z.string(),
+  })),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
+
+export const insertChatConversationSchema = createInsertSchema(chatConversations).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type ChatConversation = typeof chatConversations.$inferSelect;
+export type InsertChatConversation = z.infer<typeof insertChatConversationSchema>;
+
+// Feed discovery cache - cache search results for performance
+export const feedDiscoveryCache = pgTable("feed_discovery_cache", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  query: text("query").notNull(),
+  sourceType: varchar("source_type", { length: 50 }).notNull(), // podcast, youtube, reddit, etc.
+  results: json("results").notNull(), // Cached search results
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(), // Cache expiry (typically 24 hours)
+}, (table) => ({
+  querySourceIdx: index("feed_discovery_cache_query_source_idx").on(table.query, table.sourceType),
+  expiresAtIdx: index("feed_discovery_cache_expires_at_idx").on(table.expiresAt),
+}));
+
+export const feedDiscoveryCacheSchema = z.object({
+  id: z.string(),
+  query: z.string(),
+  sourceType: z.string(),
+  results: z.any(),
+  createdAt: z.date().optional(),
+  expiresAt: z.date(),
+});
+
+export const insertFeedDiscoveryCacheSchema = createInsertSchema(feedDiscoveryCache).omit({ id: true, createdAt: true });
+
+export type FeedDiscoveryCache = typeof feedDiscoveryCache.$inferSelect;
+export type InsertFeedDiscoveryCache = z.infer<typeof insertFeedDiscoveryCacheSchema>;

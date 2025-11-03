@@ -1,0 +1,114 @@
+Excellent question — this is where many “AI-feed” apps fail by overcomplicating things. The good news is: you don’t need full API access for all of those sources, and when you do, the APIs are free or easy to proxy.
+
+Here’s a breakdown by source and what you realistically need to launch:
+
+⸻
+
+🧩 1. YouTube
+
+✅ Feasible via official API
+	•	API: YouTube Data API v3￼
+	•	Use cases: Search by keyword, fetch channel uploads, playlists, or individual video metadata.
+	•	Key limits: 10 000 units/day free (~100 queries/day if each costs 100 units); easily extended with multiple API keys or caching.
+	•	Alternatives:
+	•	RSS: every channel already exposes an RSS feed → https://www.youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID
+	•	This is public, no auth needed, perfect for passive ingestion.
+	•	Recommendation: use RSS for ingestion, API for enrichment (views, likes, transcripts).
+
+⸻
+
+🎙️ 2. Podcasts
+
+✅ No official API needed
+	•	Most podcasts publish open RSS feeds; you can crawl via Apple Podcasts or PodcastIndex.org.
+	•	PodcastIndex API (free, open) → search by keyword or tag and retrieve RSS + metadata.
+	•	Example: https://podcastindex.org/api/1.0/search/byterm?q=longevity
+	•	Store the RSS URL and pull new episodes automatically.
+
+⸻
+
+📰 3. Reddit
+
+✅ Two routes available
+	•	Official API: requires app registration; good for authenticated features (comments, votes).
+	•	Pushshift API (community mirror): good for searching subreddits historically.
+	•	RSS alternative: every subreddit and user feed has public RSS:
+	•	https://www.reddit.com/r/{subreddit}/.rss
+	•	https://www.reddit.com/user/{username}/.rss
+	•	Recommendation: Start with RSS for simplicity (no auth, no rate limits). Add the official API later for comments/engagement data.
+
+⸻
+
+✍️ 4. Substack
+
+⚠️ No public API, but RSS is supported.
+	•	Every Substack has an RSS feed → https://{substack-name}.substack.com/feed
+	•	Pull title, excerpt, author, date, and optionally full HTML for summarization.
+	•	If you want engagement metrics (likes/comments), you’d need HTML scraping — better to skip initially.
+
+⸻
+
+📚 5. Academic Journals / Preprints
+
+✅ Best covered via open APIs
+	•	Crossref API — publication metadata, DOIs, abstracts.
+	•	Semantic Scholar API — citations, related works, authors, quality signals.
+	•	PubMed API (Entrez) — biomedical abstracts, indexed articles.
+	•	arXiv API — open access, keyword + category search.
+All are free and stable.
+
+⸻
+
+🧠 6. Other Source Types
+
+Source	API Needed?	Alternative	Notes
+Blogs / Newsletters	Optional	RSS feeds	Most platforms auto-publish RSS.
+Twitter/X	Yes	none	Currently rate-limited and not reliable. Skip for MVP.
+Mastodon / BlueSky	Optional	public ATProto	Later expansion for niche communities.
+
+
+⸻
+
+🚀 Summary Table
+
+Source	API Needed?	Free?	Easiest Approach	Add-Later Upgrade
+YouTube	Optional	✅	RSS for ingestion	API for stats/transcripts
+Podcasts	No	✅	PodcastIndex.org API	Apple Podcasts integration
+Reddit	Optional	✅	Subreddit RSS	Reddit API for comments
+Substack	No	✅	RSS feed	None needed
+Journals	Yes	✅	Crossref / Semantic Scholar	Altmetric API for impact
+Blogs / Newsletters	No	✅	RSS	None needed
+
+
+⸻
+
+⚙️ Practical architecture for MVP
+
+Ingestion Layer:
+	•	A background job (BullMQ) calls a “feed discovery” service:
+	•	For each topic → pull catalog of RSS feeds + API sources (stored in feed_catalog)
+	•	Parse with rss-parser￼
+	•	Store normalized item in items table
+	•	Optional: enrich with OpenAI summarizer & embedding
+
+Advantages:
+	•	No OAuth maintenance
+	•	No API cost explosion
+	•	No need to store user credentials for third-party APIs
+	•	RSS keeps you legally safe (publicly available data)
+
+⸻
+
+💡 Bottom Line
+
+You can launch without any formal API agreements.
+All your major content sources (YouTube, Reddit, Substack, podcasts) are RSS-capable, and that covers 90 % of your use case.
+
+Once the product grows:
+	•	Add official APIs for analytics (views, comments, author credibility)
+	•	Add PubMed / Semantic Scholar for academic enrichment
+	•	Optionally integrate OpenAI Transcription API for YouTube/podcast summaries
+
+⸻
+
+If you want, I can show you an ingestion architecture diagram and sample RSS + enrichment job flow (TypeScript pseudocode) that shows how all these sources fit into your BullMQ + Neon setup. Would you like that next?

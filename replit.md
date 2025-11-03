@@ -1,7 +1,7 @@
-# Functional Medicine Intelligence Feed
+# Lucid Feed
 
 ## Overview
-This project is a production-ready web application designed to aggregate, deduplicate, rank, and publish weekly content digests from various sources in the functional medicine domain. Its primary purpose is to provide practitioners and enthusiasts with a streamlined feed of relevant and high-quality information. The application aims to solve the problem of information overload by intelligently curating content from journals, Reddit, Substack, and YouTube, offering AI-powered summaries, and enabling personalized user experiences. The long-term ambition is to become a leading intelligence platform for the functional medicine community, offering valuable insights and saving users significant time in content discovery.
+Lucid Feed is a production-ready multi-tenant SaaS platform for personalized intelligent content curation. Users discover and subscribe to feeds across journals, podcasts, Reddit, Substack, and YouTube, receiving AI-powered personalized digests tailored to their interests. The platform emphasizes transparent quality scoring, smart conversational AI assistance, and flexible subscription tiers (Free/Premium/Pro) with weekly or daily digest delivery. Our mission is to transform information overload into clarity, helping users stay current with what matters most in their domains.
 
 ## User Preferences
 I prefer clear, concise, and direct communication. When making changes, prioritize iterative development with clear explanations of each step. I value detailed explanations for complex technical decisions. For any significant architectural changes or new feature implementations, please ask for approval before proceeding. Do not make changes to the existing folder structure unless explicitly instructed.
@@ -26,7 +26,14 @@ The application is a full-stack JavaScript project utilizing React for the front
 - **Digest Generation**: Weekly digests are automatically generated, comprising research highlights, community trends, and expert commentary sections.
 - **Export Capabilities**: Digests can be exported in JSON, Markdown, and RSS formats.
 - **Automated Scheduling**: Daily ingestion and weekly digest generation are managed by `node-cron`.
-- **Feed Catalog**: Browsable feed directory with filters by source type (journal, reddit, substack, youtube) and category. Users can submit new feeds for admin approval.
+- **Feed Catalog**: Browsable feed directory with filters by source type (journal, reddit, substack, youtube, podcast) and category. Users can submit new feeds for admin approval.
+- **Multi-Tenant Architecture** (Nov 3, 2025): Platform transformed into SaaS with user-level feed subscriptions, personalized digests, and subscription tiers:
+  - **User Feed Subscriptions**: Each user curates their own feed collection
+  - **User-Level Digests**: Personalized digests generated based on user's subscribed feeds
+  - **Subscription Tiers**: Free (weekly digest), Premium (daily digest), Pro (real-time + analytics)
+  - **Stripe Integration**: Payment processing for Premium/Pro subscriptions
+  - **Chat Persistence**: Conversation history stored across sessions
+  - **Feed Discovery**: Search interface across YouTube, podcasts, Reddit, Substack, journals
 
 #### Recent Enhancements (November 2025)
 - **Job Observability System**: Added job_runs table tracking all automated jobs (ingest, digest) with metrics including items ingested, dedupe hits, token spend, execution time, and error messages. Admin dashboard displays real-time observability data with summary cards (total jobs, items ingested, dedupe rate, token spend) and recent job runs table.
