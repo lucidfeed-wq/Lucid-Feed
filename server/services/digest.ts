@@ -149,6 +149,13 @@ export async function generateWeeklyDigest(options: DigestGenerationOptions = {}
   const week = Math.ceil((new Date().getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
   const slug = `${year}w-${week}`;
 
+    // Check if digest with this slug already exists and delete it
+    const existingDigest = await storage.getDigestBySlug(slug);
+    if (existingDigest) {
+      console.log(`Replacing existing digest: ${existingDigest.id} (${slug})`);
+      await storage.deleteDigest(existingDigest.id);
+    }
+
     const digest: InsertDigest = {
       slug,
       windowStart: windowStart.toISOString(),

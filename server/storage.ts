@@ -24,6 +24,7 @@ export interface IStorage {
   getLatestDigest(): Promise<Digest | undefined>;
   getDigestBySlug(slug: string): Promise<Digest | undefined>;
   getAllDigests(): Promise<Digest[]>;
+  deleteDigest(id: string): Promise<void>;
   
   // Users (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
@@ -164,6 +165,10 @@ export class PostgresStorage implements IStorage {
 
   async getAllDigests(): Promise<Digest[]> {
     return await db.select().from(digests).orderBy(desc(digests.generatedAt));
+  }
+
+  async deleteDigest(id: string): Promise<void> {
+    await db.delete(digests).where(eq(digests.id, id));
   }
 
   // Users (required for Replit Auth)
