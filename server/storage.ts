@@ -10,6 +10,8 @@ export interface IStorage {
   getItemByHash(hash: string): Promise<Item | undefined>;
   getItemsInWindow(start: string, end: string): Promise<Item[]>;
   mergeItemEngagement(itemId: string, engagement: { comments: number; upvotes: number; views: number }): Promise<void>;
+  getItemsWithoutQualityScores(limit: number): Promise<Item[]>;
+  updateItem(itemId: string, updates: Partial<Item>): Promise<void>;
   
   // Summaries
   createSummary(summary: InsertSummary): Promise<Summary>;
@@ -103,6 +105,18 @@ export class PostgresStorage implements IStorage {
         }
       }).where(eq(items.id, itemId));
     }
+  }
+
+  async getItemsWithoutQualityScores(limit: number): Promise<Item[]> {
+    return await db
+      .select()
+      .from(items)
+      .where(sql`${items.scoreBreakdown} IS NULL`)
+      .limit(limit);
+  }
+
+  async updateItem(itemId: string, updates: Partial<Item>): Promise<void> {
+    await db.update(items).set(updates).where(eq(items.id, itemId));
   }
 
   // Summaries

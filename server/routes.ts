@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { runIngestJob } from "./services/ingest";
 import { generateWeeklyDigest } from "./services/digest";
 import { exportDigestJSON, exportDigestMarkdown, exportDigestRSS } from "./services/exports";
+import { enrichContentBatch } from "./services/content-enrichment";
 import { z } from "zod";
 import { topics, feedDomains, sourceTypes, insertFeedCatalogSchema, insertUserFeedSubmissionSchema, type InsertUserFeedSubmission } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
@@ -245,6 +246,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating digest:", error);
       res.status(500).json({ error: "Digest generation failed" });
+    }
+  });
+
+  app.post("/admin/run/enrich", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { limit } = req.body;
+      const maxItems = limit && typeof limit === 'number' ? limit : 50;
+      
+      console.log(`Starting enrichment for up to ${maxItems} items without quality scores...`);
+      
+      // Get items that don't have scoreBreakdown
+      const items = await storage.getItemsWithoutQualityScores(maxItems);
+      
+      if (items.length === 0) {
+        return res.json({
+          success: true,
+          message: "No items need enrichment",
+          itemsEnriched: 0,
+        });
+      }
+      
+      console.log(`Found ${items.length} items to enrich`);
+      
+      // Enrich items with quality scores
+      const enriched = await enrichContentBatch(items as any);
+      
+      // Update items in database
+      let updated = 0;
+      for (const item of enriched) {
+        await storage.updateItem(item.id, {
+          fullText: item.fullText,
+          pdfUrl: item.pdfUrl,
+          qualityMetrics: item.qualityMetrics,
+          scoreBreakdown: item.scoreBreakdown,
+        });
+        updated++;
+      }
+      
+      console.log(`Successfully enriched ${updated} items`);
+      
+      res.json({
+        success: true,
+        message: `Enriched ${updated} items with quality scores`,
+        itemsEnriched: updated,
+      });
+    } catch (error) {
+      console.error("Error enriching items:", error);
+      res.status(500).json({ error: "Enrichment failed" });
     }
   });
 

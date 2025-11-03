@@ -96,6 +96,29 @@ export default function AdminPage() {
     },
   });
 
+  const runEnrichMutation = useMutation({
+    mutationFn: async (limit?: number) => {
+      return await apiRequest('POST', '/admin/run/enrich', {
+        limit: limit || 50,
+      });
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: 'Enrichment completed',
+        description: `Successfully enriched ${data.itemsEnriched || 0} items with quality scores.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/metrics/jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/digest/latest'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Enrichment failed',
+        description: error.message || 'Failed to enrich items',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const reviewMutation = useMutation({
     mutationFn: async ({ id, status, notes }: { id: string; status: 'approved' | 'rejected'; notes?: string }) => {
       return await apiRequest('PATCH', `/api/feeds/submissions/${id}/review`, {
@@ -255,6 +278,26 @@ export default function AdminPage() {
               data-testid="button-trigger-digest"
             >
               {runDigestMutation.isPending ? 'Generating...' : 'Generate Digest'}
+            </Button>
+          </div>
+
+          <div className="border-t pt-6" />
+
+          {/* Enrichment Trigger */}
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium">3. Enrich Existing Items (Add Quality Scores)</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Add transparent quality scores to existing items in database. Fetches full content, citation metrics, author credibility, and calculates multi-signal quality scores. Processes up to 50 items at a time.
+              </p>
+            </div>
+            <Button 
+              onClick={() => runEnrichMutation.mutate(50)}
+              disabled={runEnrichMutation.isPending}
+              variant="default"
+              data-testid="button-trigger-enrich"
+            >
+              {runEnrichMutation.isPending ? 'Enriching...' : 'Enrich 50 Items'}
             </Button>
           </div>
         </CardContent>
