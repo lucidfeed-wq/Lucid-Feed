@@ -46,9 +46,13 @@ export default function Chat() {
         conversationHistory: history,
         digestId: digest?.id, // Filter search to current digest
       });
+      console.log('Chat API response:', response);
       return response as unknown as ChatResponse;
     },
     onSuccess: (data) => {
+      console.log('Chat mutation success, data:', data);
+      console.log('Assistant response:', data.response);
+      console.log('Sources:', data.sources);
       setConversationHistory((prev) => [
         ...prev,
         { role: 'assistant', content: data.response },
