@@ -13,7 +13,7 @@ import { QualityScoreCard } from "./QualityScoreCard";
 import { CommunityRating } from "./CommunityRating";
 import type { DigestSectionItem, Topic } from "@shared/schema";
 import { format } from "date-fns";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/useAuth";
 
 // UTM tracking utility
 function addUTMParams(url: string, source: string = 'digest', medium: string = 'web', campaign: string = 'weekly_digest'): string {
