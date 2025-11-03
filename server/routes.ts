@@ -486,6 +486,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Bulk enrichment - process ALL items without scores in background
+  app.post("/admin/run/enrich-all", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      // Count items needing enrichment
+      const items = await storage.getItemsWithoutQualityScores(1000);
+      const totalPending = items.length;
+      
+      // Start async background job
+      res.json({
+        success: true,
+        message: `Bulk enrichment started for ~${totalPending}+ items. Check server logs for progress.`,
+        itemsPending: totalPending,
+      });
+      
+      // Process in background
+      (async () => {
+        try {
+          let totalEnriched = 0;
+          let batch = 0;
+          const batchSize = 50;
+          
+          console.log(`\n🔬 Starting bulk enrichment for all items without scores...`);
+          
+          while (true) {
+            batch++;
+            console.log(`\nBatch ${batch}: Fetching next ${batchSize} items...`);
+            
+            const batchItems = await storage.getItemsWithoutQualityScores(batchSize);
+            if (batchItems.length === 0) {
+              console.log(`✅ Bulk enrichment complete! Enriched ${totalEnriched} total items.`);
+              break;
+            }
+            
+            console.log(`Processing ${batchItems.length} items...`);
+            const enriched = await enrichContentBatch(batchItems as any);
+            
+            // Update database
+            for (const item of enriched) {
+              await storage.updateItem(item.id, {
+                fullText: item.fullText,
+                pdfUrl: item.pdfUrl,
+                qualityMetrics: item.qualityMetrics,
+                scoreBreakdown: item.scoreBreakdown,
+              });
+              totalEnriched++;
+            }
+            
+            console.log(`Batch ${batch} complete. Total enriched: ${totalEnriched}`);
+            
+            // Rate limit between batches (5 second pause)
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+        } catch (error) {
+          console.error('❌ Error in bulk enrichment:', error);
+        }
+      })();
+      
+    } catch (error) {
+      console.error("Error starting bulk enrichment:", error);
+      res.status(500).json({ error: "Failed to start bulk enrichment" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

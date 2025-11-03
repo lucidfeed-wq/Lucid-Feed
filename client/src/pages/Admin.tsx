@@ -119,6 +119,25 @@ export default function AdminPage() {
     },
   });
 
+  const runBulkEnrichMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', '/admin/run/enrich-all', {});
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: 'Bulk enrichment started',
+        description: data.message || 'Processing all items in background. Check server logs for progress.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Bulk enrichment failed',
+        description: error.message || 'Failed to start bulk enrichment',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const reviewMutation = useMutation({
     mutationFn: async ({ id, status, notes }: { id: string; status: 'approved' | 'rejected'; notes?: string }) => {
       return await apiRequest('PATCH', `/api/feeds/submissions/${id}/review`, {
@@ -288,17 +307,30 @@ export default function AdminPage() {
             <div>
               <Label className="text-sm font-medium">3. Enrich Existing Items (Add Quality Scores)</Label>
               <p className="text-xs text-muted-foreground mt-1">
-                Add transparent quality scores to existing items in database. Fetches full content, citation metrics, author credibility, and calculates multi-signal quality scores. Processes up to 50 items at a time.
+                Add transparent quality scores to existing items in database. Fetches full content, citation metrics, author credibility, and calculates multi-signal quality scores.
               </p>
             </div>
-            <Button 
-              onClick={() => runEnrichMutation.mutate(50)}
-              disabled={runEnrichMutation.isPending}
-              variant="default"
-              data-testid="button-trigger-enrich"
-            >
-              {runEnrichMutation.isPending ? 'Enriching...' : 'Enrich 50 Items'}
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                onClick={() => runEnrichMutation.mutate(50)}
+                disabled={runEnrichMutation.isPending}
+                variant="outline"
+                data-testid="button-trigger-enrich"
+              >
+                {runEnrichMutation.isPending ? 'Enriching...' : 'Enrich 50 Items'}
+              </Button>
+              <Button 
+                onClick={() => runBulkEnrichMutation.mutate()}
+                disabled={runBulkEnrichMutation.isPending}
+                variant="default"
+                data-testid="button-trigger-enrich-all"
+              >
+                {runBulkEnrichMutation.isPending ? 'Starting...' : 'Enrich ALL Items (Background)'}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground italic">
+              Note: Enrichment is automatically applied during ingestion. Use these buttons only for backfilling old items.
+            </p>
           </div>
         </CardContent>
       </Card>
