@@ -15,7 +15,7 @@ The application features a modern React frontend with a Material Design aestheti
 The application is a full-stack TypeScript project using React for the frontend and Express for the backend.
 - **Content Ingestion**: RSS feeds from curated sources (journals, Reddit, Substack, YouTube) are ingested, with full content extraction for journal articles (Unpaywall), YouTube transcripts, and full posts for Reddit/Substack.
 - **Deduplication**: Cross-source deduplication using SHA-256 hashing and URL canonicalization.
-- **Topic Taxonomy**: Two-layer topic system with 10 major categories (Health & Wellness, Science & Nature, Technology & AI, Productivity & Self-Improvement, Finance & Business, Society & Culture, Environment & Sustainability, Creativity & Media, Education & Learning, Lifestyle & Travel) containing multiple subtopics each for flexible user personalization.
+- **Topic Taxonomy**: Two-layer topic system with 10 major categories (Health & Wellness, Science & Nature, Technology & AI, Productivity & Self-Improvement, Finance & Business, Society & Culture, Environment & Sustainability, Creativity & Media, Education & Learning, Lifestyle & Travel) containing ~110 subtopics total with unique semantic values for flexible user personalization.
 - **Ranking Algorithm**: Items are ranked based on quality (40%), recency (30%), and engagement (30%).
 - **AI-Powered Summaries**: OpenAI (GPT-4o-mini) generates detailed individual item summaries (5-7 insights, 150-200 words, clinical takeaways) and category-level meta-summaries for digest sections.
 - **RAG Chat Interface**: Semantic search with OpenAI embeddings (text-embedding-3-small) and GPT-4o-mini for contextual responses citing sources.
@@ -32,7 +32,7 @@ The application is a full-stack TypeScript project using React for the frontend 
 ### Feature Specifications
 - **RSS Feed Ingestion**: From journals, Reddit, Substack, YouTube.
 - **Deduplication**: SHA-256 hashing, URL canonicalization.
-- **Two-Layer Topic Selection**: Users onboard by selecting major categories, then specific subtopics within each category.
+- **Three-Step Onboarding**: Users onboard by (1) selecting major categories, (2) choosing specific subtopics within each category, (3) selecting preferred source types (Journals, Substacks, YouTube, Reddit, Podcasts). All preferences validated against enums before persisting.
 - **Ranking Algorithm**: Quality, recency, engagement-based.
 - **Digest Generation**: Weekly/daily, with 3 sections.
 - **AI Summary Generation**: Individual and category-level.
