@@ -150,7 +150,7 @@ export default function Onboarding() {
   const savePreferencesMutation = useMutation({
     mutationFn: async () => {
       console.log("[Onboarding] Saving preferences - topics:", selectedTopics, "sourceTypes:", selectedSourceTypes);
-      const response = await apiRequest("/api/preferences", "PUT", {
+      const response = await apiRequest("PUT", "/api/preferences", {
         favoriteTopics: selectedTopics,
         preferredSourceTypes: selectedSourceTypes,
       });
@@ -174,7 +174,7 @@ export default function Onboarding() {
 
   const subscribeFeedMutation = useMutation({
     mutationFn: async (feedId: string) => {
-      return apiRequest(`/api/subscriptions/feeds/${feedId}`, "POST");
+      return apiRequest("POST", `/api/subscriptions/feeds/${feedId}`);
     },
     onSuccess: (_, feedId) => {
       setSubscribedFeeds((prev) => [...prev, feedId]);
