@@ -138,12 +138,14 @@ export default function Onboarding() {
   const [selectedSourceTypes, setSelectedSourceTypes] = useState<SourceType[]>([]);
   const [subscribedFeeds, setSubscribedFeeds] = useState<string[]>([]);
 
+  // Build feed suggestions query URL with params
+  const feedSuggestionsUrl = currentStep === 4 && selectedTopics.length > 0 && selectedSourceTypes.length > 0
+    ? `/api/feeds/suggestions?topics=${selectedTopics.join(',')}&sourceTypes=${selectedSourceTypes.join(',')}&limit=12`
+    : null;
+
   const { data: feeds, isLoading: feedsLoading } = useQuery({
-    queryKey: [
-      "/api/feeds/suggestions",
-      `?topics=${selectedTopics.join(',')}&sourceTypes=${selectedSourceTypes.join(',')}&limit=12`
-    ],
-    enabled: currentStep === 4 && selectedTopics.length > 0 && selectedSourceTypes.length > 0,
+    queryKey: [feedSuggestionsUrl || "/api/feeds/suggestions"],
+    enabled: feedSuggestionsUrl !== null,
   });
 
   const { data: user } = useQuery({
