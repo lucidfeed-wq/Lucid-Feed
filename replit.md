@@ -33,6 +33,8 @@ The application is a full-stack JavaScript project utilizing React for the front
 - **DOI Tracking for Research Quality**: Items table now includes DOI field for journal articles. DOI parsing extracts Digital Object Identifiers from RSS feeds and content, enabling future cross-source reference matching and research quality verification.
 - **UTM Attribution Tracking**: All outbound links in digest items include UTM parameters (utm_source=digest, utm_medium=web, utm_campaign=weekly_digest) for analytics tracking and referral attribution.
 - **Evidence Quality Badges**: Digest items display methodology badges (RCT, Meta-Analysis, Cohort, Case Study, Review, Preprint) and evidence level badges (Level A, B, C) based on AI-generated summary analysis, providing at-a-glance research quality indicators for practitioners.
+- **Digest Archive Preservation** (Nov 3, 2025): Modified digest generation to use timestamp-based slugs (format: 2025w-45-1730649000) instead of overwriting existing digests. All historical digests are now preserved in the archive.
+- **Bulk Enrichment System** (Nov 3, 2025): Created `/admin/run/enrich-all` endpoint for background processing of all unenriched items. Admin UI includes "Enrich ALL Items" button that processes entire backlog in batches of 50 with 5-second rate limiting between batches.
 - **Full Content Ingestion Pipeline**: Implemented comprehensive content enrichment system that fetches complete content instead of excerpts:
   - **Journal Articles**: Unpaywall API integration fetches open-access PDF URLs and extracts full text for comprehensive analysis
   - **YouTube Videos**: Complete video transcripts extracted for in-depth content analysis
@@ -49,6 +51,15 @@ The application is a full-stack JavaScript project utilizing React for the front
   - **QualityScoreCard**: Shows comprehensive breakdown of all 5 scoring components with progress bars and explanations
   - **CommunityRating**: Star-based rating widget with comment support
   - Both compact and expanded views available for different contexts
+
+#### Quality Scoring System - Expected Behavior
+- **Brand New Papers**: Papers published today (or very recently) will have quality scores around 40/100 because they:
+  - Have 0 citations (citation metrics: 0 points)
+  - Authors not yet in Semantic Scholar (author credibility: 0 points)
+  - Still receive methodology quality (25 points), community verification (5 points), and recency (10 points)
+- **Established Papers**: Older papers with citation history will have significantly higher scores (60-90/100) due to accumulated citation counts, influential citations, and author h-index metrics.
+- **Citation API Status**: Both Crossref and Semantic Scholar APIs are working correctly - verified with test queries returning proper citation counts for established papers.
+- **Enrichment Coverage**: As of Nov 3, 2025: 282 journal items total, 41 with DOIs (14.5%), all from today's ingestion. Historical papers would show more varied scores.
 
 ### Feature Specifications
 - **RSS Feed Ingestion**: Supports ingestion from journals, Reddit, Substack, and YouTube, with expanded source lists.
