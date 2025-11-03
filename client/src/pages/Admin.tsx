@@ -14,6 +14,7 @@ import { Header } from '@/components/Header';
 import type { UserFeedSubmission, JobRun, Topic } from '@shared/schema';
 import { topics } from '@shared/schema';
 import { formatDistanceToNow } from 'date-fns';
+import { formatTokensWithCost, formatCost, estimateCostFromTokens } from '@/utils/token-pricing';
 
 interface MetricsData {
   jobs: JobRun[];
@@ -383,13 +384,15 @@ export default function AdminPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Token Spend</CardTitle>
+                <CardTitle className="text-sm font-medium">AI Cost</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold" data-testid="metric-token-spend">{metrics.summary.totalTokenSpend.toLocaleString()}</div>
+                <div className="text-2xl font-bold" data-testid="metric-ai-cost">
+                  {formatCost(estimateCostFromTokens(metrics.summary.totalTokenSpend))}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  AI tokens consumed
+                  {metrics.summary.totalTokenSpend.toLocaleString()} tokens spent
                 </p>
               </CardContent>
             </Card>
@@ -439,7 +442,10 @@ export default function AdminPage() {
                           </td>
                           <td className="py-2 px-2 md:px-0 text-right">{job.itemsIngested}</td>
                           <td className="py-2 px-2 md:px-0 text-right">{job.dedupeHits}</td>
-                          <td className="py-2 px-2 md:px-0 text-right">{job.tokenSpend.toLocaleString()}</td>
+                          <td className="py-2 px-2 md:px-0 text-right">
+                            <div className="font-mono">{formatCost(estimateCostFromTokens(job.tokenSpend))}</div>
+                            <div className="text-xs text-muted-foreground">{job.tokenSpend.toLocaleString()} tokens</div>
+                          </td>
                           <td className="py-2 px-2 md:px-0">{formatDistanceToNow(new Date(job.startedAt), { addSuffix: true })}</td>
                           <td className="py-2 px-2 md:px-0">{duration ? `${duration}s` : '-'}</td>
                         </tr>

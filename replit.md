@@ -30,6 +30,7 @@ The application is a full-stack JavaScript project utilizing React for the front
 
 #### Recent Enhancements (November 2025)
 - **Job Observability System**: Added job_runs table tracking all automated jobs (ingest, digest) with metrics including items ingested, dedupe hits, token spend, execution time, and error messages. Admin dashboard displays real-time observability data with summary cards (total jobs, items ingested, dedupe rate, token spend) and recent job runs table.
+- **Token Cost Tracking** (Nov 3, 2025): Implemented comprehensive OpenAI token-to-dollar conversion across the system. Admin dashboard now displays AI costs in dollars alongside token counts. Cost calculation uses actual OpenAI pricing (GPT-4o-mini: $0.150/1M input, $0.600/1M output) with 75/25 input/output ratio estimate. Both server-side (`server/utils/token-pricing.ts`) and client-side (`client/src/utils/token-pricing.ts`) utilities provide accurate cost tracking for budget monitoring.
 - **DOI Tracking for Research Quality**: Items table now includes DOI field for journal articles. DOI parsing extracts Digital Object Identifiers from RSS feeds and content, enabling future cross-source reference matching and research quality verification.
 - **UTM Attribution Tracking**: All outbound links in digest items include UTM parameters (utm_source=digest, utm_medium=web, utm_campaign=weekly_digest) for analytics tracking and referral attribution.
 - **Evidence Quality Badges**: Digest items display methodology badges (RCT, Meta-Analysis, Cohort, Case Study, Review, Preprint) and evidence level badges (Level A, B, C) based on AI-generated summary analysis, providing at-a-glance research quality indicators for practitioners.
@@ -39,6 +40,7 @@ The application is a full-stack JavaScript project utilizing React for the front
   - **Journal Articles**: Unpaywall API integration fetches open-access PDF URLs and extracts full text for comprehensive analysis
   - **YouTube Videos**: Complete video transcripts extracted for in-depth content analysis
   - **Reddit/Substack**: Full post content ingested (no longer limited to excerpts)
+- **Content Quality Filtering** (Nov 3, 2025): Added intelligent filters to exclude items with insufficient content from both ingestion and digest generation. Items with <100 char excerpts, future publication dates, or AI content quality scores <10 are automatically filtered out, ensuring only substantive, assessable content appears in digests. Current database: ~20 items (2 journals + 18 reddit) filtered for insufficient content.
 - **Transparent Multi-Signal Quality Scoring**: Built unbiased, transparent quality assessment system combining 5 weighted signals:
   - **Citation Metrics (30%)**: Citation count, influential citations, citation velocity (Crossref + Semantic Scholar)
   - **Author Credibility (25%)**: H-index and publication track record (Semantic Scholar)

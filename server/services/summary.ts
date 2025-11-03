@@ -1,12 +1,17 @@
 import OpenAI from 'openai';
 import type { Item, InsertSummary, Methodology, EvidenceLevel } from '@shared/schema';
+import { calculateTokenCost, type TokenUsage } from '../utils/token-pricing';
 
 const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
 });
 
-export async function generateSummary(item: Item): Promise<InsertSummary> {
+export interface SummaryWithCost extends InsertSummary {
+  tokenUsage?: TokenUsage & { cost: number };
+}
+
+export async function generateSummary(item: Item): Promise<SummaryWithCost> {
   const systemPrompt = `You are a functional medicine expert who summarizes scientific articles and health content for medical practitioners.
 
 Your task: Extract comprehensive insights and detailed clinical takeaways from content, and classify the methodology and evidence level.
@@ -78,12 +83,32 @@ Generate a summary with key insights, clinical takeaway, methodology classificat
 
     const parsed = JSON.parse(content);
     
+    // Calculate token cost from actual usage
+    const usage = completion.usage;
+    let tokenUsage: (TokenUsage & { cost: number }) | undefined;
+    
+    if (usage) {
+      const tokenCost = calculateTokenCost({
+        inputTokens: usage.prompt_tokens,
+        outputTokens: usage.completion_tokens,
+        totalTokens: usage.total_tokens,
+      });
+      
+      tokenUsage = {
+        inputTokens: usage.prompt_tokens,
+        outputTokens: usage.completion_tokens,
+        totalTokens: usage.total_tokens,
+        cost: tokenCost.totalCost,
+      };
+    }
+    
     return {
       itemId: item.id,
       keyInsights: parsed.keyInsights || fallbackKeyInsights(item.rawExcerpt),
       clinicalTakeaway: parsed.clinicalTakeaway || fallbackClinicalTakeaway(item.rawExcerpt),
       methodology: (parsed.methodology || fallbackMethodology(item)) as Methodology,
       levelOfEvidence: (parsed.levelOfEvidence || 'C') as EvidenceLevel,
+      tokenUsage,
     };
   } catch (error) {
     console.error(`Error generating summary for item ${item.id}:`, error);
