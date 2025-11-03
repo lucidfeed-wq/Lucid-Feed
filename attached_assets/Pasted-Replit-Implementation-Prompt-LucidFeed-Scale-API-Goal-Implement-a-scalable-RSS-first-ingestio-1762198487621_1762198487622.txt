@@ -1,0 +1,64 @@
+Replit Implementation Prompt — LucidFeed Scale & API
+
+Goal: Implement a scalable, RSS‑first ingestion + selective enrichment architecture, harden API usage (rate limits, backoff, caching), and ship onboarding + payments + smarter chat per the current plan.
+
+⸻
+
+🔧 What to Build (Scope)
+	1.	Feed Discovery Service (YouTube/Podcasts/Reddit/Substack/Journals) using RSS for discovery.
+	2.	Feed Discovery UI with Search and Onboarding Wizard (first‑login flow).
+	3.	Stripe Subscription Flow with tiers (Free, Premium, Pro) and enforce feature gates.
+	4.	User‑level Digest Generation (weekly/daily) with cached, reusable summaries.
+	5.	Enhanced Conversational Chat (two‑stage: retrieve → summarize/synthesize) + Chat History Persistence.
+	6.	Scale & API Safety: BullMQ queues, per‑source concurrency, backoff, caching, canonical merge, and observability.
+
+Prioritize: (A) Feed Discovery Service → (B) Discovery UI + Onboarding → (C) Chat improvements → (D) Stripe + Digests → (E) Ops hardening (queues/metrics).
+
+⸻
+
+✅ Acceptance Criteria (Definition of Done)
+	•	No hard API dependencies for ingestion (RSS‑first for all sources). Enrichment uses safe, cached calls.
+	•	Per‑source concurrency + backoff to avoid 429s; failures don’t cascade. Dead‑letter queue captures persistent failures.
+	•	Canonical merge: items deduped by DOI or normalized URL; social posts linked via related_refs.
+	•	Onboarding flow: user selects topics → sees curated sources/bundles → one‑click add → digest created within first session.
+	•	Chat can summarize an entire digest with citations to included items; hallucination guardrails enforced.
+	•	Stripe plans work end‑to‑end with portal; feature gates respected per tier; token/cost usage tracked per user.
+	•	Observability: healthcheck + Sentry + structured logs; PostHog basic funnel events wired.
+
+⸻
+
+🧱 Architectural Requirements (API & Scale)
+
+1) Ingestion Strategy
+	•	Discovery: RSS only for YouTube (channel feeds), Podcasts (PodcastIndex → RSS), Reddit (subreddit RSS), Substack (site RSS), Journals (PubMed/Crossref search results → stored as sources).
+	•	Content Fetch:
+	•	YouTube transcripts: use youtube-transcript selectively behind a queue (no API key). If captions missing, fallback to description.
+	•	Podcasts: RSS description shown; optional transcript only if explicitly available.
+	•	Substack/Reddit: consume RSS content; avoid HTML scraping unless necessary.
+	•	Journals: PubMed/Crossref/Semantic Scholar for metadata; Unpaywall PDFs where available.
+
+2) Rate Limits & Backoff (Per‑Source Policies)
+	•	Global: implement BullMQ queues with per‑source concurrency caps and retry policies:
+	•	YouTube transcripts: concurrency 5–10, backoff exponential (initial 2s, factor 2, jitter), max retries 5.
+	•	RSS pulls: concurrency 50, respect ETag/Last-Modified; min interval per feed 10–30 min.
+	•	PubMed/Crossref/S2: obey provider guidance;
+	•	PubMed: with API key target ≤ 10 req/sec; without key ≤ 3 req/sec; set tool and email headers.
+	•	Crossref/S2: identify app via User-Agent; follow Retry-After.
+	•	Dead‑letter queues for persistent 4xx/5xx; alert when DLQ > threshold.
+
+3) Canonicalization & Merge
+	•	Canonical ID: doi || normalizedURL(host+path); hash as canonicalId.
+	•	Normalization: lowercase host, strip UTM + fragments, drop trailing slash.
+	•	Merge rules: Reddit/Substack/YouTube items that reference a DOI/URL do not create new primaries; they become related_refs linked to the canonical item.
+
+4) Selective Enrichment (Cost Control)
+	•	Scoring pre‑pass (cheap): source authority + recency + basic engagement proxy (channel age, subscriber tier if available, or heuristic).
+	•	Transcript fetch only for the top 10–20% by score.
+	•	LLM summarization only for the top 2–5% or when an item is placed in a user’s digest (demand‑driven).
+	•	Cache all transcripts and summaries; reuse across users/digests.
+
+5) Chat Architecture
+	•	Two‑stage pipeline: (1) retrieve top N items (or whole digest) → (2) summarizer/synthesizer with strict cite‑only constraints.
+	•	Modes: summarize_digest, answer_question, compare_items, debunk (each with tailored prompts).
+	•	Guardrails: “Answer only from provided items; if insufficient, ask for more context.”
+	•	Store prompt_version & `model
