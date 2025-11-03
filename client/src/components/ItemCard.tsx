@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MessageSquare, ThumbsUp, Eye, ExternalLink, Link2, Award } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,12 +44,6 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
   // Add UTM tracking to all outbound links
   const trackedUrl = addUTMParams(item.url);
 
-  const getScoreColor = (score: number) => {
-    if (score >= 75) return "text-green-600 dark:text-green-400";
-    if (score >= 50) return "text-yellow-600 dark:text-yellow-400";
-    return "text-orange-600 dark:text-orange-400";
-  };
-
   return (
     <Card className="hover-elevate transition-shadow" data-testid={`card-item-${item.itemId}`}>
       <CardHeader className="pb-3 md:pb-4">
@@ -57,20 +52,12 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
             <SourceBadge sourceType={item.sourceType} />
             {item.methodology && <MethodologyBadge methodology={item.methodology} />}
             {item.levelOfEvidence && <EvidenceBadge level={item.levelOfEvidence} />}
-            {item.scoreBreakdown && (
+            {item.scoreBreakdown ? (
               <Dialog open={qualityDialogOpen} onOpenChange={setQualityDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-6 px-2 text-xs gap-1"
-                    data-testid="button-quality-score"
-                  >
-                    <Award className="h-3 w-3" />
-                    <span className={getScoreColor(item.scoreBreakdown.totalScore)}>
-                      {Math.round(item.scoreBreakdown.totalScore)}
-                    </span>
-                  </Button>
+                  <div data-testid="button-quality-score">
+                    <QualityScoreCard scoreBreakdown={item.scoreBreakdown} compact={true} />
+                  </div>
                 </DialogTrigger>
                 <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
@@ -90,6 +77,11 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
                   </Tabs>
                 </DialogContent>
               </Dialog>
+            ) : (
+              <Badge variant="outline" className="text-muted-foreground" data-testid="badge-pending-score">
+                <Award className="h-3 w-3 mr-1" />
+                Pending
+              </Badge>
             )}
           </div>
           <div className="flex items-center gap-2">

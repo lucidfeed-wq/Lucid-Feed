@@ -110,7 +110,7 @@ export function QualityScoreCard({
             <Badge variant="outline" className="cursor-help" data-testid="badge-quality-score">
               <div className="flex items-center gap-1">
                 <span className={getScoreColor(safeScore.totalScore)}>
-                  {Math.round(safeScore.totalScore)}/100
+                  {Math.round(safeScore.totalScore)}/100 - {getScoreLabel(safeScore.totalScore)}
                 </span>
                 <Info className="h-3 w-3" />
               </div>
@@ -171,22 +171,13 @@ export function QualityScoreCard({
                   <div className="flex items-center gap-2">
                     <Icon className={`h-4 w-4 ${component.color}`} />
                     <span className="font-medium">{component.name}</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-3 w-3 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs text-xs">{component.description}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
                   </div>
                   <span className="font-mono text-xs">
                     {Math.round(component.score)}/{component.max}
                   </span>
                 </div>
                 <Progress value={percentage} className="h-2" />
+                <p className="text-xs text-muted-foreground">{component.description}</p>
               </div>
             );
           })}
