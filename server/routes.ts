@@ -48,13 +48,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const { favoriteTopics } = req.body;
+      console.log("[PUT /api/preferences] userId:", userId, "favoriteTopics:", favoriteTopics);
+      
+      if (!favoriteTopics || !Array.isArray(favoriteTopics)) {
+        console.error("[PUT /api/preferences] Invalid favoriteTopics:", favoriteTopics);
+        return res.status(400).json({ message: "favoriteTopics must be an array" });
+      }
+      
       const prefs = await storage.upsertUserPreferences({
         userId,
         favoriteTopics,
       });
+      console.log("[PUT /api/preferences] Success:", prefs);
       res.json(prefs);
     } catch (error) {
-      console.error("Error updating preferences:", error);
+      console.error("[PUT /api/preferences] Error updating preferences:", error);
       res.status(500).json({ message: "Failed to update preferences" });
     }
   });
