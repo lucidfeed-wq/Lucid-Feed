@@ -82,7 +82,7 @@ export class PostgresStorage implements IStorage {
       ...insertItem,
       id,
       ingestedAt: now,
-    }).returning();
+    } as any).returning();
     return item;
   }
 
@@ -211,11 +211,11 @@ export class PostgresStorage implements IStorage {
   async upsertUserPreferences(prefsData: InsertUserPreferences): Promise<UserPreferences> {
     const [prefs] = await db
       .insert(userPreferences)
-      .values(prefsData)
+      .values(prefsData as any)
       .onConflictDoUpdate({
         target: userPreferences.userId,
         set: {
-          favoriteTopics: prefsData.favoriteTopics,
+          favoriteTopics: prefsData.favoriteTopics as any,
           updatedAt: new Date(),
         },
       })
@@ -248,21 +248,25 @@ export class PostgresStorage implements IStorage {
     const results = await db
       .select({
         id: items.id,
+        title: items.title,
         sourceType: items.sourceType,
         sourceId: items.sourceId,
         doi: items.doi,
         url: items.url,
-        title: items.title,
         authorOrChannel: items.authorOrChannel,
         publishedAt: items.publishedAt,
         ingestedAt: items.ingestedAt,
         rawExcerpt: items.rawExcerpt,
+        fullText: items.fullText,
+        pdfUrl: items.pdfUrl,
         engagement: items.engagement,
         topics: items.topics,
         isPreprint: items.isPreprint,
         journalName: items.journalName,
         hashDedupe: items.hashDedupe,
+        qualityMetrics: items.qualityMetrics,
         score: items.score,
+        scoreBreakdown: items.scoreBreakdown,
       })
       .from(savedItems)
       .innerJoin(items, eq(savedItems.itemId, items.id))
@@ -327,7 +331,7 @@ export class PostgresStorage implements IStorage {
         ...submission,
         id,
         submittedAt: now,
-      })
+      } as any)
       .returning();
     
     return result;
@@ -457,7 +461,7 @@ export class PostgresStorage implements IStorage {
       .values({
         ...insertRef,
         id,
-      })
+      } as any)
       .returning();
     return ref;
   }

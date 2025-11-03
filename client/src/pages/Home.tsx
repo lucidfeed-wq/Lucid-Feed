@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,17 +17,34 @@ import { TopicFilter } from "@/components/TopicFilter";
 import { SourceTypeFilter } from "@/components/SourceTypeFilter";
 import { LoadingState } from "@/components/LoadingState";
 import { EmptyState } from "@/components/EmptyState";
-import type { Digest, Topic, SourceType } from "@shared/schema";
+import type { Digest, Topic, SourceType, UserPreferences } from "@shared/schema";
 
 export default function Home() {
+  const [, navigate] = useLocation();
   const [selectedTopics, setSelectedTopics] = useState<Topic[]>([]);
   const [selectedSourceTypes, setSelectedSourceTypes] = useState<SourceType[]>([]);
+
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
+  });
+
+  const { data: preferences } = useQuery<UserPreferences>({
+    queryKey: ["/api/preferences"],
+    enabled: !!user,
+  });
 
   const { data: rawDigest, isLoading, error } = useQuery({
     queryKey: ['/api/digest/latest'],
   });
 
   const digest = rawDigest as Digest | undefined;
+
+  // Redirect to onboarding if user has no topics selected
+  useEffect(() => {
+    if (user && preferences && (!preferences.favoriteTopics || preferences.favoriteTopics.length === 0)) {
+      navigate("/onboarding");
+    }
+  }, [user, preferences, navigate]);
 
   const handleTopicToggle = (topic: Topic) => {
     setSelectedTopics(prev =>
