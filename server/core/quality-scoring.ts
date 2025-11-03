@@ -1,193 +1,260 @@
 /**
- * Transparent Multi-Signal Quality Scoring System
+ * Unified Quality Scoring System (Works for ALL sources)
  * 
- * Combines multiple signals to create an unbiased, transparent quality score:
- * - Citation Metrics (30%): Citation count, influential citations, velocity
- * - Author Credibility (25%): H-index, author citation count
- * - Methodology Quality (25%): AI assessment of study design, bias detection
- * - Community Verification (10%): Practitioner ratings and flags
- * - Recency (10%): Time-decay factor for recent research
+ * 5 transparent components:
+ * - Content Quality (40%): AI-assessed content depth and clinical value
+ * - Engagement Signals (20%): Normalized engagement across sources
+ * - Source Credibility (20%): Domain/author reputation
+ * - Recency (10%): Time-decay factor
+ * - Community Validation (10%): Practitioner ratings
  * 
- * Final Score: 0-100 with full transparency and breakdown
+ * Traditional metrics (citations, h-index) shown separately for journals
  */
 
 import type { Item } from '@shared/schema';
 
 export interface QualityMetrics {
+  // Content Quality (from AI)
+  contentQualityScore?: number; // 0-40
+  evidenceQuality?: number; // 0-10
+  clinicalValue?: number; // 0-10
+  clarityStructure?: number; // 0-10
+  practicalApplicability?: number; // 0-10
+  contentQualityReasoning?: string;
+  
+  // Engagement Signals (source-specific)
+  upvotes?: number;
+  comments?: number;
+  views?: number;
+  likes?: number;
+  
+  // Source Credibility
+  journalTier?: 'high' | 'mid' | 'low'; // For journals
+  subredditQuality?: number; // For Reddit (0-10)
+  channelSubscribers?: number; // For YouTube
+  authorReputation?: number; // For Substack (0-10)
+  
+  // Traditional metrics (for journals - shown separately)
   citationCount?: number;
   influentialCitations?: number;
   citationVelocity?: number;
   authorHIndex?: number;
   authorCitationCount?: number;
+  
+  // Quality flags
   fundingSources?: string[];
   conflictOfInterest?: boolean;
   biasFlags?: string[];
+  
+  // Community
   communityRating?: number;
   communityVoteCount?: number;
 }
 
 export interface ScoreBreakdown {
-  citationScore: number;
-  authorCredibility: number;
-  methodologyQuality: number;
-  communityVerification: number;
-  recencyScore: number;
-  totalScore: number;
+  contentQuality: number; // 0-40
+  engagementSignals: number; // 0-20
+  sourceCredibility: number; // 0-20
+  recencyScore: number; // 0-10
+  communityValidation: number; // 0-10
+  totalScore: number; // 0-100
   explanation: string;
 }
 
 /**
- * Calculate citation score (0-30 points)
- * Based on citation count, influential citations, and velocity
+ * Calculate engagement score (0-20 points)
+ * Normalized across different source types
  */
-function calculateCitationScore(metrics: QualityMetrics): number {
-  const citationCount = metrics.citationCount || 0;
-  const influentialCitations = metrics.influentialCitations || 0;
-  const citationVelocity = metrics.citationVelocity || 0;
+function calculateEngagementScore(
+  metrics: QualityMetrics,
+  sourceType: string
+): number {
+  const upvotes = metrics.upvotes || 0;
+  const comments = metrics.comments || 0;
+  const views = metrics.views || 0;
   
-  // Normalize citation count (log scale to handle outliers)
-  // 0 citations = 0, 10 = 33%, 100 = 67%, 1000+ = 100%
-  const citationNormalized = Math.min(Math.log10(citationCount + 1) / 3, 1);
+  let normalized = 0;
   
-  // Influential citations worth more (0-50% of citations are typically influential)
-  const influentialRatio = citationCount > 0 ? influentialCitations / citationCount : 0;
-  const influentialBonus = influentialRatio * 0.3; // Up to 30% bonus
+  switch (sourceType) {
+    case 'journal':
+      // Use citation count if available
+      const citations = metrics.citationCount || 0;
+      // 0 citations = 0, 10 = 33%, 50 = 67%, 100+ = 100%
+      normalized = Math.min(Math.log10(citations + 1) / 2, 1);
+      break;
+      
+    case 'reddit':
+      // Upvotes + engagement ratio
+      // 0-10 upvotes = 0-33%, 10-100 = 33-67%, 100+ = 67-100%
+      const upvoteScore = Math.min(Math.log10(upvotes + 1) / 2, 1);
+      
+      // Comments indicate engagement quality
+      const commentRatio = upvotes > 0 ? Math.min(comments / upvotes, 0.5) : 0;
+      
+      normalized = Math.min(upvoteScore + commentRatio, 1);
+      break;
+      
+    case 'youtube':
+      // Views and likes
+      // 0-1k views = 0-33%, 1k-10k = 33-67%, 10k+ = 67-100%
+      const viewScore = Math.min(Math.log10(views + 1) / 4, 0.7);
+      
+      // Like ratio (5% is good, 10% is excellent)
+      const likeRatio = views > 0 ? Math.min((metrics.likes || 0) / views * 10, 0.3) : 0;
+      
+      normalized = Math.min(viewScore + likeRatio, 1);
+      break;
+      
+    case 'substack':
+      // Likes and comments
+      // Similar to Reddit but adjusted for Substack scale
+      const substackScore = Math.min(Math.log10((metrics.likes || 0) + 1) / 2, 0.8);
+      const substackComments = Math.min(comments / 20, 0.2);
+      
+      normalized = Math.min(substackScore + substackComments, 1);
+      break;
+      
+    default:
+      normalized = 0.3; // Baseline
+  }
   
-  // Citation velocity indicates trending impact
-  // Velocity > 5 = trending, > 10 = hot topic
-  const velocityBonus = Math.min(citationVelocity / 20, 0.2); // Up to 20% bonus
-  
-  const rawScore = citationNormalized + influentialBonus + velocityBonus;
-  const score = Math.min(rawScore, 1) * 30; // Max 30 points
-  
+  const score = normalized * 20;
   return Math.round(score * 10) / 10;
 }
 
 /**
- * Calculate author credibility score (0-25 points)
- * Based on h-index and author citation count
+ * Calculate source credibility score (0-20 points)
+ * Based on platform-specific reputation signals
  */
-function calculateAuthorScore(metrics: QualityMetrics): number {
-  const hIndex = metrics.authorHIndex || 0;
-  const authorCitations = metrics.authorCitationCount || 0;
-  
-  // H-index scoring: 0 = 0%, 10 = 33%, 30 = 67%, 50+ = 100%
-  const hIndexNormalized = Math.min(hIndex / 50, 1);
-  
-  // Author citation count (log scale)
-  // 0 = 0%, 100 = 33%, 1000 = 67%, 10000+ = 100%
-  const citationNormalized = Math.min(Math.log10(authorCitations + 1) / 4, 1);
-  
-  const rawScore = (hIndexNormalized * 0.6) + (citationNormalized * 0.4);
-  const score = rawScore * 25; // Max 25 points
-  
-  return Math.round(score * 10) / 10;
-}
-
-/**
- * Calculate methodology quality score (0-25 points)
- * This will be enhanced by AI assessment, for now uses basic indicators
- */
-function calculateMethodologyScore(
+function calculateSourceCredibility(
   metrics: QualityMetrics,
   sourceType: string,
-  isPreprint: boolean
+  journalName?: string | null,
+  authorOrChannel?: string
 ): number {
-  let score = 25; // Start with max score
+  let score = 10; // Baseline
   
-  // Deductions for quality concerns
-  
-  // Preprint penalty (not peer-reviewed)
-  if (isPreprint) {
-    score -= 5;
+  switch (sourceType) {
+    case 'journal':
+      // Journal tier (high-impact vs lower-impact)
+      const tier = metrics.journalTier || inferJournalTier(journalName);
+      
+      if (tier === 'high') {
+        score = 20; // Nature, Science, NEJM, Lancet, JAMA, BMJ
+      } else if (tier === 'mid') {
+        score = 15; // PLoS, Frontiers, specialty journals
+      } else {
+        score = 12; // Other journals
+      }
+      
+      // Deduct for preprint
+      // (already handled in content quality, but could add small penalty)
+      break;
+      
+    case 'reddit':
+      // Subreddit quality
+      const subredditQuality = metrics.subredditQuality || 5;
+      score = Math.min(subredditQuality * 2, 20); // 0-10 scale → 0-20
+      break;
+      
+    case 'youtube':
+      // Channel subscribers (log scale)
+      const subscribers = metrics.channelSubscribers || 0;
+      // 0 = 5, 1k = 10, 10k = 15, 100k+ = 20
+      score = 5 + Math.min(Math.log10(subscribers + 1) / 5 * 15, 15);
+      break;
+      
+    case 'substack':
+      // Author reputation (if tracked)
+      const reputation = metrics.authorReputation || 5;
+      score = Math.min(reputation * 2, 20); // 0-10 scale → 0-20
+      break;
   }
   
-  // Conflict of interest penalty
-  if (metrics.conflictOfInterest) {
-    score -= 8;
+  // Quality deductions (apply to all sources)
+  if (metrics.conflictOfInterest) score -= 3;
+  if (metrics.biasFlags && metrics.biasFlags.length > 0) {
+    score -= metrics.biasFlags.length * 2;
   }
   
-  // Bias flags (pharma, ag, etc.)
-  const biasFlags = metrics.biasFlags || [];
-  score -= biasFlags.length * 3; // -3 per flag
-  
-  // Funding source bias detection
-  const fundingSources = metrics.fundingSources || [];
-  const suspiciousFunders = fundingSources.filter((funder) =>
-    /pharmaceutical|pharma|pfizer|moderna|merck|bayer|monsanto|agriculture|agri|food industry/i.test(
-      funder
-    )
-  );
-  score -= suspiciousFunders.length * 4; // -4 per suspicious funder
-  
-  // Source type quality baseline
-  const sourceQuality = {
-    journal: 0, // No penalty
-    substack: -2,
-    youtube: -3,
-    reddit: -5,
-  };
-  score += sourceQuality[sourceType as keyof typeof sourceQuality] || 0;
-  
-  // Ensure score stays in bounds
-  return Math.max(0, Math.min(25, Math.round(score * 10) / 10));
+  return Math.max(0, Math.min(20, Math.round(score * 10) / 10));
 }
 
 /**
- * Calculate community verification score (0-10 points)
- * Based on practitioner ratings and vote count
+ * Infer journal tier from journal name
  */
-function calculateCommunityScore(metrics: QualityMetrics): number {
-  const rating = metrics.communityRating || 0; // 0-5 scale
-  const voteCount = metrics.communityVoteCount || 0;
+function inferJournalTier(journalName?: string | null): 'high' | 'mid' | 'low' {
+  if (!journalName) return 'low';
   
-  if (voteCount === 0) {
-    return 5; // Neutral score if no ratings yet
+  const name = journalName.toLowerCase();
+  
+  // High-impact journals
+  const highImpact = [
+    'nature', 'science', 'cell', 'lancet', 'nejm', 'jama', 'bmj',
+    'pnas', 'immunity', 'neuron', 'annual review'
+  ];
+  
+  if (highImpact.some(j => name.includes(j))) {
+    return 'high';
   }
   
-  // Weight rating by vote count (more votes = more reliable)
-  const confidence = Math.min(voteCount / 10, 1); // Full confidence at 10+ votes
+  // Mid-tier journals
+  const midTier = [
+    'plos', 'frontiers', 'nutrients', 'journal of', 'european',
+    'american journal', 'clinical', 'metabolism', 'diabetes'
+  ];
   
-  // Convert 0-5 rating to 0-10 score
-  const score = (rating / 5) * 10 * confidence;
-  
-  // If very few votes, blend with neutral score
-  if (voteCount < 5) {
-    const neutral = 5;
-    const weight = voteCount / 5;
-    return Math.round((score * weight + neutral * (1 - weight)) * 10) / 10;
+  if (midTier.some(j => name.includes(j))) {
+    return 'mid';
   }
   
-  return Math.round(score * 10) / 10;
+  return 'low';
 }
 
 /**
  * Calculate recency score (0-10 points)
- * Recent research weighted higher to reflect scientific progress
  */
 function calculateRecencyScore(publishedAt: string): number {
   const now = new Date();
   const published = new Date(publishedAt);
   const daysSince = (now.getTime() - published.getTime()) / (1000 * 60 * 60 * 24);
   
-  // Scoring curve:
-  // 0-30 days = 10 points (peak freshness)
-  // 30-90 days = 8-10 points (very recent)
-  // 90-365 days = 5-8 points (recent)
-  // 1-2 years = 3-5 points (moderately recent)
-  // 2-5 years = 1-3 points (older)
-  // 5+ years = 0-1 points (dated)
-  
-  if (daysSince < 30) return 10;
-  if (daysSince < 90) return 8 + (90 - daysSince) / 30;
-  if (daysSince < 365) return 5 + (365 - daysSince) / 91.67;
-  if (daysSince < 730) return 3 + (730 - daysSince) / 182.5;
-  if (daysSince < 1825) return 1 + (1825 - daysSince) / 546.75;
-  return Math.max(0, 1 - (daysSince - 1825) / 1825);
+  if (daysSince < 7) return 10; // <1 week
+  if (daysSince < 30) return 9; // <1 month
+  if (daysSince < 90) return 7; // <3 months
+  if (daysSince < 180) return 5; // <6 months
+  if (daysSince < 365) return 3; // <1 year
+  return Math.max(0, 1 - (daysSince - 365) / 1825); // Decay over 5 years
 }
 
 /**
- * Generate human-readable explanation of the score
+ * Calculate community validation score (0-10 points)
+ */
+function calculateCommunityScore(metrics: QualityMetrics): number {
+  const rating = metrics.communityRating || 0;
+  const voteCount = metrics.communityVoteCount || 0;
+  
+  if (voteCount === 0) {
+    return 5; // Neutral baseline (no ratings yet)
+  }
+  
+  // Confidence increases with vote count
+  const confidence = Math.min(voteCount / 10, 1);
+  
+  // Convert 0-5 rating to 0-10 score
+  const score = (rating / 5) * 10 * confidence;
+  
+  // Blend with neutral score if few votes
+  if (voteCount < 5) {
+    const weight = voteCount / 5;
+    return Math.round((score * weight + 5 * (1 - weight)) * 10) / 10;
+  }
+  
+  return Math.round(score * 10) / 10;
+}
+
+/**
+ * Generate human-readable explanation
  */
 function generateExplanation(
   breakdown: Omit<ScoreBreakdown, 'explanation'>,
@@ -196,48 +263,23 @@ function generateExplanation(
 ): string {
   const parts: string[] = [];
   
-  // Citation analysis
-  if (metrics.citationCount && metrics.citationCount > 0) {
-    parts.push(
-      `${metrics.citationCount} citations${
-        metrics.influentialCitations
-          ? ` (${metrics.influentialCitations} influential)`
-          : ''
-      }`
-    );
+  // Content quality
+  if (metrics.contentQualityReasoning) {
+    parts.push(metrics.contentQualityReasoning);
   }
   
-  // Author credibility
-  if (metrics.authorHIndex && metrics.authorHIndex > 0) {
-    parts.push(`Author h-index: ${metrics.authorHIndex}`);
+  // Engagement
+  if (sourceType === 'reddit' && metrics.upvotes) {
+    parts.push(`${metrics.upvotes} upvotes, ${metrics.comments || 0} comments`);
+  } else if (sourceType === 'youtube' && metrics.views) {
+    parts.push(`${metrics.views} views`);
+  } else if (sourceType === 'journal' && metrics.citationCount) {
+    parts.push(`${metrics.citationCount} citations`);
   }
   
-  // Quality concerns
-  const concerns: string[] = [];
-  if (metrics.conflictOfInterest) concerns.push('declared conflicts of interest');
-  if (metrics.biasFlags && metrics.biasFlags.length > 0) {
-    concerns.push(`bias flags: ${metrics.biasFlags.join(', ')}`);
-  }
-  if (metrics.fundingSources && metrics.fundingSources.length > 0) {
-    const suspicious = metrics.fundingSources.filter((f) =>
-      /pharmaceutical|pharma|monsanto|agriculture/i.test(f)
-    );
-    if (suspicious.length > 0) {
-      concerns.push(`funding from ${suspicious.join(', ')}`);
-    }
-  }
-  
-  if (concerns.length > 0) {
-    parts.push(`Quality concerns: ${concerns.join('; ')}`);
-  }
-  
-  // Community input
+  // Community
   if (metrics.communityRating && metrics.communityVoteCount && metrics.communityVoteCount > 0) {
-    parts.push(
-      `Community rating: ${metrics.communityRating.toFixed(1)}/5.0 (${
-        metrics.communityVoteCount
-      } votes)`
-    );
+    parts.push(`Community: ${metrics.communityRating.toFixed(1)}/5 (${metrics.communityVoteCount} votes)`);
   }
   
   // Source type
@@ -247,33 +289,42 @@ function generateExplanation(
 }
 
 /**
- * Calculate comprehensive quality score with full transparency
+ * Calculate unified quality score (works for ALL sources)
  */
 export function calculateQualityScore(
   item: Partial<Item>,
   metrics: QualityMetrics
 ): ScoreBreakdown {
-  const citationScore = calculateCitationScore(metrics);
-  const authorCredibility = calculateAuthorScore(metrics);
-  const methodologyQuality = calculateMethodologyScore(
+  // Content Quality (40%) - from AI analyzer or baseline
+  const contentQuality = metrics.contentQualityScore || getBaselineContentScore(item.sourceType || 'journal');
+  
+  // Engagement Signals (20%)
+  const engagementSignals = calculateEngagementScore(metrics, item.sourceType || 'journal');
+  
+  // Source Credibility (20%)
+  const sourceCredibility = calculateSourceCredibility(
     metrics,
     item.sourceType || 'journal',
-    item.isPreprint || false
+    item.journalName,
+    item.authorOrChannel
   );
-  const communityVerification = calculateCommunityScore(metrics);
+  
+  // Recency (10%)
   const recencyScore = calculateRecencyScore(item.publishedAt || new Date().toISOString());
   
+  // Community Validation (10%)
+  const communityValidation = calculateCommunityScore(metrics);
+  
   const totalScore = Math.round(
-    (citationScore + authorCredibility + methodologyQuality + communityVerification + recencyScore) *
-      10
+    (contentQuality + engagementSignals + sourceCredibility + recencyScore + communityValidation) * 10
   ) / 10;
   
   const breakdown: ScoreBreakdown = {
-    citationScore,
-    authorCredibility,
-    methodologyQuality,
-    communityVerification,
+    contentQuality,
+    engagementSignals,
+    sourceCredibility,
     recencyScore,
+    communityValidation,
     totalScore,
     explanation: '',
   };
@@ -281,4 +332,55 @@ export function calculateQualityScore(
   breakdown.explanation = generateExplanation(breakdown, metrics, item.sourceType || 'journal');
   
   return breakdown;
+}
+
+/**
+ * Get baseline content score when AI analysis unavailable
+ */
+function getBaselineContentScore(sourceType: string): number {
+  const baselines = {
+    journal: 25,
+    substack: 22,
+    youtube: 20,
+    reddit: 18,
+  };
+  
+  return baselines[sourceType as keyof typeof baselines] || 20;
+}
+
+/**
+ * Calculate traditional citation-based score for journals (shown separately)
+ * This is NOT part of the unified score, but displayed alongside it
+ */
+export function calculateTraditionalCitationMetrics(metrics: QualityMetrics): {
+  citationScore: number;
+  authorCredibility: number;
+  description: string;
+} {
+  const citationCount = metrics.citationCount || 0;
+  const hIndex = metrics.authorHIndex || 0;
+  const influentialCitations = metrics.influentialCitations || 0;
+  
+  // Citation score (0-100 scale)
+  const citationNormalized = Math.min(Math.log10(citationCount + 1) / 3, 1);
+  const influentialRatio = citationCount > 0 ? influentialCitations / citationCount : 0;
+  const citationScore = Math.round((citationNormalized + influentialRatio * 0.3) * 100);
+  
+  // Author credibility (0-100 scale)
+  const hIndexNormalized = Math.min(hIndex / 50, 1);
+  const authorCredibility = Math.round(hIndexNormalized * 100);
+  
+  let description = `${citationCount} citations`;
+  if (influentialCitations > 0) {
+    description += ` (${influentialCitations} influential)`;
+  }
+  if (hIndex > 0) {
+    description += `, Author h-index: ${hIndex}`;
+  }
+  
+  return {
+    citationScore,
+    authorCredibility,
+    description,
+  };
 }

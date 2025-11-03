@@ -42,26 +42,51 @@ export const items = pgTable('items', {
   journalName: text('journal_name'),
   hashDedupe: varchar('hash_dedupe', { length: 64 }).notNull().unique(),
   score: integer('score'),
-  // Quality metrics for transparent scoring
+  // Quality metrics for unified transparent scoring
   qualityMetrics: json('quality_metrics').$type<{
+    // Content Quality (from AI)
+    contentQualityScore?: number;
+    evidenceQuality?: number;
+    clinicalValue?: number;
+    clarityStructure?: number;
+    practicalApplicability?: number;
+    contentQualityReasoning?: string;
+    
+    // Engagement Signals
+    upvotes?: number;
+    comments?: number;
+    views?: number;
+    likes?: number;
+    
+    // Source Credibility
+    journalTier?: 'high' | 'mid' | 'low';
+    subredditQuality?: number;
+    channelSubscribers?: number;
+    authorReputation?: number;
+    
+    // Traditional metrics (journals only - shown separately)
     citationCount?: number;
     influentialCitations?: number;
     citationVelocity?: number;
     authorHIndex?: number;
     authorCitationCount?: number;
+    
+    // Quality flags
     fundingSources?: string[];
     conflictOfInterest?: boolean;
     biasFlags?: string[];
+    
+    // Community
     communityRating?: number;
     communityVoteCount?: number;
   }>(),
-  // Transparent score breakdown
+  // Unified score breakdown (works for ALL sources)
   scoreBreakdown: json('score_breakdown').$type<{
-    citationScore: number; // 30%
-    authorCredibility: number; // 25%
-    methodologyQuality: number; // 25%
-    communityVerification: number; // 10%
-    recencyScore: number; // 10%
+    contentQuality: number; // 0-40
+    engagementSignals: number; // 0-20
+    sourceCredibility: number; // 0-20
+    recencyScore: number; // 0-10
+    communityValidation: number; // 0-10
     totalScore: number; // 0-100
     explanation: string;
   }>(),
@@ -153,11 +178,11 @@ export const digestSectionItemSchema = z.object({
     views: z.number(),
   }).optional(),
   scoreBreakdown: z.object({
-    citationScore: z.number(),
-    authorCredibility: z.number(),
-    methodologyQuality: z.number(),
-    communityVerification: z.number(),
+    contentQuality: z.number(),
+    engagementSignals: z.number(),
+    sourceCredibility: z.number(),
     recencyScore: z.number(),
+    communityValidation: z.number(),
     totalScore: z.number(),
     explanation: z.string(),
   }).optional(),

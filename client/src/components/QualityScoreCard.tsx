@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Info, TrendingUp, User, FileCheck, Users, Clock } from "lucide-react";
+import { Info, FileText, TrendingUp, Shield, Clock, Users } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -10,53 +10,62 @@ import {
 } from "@/components/ui/tooltip";
 
 interface ScoreBreakdown {
-  citationScore: number;
-  authorCredibility: number;
-  methodologyQuality: number;
-  communityVerification: number;
-  recencyScore: number;
-  totalScore: number;
+  contentQuality: number; // 0-40
+  engagementSignals: number; // 0-20
+  sourceCredibility: number; // 0-20
+  recencyScore: number; // 0-10
+  communityValidation: number; // 0-10
+  totalScore: number; // 0-100
   explanation: string;
 }
 
 interface QualityScoreCardProps {
   scoreBreakdown: ScoreBreakdown;
   compact?: boolean;
+  showTraditionalMetrics?: boolean;
+  citationCount?: number;
+  authorHIndex?: number;
 }
 
-export function QualityScoreCard({ scoreBreakdown, compact = false }: QualityScoreCardProps) {
+export function QualityScoreCard({ 
+  scoreBreakdown, 
+  compact = false,
+  showTraditionalMetrics = false,
+  citationCount,
+  authorHIndex,
+}: QualityScoreCardProps) {
   const components = [
     {
-      name: "Citations",
-      score: scoreBreakdown.citationScore,
-      max: 30,
-      icon: TrendingUp,
+      name: "Content Quality",
+      score: scoreBreakdown.contentQuality,
+      max: 40,
+      icon: FileText,
       color: "text-blue-600 dark:text-blue-400",
-      description: "Citation count, influential citations, and citation velocity",
+      description: "AI-assessed evidence quality, clinical value, clarity, and practical applicability",
     },
     {
-      name: "Author",
-      score: scoreBreakdown.authorCredibility,
-      max: 25,
-      icon: User,
+      name: "Engagement",
+      score: scoreBreakdown.engagementSignals,
+      max: 20,
+      icon: TrendingUp,
       color: "text-purple-600 dark:text-purple-400",
-      description: "Author h-index and publication track record",
+      description: "Normalized engagement metrics: citations, upvotes, views, or likes depending on source",
     },
     {
-      name: "Methodology",
-      score: scoreBreakdown.methodologyQuality,
-      max: 25,
-      icon: FileCheck,
+      name: "Source Credibility",
+      score: scoreBreakdown.sourceCredibility,
+      max: 20,
+      icon: Shield,
       color: "text-green-600 dark:text-green-400",
-      description: "Study design quality and bias assessment",
+      description: "Source reputation: journal tier, channel size, or community quality",
     },
     {
       name: "Community",
-      score: scoreBreakdown.communityVerification,
+      score: scoreBreakdown.communityValidation,
       max: 10,
       icon: Users,
       color: "text-orange-600 dark:text-orange-400",
-      description: "Practitioner ratings and peer feedback",
+      description: "Practitioner ratings and peer feedback from functional medicine community",
     },
     {
       name: "Recency",
@@ -105,6 +114,17 @@ export function QualityScoreCard({ scoreBreakdown, compact = false }: QualitySco
                   </div>
                 ))}
               </div>
+              {showTraditionalMetrics && (citationCount || authorHIndex) && (
+                <div className="border-t pt-2 mt-2">
+                  <div className="text-xs font-medium mb-1">Traditional Metrics:</div>
+                  {citationCount !== undefined && (
+                    <div className="text-xs">Citations: {citationCount}</div>
+                  )}
+                  {authorHIndex !== undefined && (
+                    <div className="text-xs">Author H-Index: {authorHIndex}</div>
+                  )}
+                </div>
+              )}
             </div>
           </TooltipContent>
         </Tooltip>
@@ -133,7 +153,7 @@ export function QualityScoreCard({ scoreBreakdown, compact = false }: QualitySco
             const percentage = (component.score / component.max) * 100;
 
             return (
-              <div key={component.name} className="space-y-1" data-testid={`score-${component.name.toLowerCase()}`}>
+              <div key={component.name} className="space-y-1" data-testid={`score-${component.name.toLowerCase().replace(' ', '-')}`}>
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <Icon className={`h-4 w-4 ${component.color}`} />
@@ -159,14 +179,35 @@ export function QualityScoreCard({ scoreBreakdown, compact = false }: QualitySco
           })}
         </div>
 
+        {showTraditionalMetrics && (citationCount || authorHIndex) && (
+          <div className="pt-4 border-t">
+            <div className="text-sm font-medium mb-2">Traditional Academic Metrics</div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {citationCount !== undefined && (
+                <div>
+                  <div className="text-muted-foreground">Citations</div>
+                  <div className="font-semibold">{citationCount}</div>
+                </div>
+              )}
+              {authorHIndex !== undefined && (
+                <div>
+                  <div className="text-muted-foreground">Author H-Index</div>
+                  <div className="font-semibold">{authorHIndex}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="pt-2 border-t">
           <div className="text-xs text-muted-foreground">
-            <div className="font-medium mb-1">About Transparency Scoring</div>
+            <div className="font-medium mb-1">About Unified Quality Scoring</div>
             <div>
-              Our multi-signal quality assessment combines citations, author credibility,
-              methodology, community feedback, and recency to provide a transparent,
-              unbiased view of scientific quality. You're free to read any content
-              regardless of score—this is simply a lighthouse to help navigate.
+              Our transparent unified scoring works across ALL sources (journals, Reddit, YouTube, Substack).
+              It combines AI-assessed content quality, normalized engagement, source credibility, community
+              feedback, and recency to provide comparable quality scores. For journals, traditional metrics
+              (citations, h-index) are shown separately. You're free to read any content regardless of
+              score—this is a lighthouse, not a gatekeeper.
             </div>
           </div>
         </div>
