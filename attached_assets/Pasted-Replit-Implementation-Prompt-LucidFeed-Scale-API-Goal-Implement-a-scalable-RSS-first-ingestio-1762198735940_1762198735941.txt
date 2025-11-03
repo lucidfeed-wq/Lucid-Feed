@@ -1,0 +1,168 @@
+Replit Implementation Prompt — LucidFeed Scale & API
+
+Goal: Implement a scalable, RSS‑first ingestion + selective enrichment architecture, harden API usage (rate limits, backoff, caching), and ship onboarding + payments + smarter chat per the current plan.
+
+⸻
+
+🔧 What to Build (Scope)
+	1.	Feed Discovery Service (YouTube/Podcasts/Reddit/Substack/Journals) using RSS for discovery.
+	2.	Feed Discovery UI with Search and Onboarding Wizard (first‑login flow).
+	3.	Stripe Subscription Flow with tiers (Free, Premium, Pro) and enforce feature gates.
+	4.	User‑level Digest Generation (weekly/daily) with cached, reusable summaries.
+	5.	Enhanced Conversational Chat (two‑stage: retrieve → summarize/synthesize) + Chat History Persistence.
+	6.	Scale & API Safety: BullMQ queues, per‑source concurrency, backoff, caching, canonical merge, and observability.
+
+Prioritize: (A) Feed Discovery Service → (B) Discovery UI + Onboarding → (C) Chat improvements → (D) Stripe + Digests → (E) Ops hardening (queues/metrics).
+
+⸻
+
+✅ Acceptance Criteria (Definition of Done)
+	•	No hard API dependencies for ingestion (RSS‑first for all sources). Enrichment uses safe, cached calls.
+	•	Per‑source concurrency + backoff to avoid 429s; failures don’t cascade. Dead‑letter queue captures persistent failures.
+	•	Canonical merge: items deduped by DOI or normalized URL; social posts linked via related_refs.
+	•	Onboarding flow: user selects topics → sees curated sources/bundles → one‑click add → digest created within first session.
+	•	Chat can summarize an entire digest with citations to included items; hallucination guardrails enforced.
+	•	Stripe plans work end‑to‑end with portal; feature gates respected per tier; token/cost usage tracked per user.
+	•	Observability: healthcheck + Sentry + structured logs; PostHog basic funnel events wired.
+
+⸻
+
+🧱 Architectural Requirements (API & Scale)
+
+1) Ingestion Strategy
+	•	Discovery: RSS only for YouTube (channel feeds), Podcasts (PodcastIndex → RSS), Reddit (subreddit RSS), Substack (site RSS), Journals (PubMed/Crossref search results → stored as sources).
+	•	Content Fetch:
+	•	YouTube transcripts: use youtube-transcript selectively behind a queue (no API key). If captions missing, fallback to description.
+	•	Podcasts: RSS description shown; optional transcript only if explicitly available.
+	•	Substack/Reddit: consume RSS content; avoid HTML scraping unless necessary.
+	•	Journals: PubMed/Crossref/Semantic Scholar for metadata; Unpaywall PDFs where available.
+
+2) Rate Limits & Backoff (Per‑Source Policies)
+	•	Global: implement BullMQ queues with per‑source concurrency caps and retry policies:
+	•	YouTube transcripts: concurrency 5–10, backoff exponential (initial 2s, factor 2, jitter), max retries 5.
+	•	RSS pulls: concurrency 50, respect ETag/Last-Modified; min interval per feed 10–30 min.
+	•	PubMed/Crossref/S2: obey provider guidance;
+	•	PubMed: with API key target ≤ 10 req/sec; without key ≤ 3 req/sec; set tool and email headers.
+	•	Crossref/S2: identify app via User-Agent; follow Retry-After.
+	•	Dead‑letter queues for persistent 4xx/5xx; alert when DLQ > threshold.
+
+3) Canonicalization & Merge
+	•	Canonical ID: doi || normalizedURL(host+path); hash as canonicalId.
+	•	Normalization: lowercase host, strip UTM + fragments, drop trailing slash.
+	•	Merge rules: Reddit/Substack/YouTube items that reference a DOI/URL do not create new primaries; they become related_refs linked to the canonical item.
+
+4) Selective Enrichment (Cost Control)
+	•	Scoring pre‑pass (cheap): source authority + recency + basic engagement proxy (channel age, subscriber tier if available, or heuristic).
+	•	Transcript fetch only for the top 10–20% by score.
+	•	LLM summarization only for the top 2–5% or when an item is placed in a user’s digest (demand‑driven).
+	•	Cache all transcripts and summaries; reuse across users/digests.
+
+5) Chat Architecture
+	•	Two‑stage pipeline: (1) retrieve top N items (or whole digest) → (2) summarizer/synthesizer with strict cite‑only constraints.
+	•	Modes: summarize_digest, answer_question, compare_items, debunk (each with tailored prompts).
+	•	Guardrails: “Answer only from provided items; if insufficient, ask for more context.”
+	•	Store prompt_version & model_version with outputs for rollback.
+
+6) Storage & Indexing
+	•	Indexes: items(published_at DESC), GIN on items.topics, and a tsvector on title + excerpt + summary.
+	•	Embeddings: pgvector (ivfflat) for item_embeddings to enable fast semantic search per digest/topic.
+
+7) Observability & Analytics
+	•	Logging: pino with requestId/jobId correlation.
+	•	Errors: Sentry wired to server + workers.
+	•	Health: /healthz and /readiness endpoints.
+	•	Metrics (emit counters/gauges):
+	•	rss_items_fetched, items_merged, transcripts_ok/failed,
+	•	summaries_created, token_spend{userId}, digest_build_time, dlq_depth{queue}.
+	•	Product analytics (PostHog or Plausible): wizard_start, topic_select, bundle_add, source_add, digest_created, digest_opened, chat_ask, chat_tokens, stripe_checkout.
+
+8) Email Deliverability
+	•	Use Resend/Postmark; configure SPF/DKIM/DMARC (BIMI later).
+	•	Start with lightweight HTML + plaintext; warm domain before bulk sends.
+
+9) Compliance & UX
+	•	Show source + link and content‑type badges: Peer‑reviewed / Preprint / Expert Opinion / News.
+	•	Display medical disclaimer in digests and chat.
+
+⸻
+
+🗂️ Work Items (Combine Replit’s “Ready to Implement” + Additions)
+
+From Replit’s “Ready to Implement”
+	•	Feed Discovery Service (YouTube RSS, PodcastIndex, Reddit RSS, Substack)
+	•	Feed Discovery UI with Search
+	•	Onboarding Wizard
+	•	Stripe Subscription Flow (Free, Premium, Pro)
+	•	User‑level Digest Generation (weekly/daily)
+	•	Enhanced Conversational Chat
+	•	Chat History Persistence
+
+Additional Must‑Haves (Scale & Quality)
+	•	BullMQ job queues with per‑source concurrency, backoff, DLQ
+	•	Canonical merge (DOI/URL) + related_refs linkage
+	•	Selective enrichment pipeline (score → transcript → summarize on demand)
+	•	Caching layers: transcripts, summaries, RSS ETag/Last‑Modified
+	•	Indexes (published_at, topics GIN, tsvector) + pgvector for semantic search
+	•	Observability: Sentry, pino, /healthz, metrics counters
+	•	Product analytics events (activation funnel + token usage)
+	•	Email sender (Resend/Postmark) + SPF/DKIM/DMARC
+	•	Quality badges (Peer‑reviewed/Preprint/Opinion) + starter bundles (curated sources by topic)
+	•	Feature gates & usage caps per tier (chat limits, digest frequency)
+
+⸻
+
+🔩 Implementation Notes (Concrete Specs)
+
+BullMQ Queues (example config)
+	•	Queues: rssFetch, ytTranscript, metadataEnrich, summaryBuild, digestBuild.
+	•	Concurrency:
+	•	rssFetch: 50
+	•	ytTranscript: 8
+	•	metadataEnrich: 10
+	•	summaryBuild: 6
+	•	digestBuild: 4
+	•	Retry/backoff: exponential, base 2000ms, factor 2, jitter 0.4, maxRetries 5.
+	•	DLQ: *-dlq; alert when depth > 100 or >2% of total jobs in 24h.
+
+Canonicalizer (pseudo)
+
+canonicalUrl = normalize(url) // strip utm/*, lower host, drop #*, normalize path slashes
+canonicalId = doi || sha256(canonicalUrl)
+if (refersTo(canonicalId)) -> create related_ref; else upsert primary item
+
+Selective Enrichment (pseudo)
+
+score = w1*sourceAuthority + w2*recency + w3*engagementProxy
+if score > T1: fetchTranscript(videoId)
+if score > T2 or itemInUserDigest: buildSummary(item)
+cache(transcript, summary)
+
+Chat Summarizer (digest mode)
+	•	Input: ordered list of items + cached summaries.
+	•	Prompt guardrails: “Answer only from these items. Cite titles with links. If insufficient, state limitation.”
+	•	Output: sectioned TL;DR + per‑item citations.
+
+⸻
+
+🗺️ Rollout Plan (Milestones)
+	1.	M1 (Week 1‑2): Feed Discovery Service, curated catalog + bundles, Discovery UI, Onboarding Wizard (MVP).
+	2.	M2 (Week 3): BullMQ queues + caching + canonical merge; basic observability (Sentry/logs/health).
+	3.	M3 (Week 4): Chat two‑stage summarizer + digest summarize mode; chat history; badges.
+	4.	M4 (Week 5): Stripe subscriptions + feature gates; email sender + domain auth; first real user cohort.
+	5.	M5 (Week 6): Indexes + pgvector; activation funnel analytics; token usage dashboards; polish.
+
+⸻
+
+✅ Test Plan (Smoke + Scale)
+	•	Smoke: ingest 100 feeds, build 10 digests, run 20 chat queries (digest summarize & Q&A) → 0 unhandled errors.
+	•	Backoff test: force 429s on transcript queue → verify retries, reduced concurrency, DLQ thresholds/alerts.
+	•	Canonical test: same DOI from journal + Reddit + Substack → 1 primary item + 2 related_refs.
+	•	Cost test: confirm summaries only created on demand and cached; token spend per user recorded.
+	•	Load: 10k items/day → queue latency under 5 minutes; API error rate < 2%.
+
+⸻
+
+📎 Notes to Replit
+	•	Keep ingestion RSS‑first; avoid brittle scraping. Transcript fetching must be polite (UA header, backoff, caching).
+	•	All new code behind feature flags for quick rollback.
+	•	Ship small, end‑to‑end vertical slices (wizard → add sources → create first digest → chat about it) before broadening.
