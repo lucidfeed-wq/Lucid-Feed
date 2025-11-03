@@ -190,6 +190,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User Feed Subscription endpoints (protected)
+  app.get('/api/subscriptions/feeds', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const subscriptions = await storage.getUserFeedSubscriptions(userId);
+      res.json(subscriptions);
+    } catch (error) {
+      console.error("Error fetching user feed subscriptions:", error);
+      res.status(500).json({ message: "Failed to fetch subscriptions" });
+    }
+  });
+
+  app.post('/api/subscriptions/feeds/:feedId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { feedId } = req.params;
+      
+      const subscription = await storage.subscribeFeed(userId, feedId);
+      res.json(subscription);
+    } catch (error) {
+      console.error("Error subscribing to feed:", error);
+      res.status(500).json({ message: "Failed to subscribe to feed" });
+    }
+  });
+
+  app.delete('/api/subscriptions/feeds/:feedId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { feedId } = req.params;
+      
+      await storage.unsubscribeFeed(userId, feedId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error unsubscribing from feed:", error);
+      res.status(500).json({ message: "Failed to unsubscribe from feed" });
+    }
+  });
+
+  app.get('/api/subscriptions/feeds/:feedId/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { feedId } = req.params;
+      
+      const isSubscribed = await storage.isSubscribedToFeed(userId, feedId);
+      res.json({ isSubscribed });
+    } catch (error) {
+      console.error("Error checking subscription status:", error);
+      res.status(500).json({ message: "Failed to check subscription status" });
+    }
+  });
+
+  // User Subscription Management (Stripe tier)
+  app.get('/api/subscription', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const subscription = await storage.getUserSubscription(userId);
+      
+      // Create free tier if no subscription exists
+      if (!subscription) {
+        const defaultSubscription = await storage.upsertUserSubscription({
+          userId,
+          tier: 'free',
+          status: 'active',
+          digestFrequency: 'weekly',
+          cancelAtPeriodEnd: false,
+        });
+        return res.json(defaultSubscription);
+      }
+      
+      res.json(subscription);
+    } catch (error) {
+      console.error("Error fetching user subscription:", error);
+      res.status(500).json({ message: "Failed to fetch subscription" });
+    }
+  });
+
   // Digest endpoints (public)
   app.get("/api/digest/latest", async (req, res) => {
     try {

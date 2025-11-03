@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users, userPreferences, savedItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating } from "@shared/schema";
+import { items, summaries, digests, users, userPreferences, savedItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription } from "@shared/schema";
 import { eq, and, gte, lte, desc, inArray, or, like, sql, avg, count } from "drizzle-orm";
 
 export interface IStorage {
@@ -61,6 +61,16 @@ export interface IStorage {
   upsertUserRating(rating: InsertUserRating): Promise<UserRating>;
   getUserRating(userId: string, itemId: string): Promise<UserRating | undefined>;
   getRatingStats(itemId: string): Promise<{ averageRating: number; totalRatings: number }>;
+  
+  // User Feed Subscriptions (multi-tenant feed management)
+  subscribeFeed(userId: string, feedId: string): Promise<UserFeedSubscription>;
+  unsubscribeFeed(userId: string, feedId: string): Promise<void>;
+  getUserFeedSubscriptions(userId: string): Promise<(UserFeedSubscription & { feed: FeedCatalog })[]>;
+  isSubscribedToFeed(userId: string, feedId: string): Promise<boolean>;
+  
+  // User Subscription Management (Stripe tiers)
+  getUserSubscription(userId: string): Promise<UserSubscription | undefined>;
+  upsertUserSubscription(subscription: InsertUserSubscription): Promise<UserSubscription>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -543,6 +553,143 @@ export class PostgresStorage implements IStorage {
       averageRating: Math.round(avgRating * 10) / 10, // Round to 1 decimal
       totalRatings: totalCount,
     };
+  }
+
+  // User Feed Subscriptions
+  async subscribeFeed(userId: string, feedId: string): Promise<UserFeedSubscription> {
+    const id = nanoid();
+    
+    // Check if subscription already exists
+    const [existing] = await db
+      .select()
+      .from(userFeedSubscriptions)
+      .where(
+        and(
+          eq(userFeedSubscriptions.userId, userId),
+          eq(userFeedSubscriptions.feedId, feedId)
+        )
+      )
+      .limit(1);
+    
+    if (existing) {
+      // Reactivate if inactive
+      if (!existing.isActive) {
+        const [updated] = await db
+          .update(userFeedSubscriptions)
+          .set({ isActive: true })
+          .where(eq(userFeedSubscriptions.id, existing.id))
+          .returning();
+        return updated;
+      }
+      return existing;
+    }
+    
+    // Create new subscription
+    const [subscription] = await db
+      .insert(userFeedSubscriptions)
+      .values({
+        id,
+        userId,
+        feedId,
+        isActive: true,
+      })
+      .returning();
+    
+    return subscription;
+  }
+
+  async unsubscribeFeed(userId: string, feedId: string): Promise<void> {
+    await db
+      .update(userFeedSubscriptions)
+      .set({ isActive: false })
+      .where(
+        and(
+          eq(userFeedSubscriptions.userId, userId),
+          eq(userFeedSubscriptions.feedId, feedId)
+        )
+      );
+  }
+
+  async getUserFeedSubscriptions(userId: string): Promise<(UserFeedSubscription & { feed: FeedCatalog })[]> {
+    const results = await db
+      .select({
+        id: userFeedSubscriptions.id,
+        userId: userFeedSubscriptions.userId,
+        feedId: userFeedSubscriptions.feedId,
+        subscribedAt: userFeedSubscriptions.subscribedAt,
+        isActive: userFeedSubscriptions.isActive,
+        feed: feedCatalog,
+      })
+      .from(userFeedSubscriptions)
+      .innerJoin(feedCatalog, eq(userFeedSubscriptions.feedId, feedCatalog.id))
+      .where(
+        and(
+          eq(userFeedSubscriptions.userId, userId),
+          eq(userFeedSubscriptions.isActive, true)
+        )
+      )
+      .orderBy(desc(userFeedSubscriptions.subscribedAt));
+    
+    return results;
+  }
+
+  async isSubscribedToFeed(userId: string, feedId: string): Promise<boolean> {
+    const [result] = await db
+      .select()
+      .from(userFeedSubscriptions)
+      .where(
+        and(
+          eq(userFeedSubscriptions.userId, userId),
+          eq(userFeedSubscriptions.feedId, feedId),
+          eq(userFeedSubscriptions.isActive, true)
+        )
+      )
+      .limit(1);
+    return !!result;
+  }
+
+  // User Subscription Management (Stripe tiers)
+  async getUserSubscription(userId: string): Promise<UserSubscription | undefined> {
+    const [subscription] = await db
+      .select()
+      .from(userSubscriptions)
+      .where(eq(userSubscriptions.userId, userId))
+      .limit(1);
+    return subscription;
+  }
+
+  async upsertUserSubscription(insertSubscription: InsertUserSubscription): Promise<UserSubscription> {
+    const id = nanoid();
+    const now = new Date();
+    
+    const [existing] = await db
+      .select()
+      .from(userSubscriptions)
+      .where(eq(userSubscriptions.userId, insertSubscription.userId))
+      .limit(1);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(userSubscriptions)
+        .set({
+          ...insertSubscription,
+          updatedAt: now,
+        })
+        .where(eq(userSubscriptions.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(userSubscriptions)
+        .values({
+          ...insertSubscription,
+          id,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+      return created;
+    }
   }
 }
 
