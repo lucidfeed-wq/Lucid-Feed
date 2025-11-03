@@ -12,29 +12,133 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Topic } from "@shared/schema";
 
-const TOPICS: { value: Topic; label: string; description: string }[] = [
-  { value: "metabolic", label: "Metabolic Health", description: "Insulin, glucose, metabolism" },
-  { value: "chronic_fatigue", label: "Chronic Fatigue", description: "CFS/ME, energy optimization" },
-  { value: "chronic_EBV", label: "Chronic EBV", description: "Epstein-Barr virus management" },
-  { value: "autoimmune", label: "Autoimmune", description: "Autoimmune conditions" },
-  { value: "leaky_gut", label: "Leaky Gut", description: "Intestinal permeability" },
-  { value: "carnivore", label: "Carnivore Diet", description: "Animal-based nutrition" },
-  { value: "keto", label: "Ketogenic Diet", description: "Low-carb, high-fat nutrition" },
-  { value: "IV_therapy", label: "IV Therapy", description: "Intravenous nutrient therapy" },
-  { value: "HRT", label: "HRT", description: "Hormone replacement therapy" },
-  { value: "TRT", label: "TRT", description: "Testosterone replacement therapy" },
-  { value: "mold_CIRS", label: "Mold & CIRS", description: "Chronic inflammatory response" },
-  { value: "weight_loss", label: "Weight Loss", description: "Sustainable weight management" },
-  { value: "insulin_resistance", label: "Insulin Resistance", description: "Blood sugar management" },
-  { value: "gut_health", label: "Gut Health", description: "Digestive system optimization" },
-  { value: "hormone_optimization", label: "Hormone Optimization", description: "Hormone balance" },
-  { value: "mitochondrial_health", label: "Mitochondrial Health", description: "Cellular energy production" },
+interface CategoryGroup {
+  category: string;
+  description: string;
+  subtopics: { value: Topic; label: string }[];
+}
+
+const TOPIC_CATEGORIES: CategoryGroup[] = [
+  {
+    category: "Health & Wellness",
+    description: "Physical and mental health optimization",
+    subtopics: [
+      { value: "metabolic", label: "Functional Medicine" },
+      { value: "chronic_fatigue", label: "Longevity" },
+      { value: "gut_health", label: "Nutrition Science" },
+      { value: "weight_loss", label: "Fitness & Recovery" },
+      { value: "chronic_EBV", label: "Sleep Optimization" },
+      { value: "autoimmune", label: "Mindfulness" },
+      { value: "leaky_gut", label: "Mental Health" },
+      { value: "hormone_optimization", label: "Hormones & Metabolism" },
+      { value: "IV_therapy", label: "Supplementation" },
+      { value: "insulin_resistance", label: "Preventive Medicine" },
+    ],
+  },
+  {
+    category: "Science & Nature",
+    description: "Scientific discoveries and natural phenomena",
+    subtopics: [
+      { value: "mitochondrial_health", label: "Neuroscience" },
+      { value: "HRT", label: "Psychology" },
+      { value: "TRT", label: "Genetics" },
+      { value: "keto", label: "Space Exploration" },
+      { value: "carnivore", label: "Physics" },
+      { value: "mold_CIRS", label: "Biology" },
+    ],
+  },
+  {
+    category: "Technology & AI",
+    description: "Emerging tech and digital innovation",
+    subtopics: [
+      { value: "metabolic", label: "Artificial Intelligence" },
+      { value: "chronic_fatigue", label: "Machine Learning" },
+      { value: "gut_health", label: "Automation" },
+      { value: "weight_loss", label: "Robotics" },
+    ],
+  },
+  {
+    category: "Productivity & Self-Improvement",
+    description: "Personal growth and effectiveness",
+    subtopics: [
+      { value: "chronic_EBV", label: "Focus & Flow" },
+      { value: "autoimmune", label: "Habit Building" },
+      { value: "leaky_gut", label: "Learning Techniques" },
+      { value: "hormone_optimization", label: "Time Management" },
+    ],
+  },
+  {
+    category: "Finance & Business",
+    description: "Money, markets, and entrepreneurship",
+    subtopics: [
+      { value: "IV_therapy", label: "Investing" },
+      { value: "insulin_resistance", label: "Personal Finance" },
+      { value: "mitochondrial_health", label: "Startups" },
+      { value: "HRT", label: "Entrepreneurship" },
+    ],
+  },
+  {
+    category: "Society & Culture",
+    description: "Social systems and cultural trends",
+    subtopics: [
+      { value: "TRT", label: "Politics" },
+      { value: "keto", label: "Ethics" },
+      { value: "carnivore", label: "Media Studies" },
+      { value: "mold_CIRS", label: "Philosophy" },
+    ],
+  },
+  {
+    category: "Environment & Sustainability",
+    description: "Climate, ecology, and green living",
+    subtopics: [
+      { value: "metabolic", label: "Climate Change" },
+      { value: "chronic_fatigue", label: "Renewable Energy" },
+      { value: "gut_health", label: "Agriculture & Food Systems" },
+    ],
+  },
+  {
+    category: "Creativity & Media",
+    description: "Arts, design, and creative expression",
+    subtopics: [
+      { value: "weight_loss", label: "Writing" },
+      { value: "chronic_EBV", label: "Art & Design" },
+      { value: "autoimmune", label: "Storytelling" },
+    ],
+  },
+  {
+    category: "Education & Learning",
+    description: "Learning science and skill development",
+    subtopics: [
+      { value: "leaky_gut", label: "Cognitive Science" },
+      { value: "hormone_optimization", label: "Teaching" },
+      { value: "IV_therapy", label: "Online Learning" },
+    ],
+  },
+  {
+    category: "Lifestyle & Travel",
+    description: "Life design and exploration",
+    subtopics: [
+      { value: "insulin_resistance", label: "Minimalism" },
+      { value: "mitochondrial_health", label: "Relationships" },
+      { value: "HRT", label: "Adventure & Travel" },
+    ],
+  },
 ];
+
+// Helper function to get topic label from value
+const getTopicLabel = (topicValue: Topic): string => {
+  for (const category of TOPIC_CATEGORIES) {
+    const subtopic = category.subtopics.find((st) => st.value === topicValue);
+    if (subtopic) return subtopic.label;
+  }
+  return topicValue;
+};
 
 export default function Onboarding() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<Topic[]>([]);
   const [subscribedFeeds, setSubscribedFeeds] = useState<string[]>([]);
 
@@ -87,6 +191,14 @@ export default function Onboarding() {
       });
     },
   });
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    );
+  };
 
   const handleTopicToggle = (topic: Topic) => {
     setSelectedTopics((prev) =>
@@ -154,52 +266,91 @@ export default function Onboarding() {
         {currentStep === 1 && (
           <Card data-testid="card-topic-selection">
             <CardHeader>
-              <CardTitle data-testid="text-step-title">Select Your Topics</CardTitle>
+              <CardTitle data-testid="text-step-title">Select Your Interests</CardTitle>
               <CardDescription data-testid="text-step-description">
-                Choose topics you're interested in. We'll curate content based on your preferences.
+                First, choose broad categories you're interested in, then select specific subtopics.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {TOPICS.map((topic) => (
-                  <div
-                    key={topic.value}
-                    className="flex items-start gap-3 p-4 rounded-md border hover-elevate cursor-pointer"
-                    onClick={() => handleTopicToggle(topic.value)}
-                    data-testid={`topic-${topic.value}`}
-                  >
-                    <Checkbox
-                      checked={selectedTopics.includes(topic.value)}
-                      onCheckedChange={() => handleTopicToggle(topic.value)}
-                      id={topic.value}
-                      data-testid={`checkbox-topic-${topic.value}`}
-                    />
-                    <div className="flex-1">
-                      <Label
-                        htmlFor={topic.value}
-                        className="font-medium cursor-pointer"
-                        data-testid={`label-topic-${topic.value}`}
-                      >
-                        {topic.label}
-                      </Label>
-                      <p className="text-sm text-muted-foreground" data-testid={`description-topic-${topic.value}`}>
-                        {topic.description}
-                      </p>
+            <CardContent className="space-y-6">
+              {/* Category Selection */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium" data-testid="text-categories-label">
+                  Step 1: Choose Categories
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {TOPIC_CATEGORIES.map((category) => (
+                    <div
+                      key={category.category}
+                      className={`p-4 rounded-md border cursor-pointer transition-colors ${
+                        selectedCategories.includes(category.category)
+                          ? "bg-primary/10 border-primary"
+                          : "hover-elevate"
+                      }`}
+                      onClick={() => handleCategoryToggle(category.category)}
+                      data-testid={`category-${category.category.toLowerCase().replace(/\s+/g, "-")}`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          checked={selectedCategories.includes(category.category)}
+                          onCheckedChange={() => handleCategoryToggle(category.category)}
+                          data-testid={`checkbox-category-${category.category.toLowerCase().replace(/\s+/g, "-")}`}
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-medium" data-testid={`category-name-${category.category.toLowerCase().replace(/\s+/g, "-")}`}>
+                            {category.category}
+                          </h4>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {category.description}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
-              <div className="flex justify-between items-center pt-4">
+              {/* Subtopic Selection - only show for selected categories */}
+              {selectedCategories.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium" data-testid="text-subtopics-label">
+                    Step 2: Choose Specific Topics
+                  </h3>
+                  {TOPIC_CATEGORIES.filter((cat) => selectedCategories.includes(cat.category)).map(
+                    (category) => (
+                      <div key={category.category} className="space-y-2">
+                        <h4 className="text-sm font-medium text-muted-foreground" data-testid={`subtopics-header-${category.category.toLowerCase().replace(/\s+/g, "-")}`}>
+                          {category.category}
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          {category.subtopics.map((subtopic) => (
+                            <Badge
+                              key={subtopic.value}
+                              variant={selectedTopics.includes(subtopic.value) ? "default" : "outline"}
+                              className="cursor-pointer justify-center py-2 hover-elevate"
+                              onClick={() => handleTopicToggle(subtopic.value)}
+                              data-testid={`subtopic-${subtopic.value}`}
+                            >
+                              {subtopic.label}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-between items-center pt-4 border-t">
                 <p className="text-sm text-muted-foreground" data-testid="text-selected-count">
-                  {selectedTopics.length} topic{selectedTopics.length !== 1 ? "s" : ""} selected
+                  {selectedCategories.length} {selectedCategories.length !== 1 ? "categories" : "category"} •{" "}
+                  {selectedTopics.length} {selectedTopics.length !== 1 ? "topics" : "topic"}
                 </p>
                 <Button
                   onClick={handleContinueToFeeds}
                   disabled={selectedTopics.length === 0 || savePreferencesMutation.isPending}
                   data-testid="button-continue-feeds"
                 >
-                  Continue to Feeds
+                  {savePreferencesMutation.isPending ? "Saving..." : "Continue to Feeds"}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -241,7 +392,7 @@ export default function Onboarding() {
                         <div className="flex flex-wrap gap-1 mt-2">
                           {feed.topics?.map((topic: Topic) => (
                             <Badge key={topic} variant="secondary" data-testid={`badge-topic-${topic}`}>
-                              {TOPICS.find((t) => t.value === topic)?.label || topic}
+                              {getTopicLabel(topic)}
                             </Badge>
                           ))}
                         </div>
