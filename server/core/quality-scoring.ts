@@ -183,7 +183,7 @@ function calculateSourceCredibility(
 /**
  * Infer journal tier from journal name
  */
-function inferJournalTier(journalName?: string | null): 'high' | 'mid' | 'low' {
+export function inferJournalTier(journalName?: string | null): 'high' | 'mid' | 'low' {
   if (!journalName) return 'low';
   
   const name = journalName.toLowerCase();
@@ -296,7 +296,7 @@ export function calculateQualityScore(
   metrics: QualityMetrics
 ): ScoreBreakdown {
   // Content Quality (40%) - from AI analyzer or baseline
-  const contentQuality = metrics.contentQualityScore || getBaselineContentScore(item.sourceType || 'journal');
+  const contentQuality = metrics.contentQualityScore ?? getBaselineContentScore(item.sourceType || 'journal');
   
   // Engagement Signals (20%)
   const engagementSignals = calculateEngagementScore(metrics, item.sourceType || 'journal');
@@ -315,21 +315,41 @@ export function calculateQualityScore(
   // Community Validation (10%)
   const communityValidation = calculateCommunityScore(metrics);
   
-  const totalScore = Math.round(
-    (contentQuality + engagementSignals + sourceCredibility + recencyScore + communityValidation) * 10
-  ) / 10;
+  // Ensure all components are valid numbers and clamped to valid ranges
+  const safeContentQuality = Math.max(0, Math.min(40, 
+    Number.isFinite(contentQuality) ? contentQuality : getBaselineContentScore(item.sourceType || 'journal')
+  ));
+  const safeEngagement = Math.max(0, Math.min(20,
+    Number.isFinite(engagementSignals) ? engagementSignals : 0
+  ));
+  const safeCredibility = Math.max(0, Math.min(20,
+    Number.isFinite(sourceCredibility) ? sourceCredibility : 10
+  ));
+  const safeRecency = Math.max(0, Math.min(10,
+    Number.isFinite(recencyScore) ? recencyScore : 5
+  ));
+  const safeCommunity = Math.max(0, Math.min(10,
+    Number.isFinite(communityValidation) ? communityValidation : 5
+  ));
+  
+  const rawTotal = safeContentQuality + safeEngagement + safeCredibility + safeRecency + safeCommunity;
+  const totalScore = Number.isFinite(rawTotal) ? Math.max(0, Math.min(100, Math.round(rawTotal * 10) / 10)) : 0;
   
   const breakdown: ScoreBreakdown = {
-    contentQuality,
-    engagementSignals,
-    sourceCredibility,
-    recencyScore,
-    communityValidation,
+    contentQuality: Math.round(safeContentQuality * 10) / 10,
+    engagementSignals: Math.round(safeEngagement * 10) / 10,
+    sourceCredibility: Math.round(safeCredibility * 10) / 10,
+    recencyScore: Math.round(safeRecency * 10) / 10,
+    communityValidation: Math.round(safeCommunity * 10) / 10,
     totalScore,
     explanation: '',
   };
   
-  breakdown.explanation = generateExplanation(breakdown, metrics, item.sourceType || 'journal');
+  try {
+    breakdown.explanation = generateExplanation(breakdown, metrics, item.sourceType || 'journal');
+  } catch (error) {
+    breakdown.explanation = `Source: ${item.sourceType || 'unknown'}`;
+  }
   
   return breakdown;
 }

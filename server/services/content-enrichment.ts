@@ -12,7 +12,7 @@
 
 import type { InsertItem } from '@shared/schema';
 import type { QualityMetrics, ScoreBreakdown } from '../core/quality-scoring';
-import { calculateQualityScore, calculateTraditionalCitationMetrics } from '../core/quality-scoring';
+import { calculateQualityScore, calculateTraditionalCitationMetrics, inferJournalTier } from '../core/quality-scoring';
 import { analyzeContentQuality } from './content-quality-analyzer';
 import { fetchOpenAccessPDF, extractPDFText } from './unpaywall';
 import { fetchCitationMetrics } from './crossref';
@@ -190,33 +190,4 @@ export async function enrichContentBatch(
   
   console.log(`✓ Enrichment complete: ${items.length} items processed`);
   return results;
-}
-
-/**
- * Infer journal tier from name
- */
-function inferJournalTier(journalName?: string | null): 'high' | 'mid' | 'low' {
-  if (!journalName) return 'low';
-  
-  const name = journalName.toLowerCase();
-  
-  const highImpact = [
-    'nature', 'science', 'cell', 'lancet', 'nejm', 'jama', 'bmj',
-    'pnas', 'immunity', 'neuron', 'annual review'
-  ];
-  
-  if (highImpact.some(j => name.includes(j))) {
-    return 'high';
-  }
-  
-  const midTier = [
-    'plos', 'frontiers', 'nutrients', 'journal of', 'european',
-    'american journal', 'clinical', 'metabolism', 'diabetes'
-  ];
-  
-  if (midTier.some(j => name.includes(j))) {
-    return 'mid';
-  }
-  
-  return 'low';
 }

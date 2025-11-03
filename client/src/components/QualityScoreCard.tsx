@@ -34,10 +34,21 @@ export function QualityScoreCard({
   citationCount,
   authorHIndex,
 }: QualityScoreCardProps) {
+  // Ensure all score values are valid numbers
+  const safeScore = {
+    contentQuality: Number.isFinite(scoreBreakdown.contentQuality) ? scoreBreakdown.contentQuality : 0,
+    engagementSignals: Number.isFinite(scoreBreakdown.engagementSignals) ? scoreBreakdown.engagementSignals : 0,
+    sourceCredibility: Number.isFinite(scoreBreakdown.sourceCredibility) ? scoreBreakdown.sourceCredibility : 0,
+    recencyScore: Number.isFinite(scoreBreakdown.recencyScore) ? scoreBreakdown.recencyScore : 0,
+    communityValidation: Number.isFinite(scoreBreakdown.communityValidation) ? scoreBreakdown.communityValidation : 0,
+    totalScore: Number.isFinite(scoreBreakdown.totalScore) ? scoreBreakdown.totalScore : 0,
+    explanation: scoreBreakdown.explanation || 'Score calculation in progress',
+  };
+
   const components = [
     {
       name: "Content Quality",
-      score: scoreBreakdown.contentQuality,
+      score: safeScore.contentQuality,
       max: 40,
       icon: FileText,
       color: "text-blue-600 dark:text-blue-400",
@@ -45,7 +56,7 @@ export function QualityScoreCard({
     },
     {
       name: "Engagement",
-      score: scoreBreakdown.engagementSignals,
+      score: safeScore.engagementSignals,
       max: 20,
       icon: TrendingUp,
       color: "text-purple-600 dark:text-purple-400",
@@ -53,7 +64,7 @@ export function QualityScoreCard({
     },
     {
       name: "Source Credibility",
-      score: scoreBreakdown.sourceCredibility,
+      score: safeScore.sourceCredibility,
       max: 20,
       icon: Shield,
       color: "text-green-600 dark:text-green-400",
@@ -61,7 +72,7 @@ export function QualityScoreCard({
     },
     {
       name: "Community",
-      score: scoreBreakdown.communityValidation,
+      score: safeScore.communityValidation,
       max: 10,
       icon: Users,
       color: "text-orange-600 dark:text-orange-400",
@@ -69,7 +80,7 @@ export function QualityScoreCard({
     },
     {
       name: "Recency",
-      score: scoreBreakdown.recencyScore,
+      score: safeScore.recencyScore,
       max: 10,
       icon: Clock,
       color: "text-indigo-600 dark:text-indigo-400",
@@ -78,14 +89,16 @@ export function QualityScoreCard({
   ];
 
   const getScoreColor = (score: number) => {
-    if (score >= 75) return "text-green-600 dark:text-green-400";
-    if (score >= 50) return "text-yellow-600 dark:text-yellow-400";
+    const safeScore = Number.isFinite(score) ? score : 0;
+    if (safeScore >= 75) return "text-green-600 dark:text-green-400";
+    if (safeScore >= 50) return "text-yellow-600 dark:text-yellow-400";
     return "text-orange-600 dark:text-orange-400";
   };
 
   const getScoreLabel = (score: number) => {
-    if (score >= 75) return "High Quality";
-    if (score >= 50) return "Moderate Quality";
+    const safeScore = Number.isFinite(score) ? score : 0;
+    if (safeScore >= 75) return "High Quality";
+    if (safeScore >= 50) return "Moderate Quality";
     return "Emerging Evidence";
   };
 
@@ -96,8 +109,8 @@ export function QualityScoreCard({
           <TooltipTrigger asChild>
             <Badge variant="outline" className="cursor-help" data-testid="badge-quality-score">
               <div className="flex items-center gap-1">
-                <span className={getScoreColor(scoreBreakdown.totalScore)}>
-                  {Math.round(scoreBreakdown.totalScore)}/100
+                <span className={getScoreColor(safeScore.totalScore)}>
+                  {Math.round(safeScore.totalScore)}/100
                 </span>
                 <Info className="h-3 w-3" />
               </div>
@@ -105,7 +118,7 @@ export function QualityScoreCard({
           </TooltipTrigger>
           <TooltipContent className="max-w-sm">
             <div className="space-y-2">
-              <div className="font-medium">{scoreBreakdown.explanation}</div>
+              <div className="font-medium">{safeScore.explanation}</div>
               <div className="text-xs space-y-1">
                 {components.map((c) => (
                   <div key={c.name} className="flex justify-between">
@@ -137,14 +150,14 @@ export function QualityScoreCard({
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Quality Score</span>
-          <Badge variant="outline" className={getScoreColor(scoreBreakdown.totalScore)}>
-            {Math.round(scoreBreakdown.totalScore)}/100 - {getScoreLabel(scoreBreakdown.totalScore)}
+          <Badge variant="outline" className={getScoreColor(safeScore.totalScore)}>
+            {Math.round(safeScore.totalScore)}/100 - {getScoreLabel(safeScore.totalScore)}
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-sm text-muted-foreground">
-          {scoreBreakdown.explanation}
+          {safeScore.explanation}
         </div>
 
         <div className="space-y-3">
