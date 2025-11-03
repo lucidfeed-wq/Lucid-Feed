@@ -49,15 +49,20 @@ export default function Onboarding() {
 
   const savePreferencesMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("/api/preferences", "PUT", {
+      console.log("[Onboarding] Saving topics:", selectedTopics);
+      const response = await apiRequest("/api/preferences", "PUT", {
         favoriteTopics: selectedTopics,
       });
+      console.log("[Onboarding] Save response:", response);
+      return response;
     },
     onSuccess: () => {
+      console.log("[Onboarding] Save successful, moving to step 2");
       queryClient.invalidateQueries({ queryKey: ["/api/preferences"] });
       setCurrentStep(2);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("[Onboarding] Save error:", error);
       toast({
         title: "Error",
         description: "Failed to save preferences. Please try again.",
