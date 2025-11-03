@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { useState } from "react";
-import { FileJson, FileText, Rss, LogIn, LogOut, Settings, Bookmark, MessageSquare, Library, Shield, Menu, Home, Archive } from "lucide-react";
+import { FileJson, FileText, Rss, LogIn, LogOut, Settings, Bookmark, MessageSquare, Library, Shield, Menu, Home, Archive, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -77,6 +77,15 @@ export function Header() {
                   >
                     <Archive className="w-5 h-5" />
                     <span className="font-medium">Archive</span>
+                  </Link>
+                  <Link 
+                    href="/discover" 
+                    className="flex items-center gap-3 px-3 py-2 rounded-md hover-elevate active-elevate-2" 
+                    data-testid="mobile-link-discover"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Search className="w-5 h-5" />
+                    <span className="font-medium">Discover</span>
                   </Link>
                   <Link 
                     href="/feeds" 
@@ -164,6 +173,10 @@ export function Header() {
               </Link>
               <Link href="/archive" className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-archive">
                 Archive
+              </Link>
+              <Link href="/discover" className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md flex items-center gap-2" data-testid="link-discover">
+                <Search className="w-4 h-4" />
+                Discover
               </Link>
               <Link href="/feeds" className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md flex items-center gap-2" data-testid="link-feeds">
                 <Library className="w-4 h-4" />

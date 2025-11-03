@@ -10,6 +10,7 @@ import Preferences from "@/pages/Preferences";
 import SavedItems from "@/pages/SavedItems";
 import Chat from "@/pages/Chat";
 import FeedCatalog from "@/pages/FeedCatalog";
+import Discover from "@/pages/Discover";
 import Admin from "@/pages/Admin";
 import NotFound from "@/pages/not-found";
 
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/saved" component={SavedItems} />
       <Route path="/chat" component={Chat} />
       <Route path="/feeds" component={FeedCatalog} />
+      <Route path="/discover" component={Discover} />
       <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
