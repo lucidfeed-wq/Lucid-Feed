@@ -42,6 +42,7 @@ export interface IStorage {
   
   // Feed Catalog
   getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string }): Promise<FeedCatalog[]>;
+  getSuggestedFeeds(topics: string[], sourceTypes: string[], limit?: number): Promise<FeedCatalog[]>;
   submitFeed(submission: InsertUserFeedSubmission): Promise<UserFeedSubmission>;
   getUserFeedSubmissions(userId: string): Promise<UserFeedSubmission[]>;
   getPendingFeedSubmissions(): Promise<UserFeedSubmission[]>;
@@ -320,6 +321,62 @@ export class PostgresStorage implements IStorage {
     
     const results = await query.orderBy(feedCatalog.name);
     return results;
+  }
+
+  async getSuggestedFeeds(topics: string[], sourceTypes: string[], limit: number = 12): Promise<FeedCatalog[]> {
+    // Strategy: Prioritize featured feeds that match user preferences, then high-quality non-featured feeds
+    
+    // First get featured feeds matching topics and source types
+    const featuredFeeds = await db
+      .select()
+      .from(feedCatalog)
+      .where(
+        and(
+          eq(feedCatalog.isApproved, true),
+          eq(feedCatalog.isActive, true),
+          eq(feedCatalog.featured, true),
+          inArray(feedCatalog.sourceType, sourceTypes)
+        )
+      )
+      .orderBy(feedCatalog.starterRank, desc(feedCatalog.qualityScore))
+      .limit(limit);
+    
+    // Filter featured feeds to only those that have at least one matching topic
+    const matchingFeatured = featuredFeeds.filter((feed) => {
+      const feedTopics = feed.topics as string[];
+      return feedTopics.some((t: string) => topics.includes(t));
+    });
+    
+    // If we have enough featured feeds, return them
+    if (matchingFeatured.length >= limit) {
+      return matchingFeatured.slice(0, limit);
+    }
+    
+    // Otherwise, supplement with high-quality non-featured feeds
+    const remainingLimit = limit - matchingFeatured.length;
+    const nonFeaturedFeeds = await db
+      .select()
+      .from(feedCatalog)
+      .where(
+        and(
+          eq(feedCatalog.isApproved, true),
+          eq(feedCatalog.isActive, true),
+          eq(feedCatalog.featured, false),
+          inArray(feedCatalog.sourceType, sourceTypes)
+        )
+      )
+      .orderBy(desc(feedCatalog.qualityScore))
+      .limit(remainingLimit * 2); // Get more to filter
+    
+    // Filter non-featured feeds by topics
+    const matchingNonFeatured = nonFeaturedFeeds
+      .filter((feed) => {
+        const feedTopics = feed.topics as string[];
+        return feedTopics.some((t: string) => topics.includes(t));
+      })
+      .slice(0, remainingLimit);
+    
+    return [...matchingFeatured, ...matchingNonFeatured];
   }
 
   async submitFeed(submission: InsertUserFeedSubmission): Promise<UserFeedSubmission> {

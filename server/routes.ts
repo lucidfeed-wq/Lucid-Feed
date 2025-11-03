@@ -510,6 +510,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Feed suggestions based on user preferences
+  app.get("/api/feeds/suggestions", async (req, res) => {
+    try {
+      const { topics: topicsParam, sourceTypes: sourceTypesParam, limit: limitParam } = req.query;
+      
+      // Parse topics and sourceTypes from query params (expect comma-separated strings)
+      const topics = typeof topicsParam === 'string' ? topicsParam.split(',').filter(Boolean) : [];
+      const sourceTypes = typeof sourceTypesParam === 'string' ? sourceTypesParam.split(',').filter(Boolean) : [];
+      const limit = typeof limitParam === 'string' ? parseInt(limitParam, 10) : 12;
+      
+      console.log("[GET /api/feeds/suggestions] topics:", topics, "sourceTypes:", sourceTypes, "limit:", limit);
+      
+      if (topics.length === 0 || sourceTypes.length === 0) {
+        return res.status(400).json({ error: "topics and sourceTypes are required" });
+      }
+      
+      const suggestedFeeds = await storage.getSuggestedFeeds(topics, sourceTypes, limit);
+      console.log("[GET /api/feeds/suggestions] Found", suggestedFeeds.length, "feeds");
+      res.json(suggestedFeeds);
+    } catch (error) {
+      console.error("Error fetching suggested feeds:", error);
+      res.status(500).json({ error: "Failed to fetch suggested feeds" });
+    }
+  });
+
   app.post("/api/feeds/submit", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

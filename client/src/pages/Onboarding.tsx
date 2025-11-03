@@ -139,8 +139,11 @@ export default function Onboarding() {
   const [subscribedFeeds, setSubscribedFeeds] = useState<string[]>([]);
 
   const { data: feeds, isLoading: feedsLoading } = useQuery({
-    queryKey: ["/api/catalog/feeds"],
-    enabled: currentStep === 4,
+    queryKey: [
+      "/api/feeds/suggestions",
+      `?topics=${selectedTopics.join(',')}&sourceTypes=${selectedSourceTypes.join(',')}&limit=12`
+    ],
+    enabled: currentStep === 4 && selectedTopics.length > 0 && selectedSourceTypes.length > 0,
   });
 
   const { data: user } = useQuery({
@@ -272,11 +275,8 @@ export default function Onboarding() {
 
   const progress = ((currentStep - 1) / 4) * 100;
 
-  const filteredFeeds = Array.isArray(feeds) 
-    ? feeds.filter((feed: any) =>
-        feed.topics?.some((topic: Topic) => selectedTopics.includes(topic))
-      )
-    : [];
+  // Feeds are already filtered by the API based on user preferences
+  const filteredFeeds = Array.isArray(feeds) ? feeds : [];
 
   return (
     <div className="min-h-screen bg-background">

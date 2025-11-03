@@ -345,6 +345,10 @@ export const feedCatalog = pgTable("feed_catalog", {
   category: text("category").notNull(), // More specific: journals, reddit, substack, youtube
   description: text("description"),
   sourceType: varchar("source_type", { length: 50 }).notNull(), // journal, reddit, substack, youtube
+  topics: json("topics").$type<Topic[]>().notNull().default(sql`'[]'::json`), // Topics this feed covers
+  featured: boolean("featured").notNull().default(false), // Curated starter feed
+  starterRank: integer("starter_rank"), // Order for featured feeds (lower = higher priority)
+  qualityScore: integer("quality_score").default(50), // Quality metric 0-100 for ranking
   isApproved: boolean("is_approved").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   submittedBy: varchar("submitted_by").references(() => users.id, { onDelete: 'set null' }),
@@ -355,6 +359,7 @@ export const feedCatalog = pgTable("feed_catalog", {
   domainIdx: index("feed_catalog_domain_idx").on(table.domain),
   isApprovedIdx: index("feed_catalog_is_approved_idx").on(table.isApproved),
   sourceTypeIdx: index("feed_catalog_source_type_idx").on(table.sourceType),
+  featuredIdx: index("feed_catalog_featured_idx").on(table.featured),
 }));
 
 export const feedCatalogSchema = z.object({
@@ -365,6 +370,10 @@ export const feedCatalogSchema = z.object({
   category: z.string(),
   description: z.string().optional(),
   sourceType: z.enum(sourceTypes),
+  topics: z.array(z.enum(topics)),
+  featured: z.boolean(),
+  starterRank: z.number().nullable().optional(),
+  qualityScore: z.number().nullable().optional(),
   isApproved: z.boolean(),
   isActive: z.boolean(),
   submittedBy: z.string().nullable().optional(),
