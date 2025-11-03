@@ -216,6 +216,7 @@ export class PostgresStorage implements IStorage {
         target: userPreferences.userId,
         set: {
           favoriteTopics: prefsData.favoriteTopics as any,
+          preferredSourceTypes: prefsData.preferredSourceTypes as any,
           updatedAt: new Date(),
         },
       })

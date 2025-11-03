@@ -35,7 +35,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const prefs = await storage.getUserPreferences(userId);
       if (!prefs) {
-        return res.json({ userId, favoriteTopics: [], updatedAt: null });
+        return res.json({ userId, favoriteTopics: [], preferredSourceTypes: [], updatedAt: null });
       }
       res.json(prefs);
     } catch (error) {
@@ -47,17 +47,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/preferences', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { favoriteTopics } = req.body;
-      console.log("[PUT /api/preferences] userId:", userId, "favoriteTopics:", favoriteTopics);
+      const { favoriteTopics, preferredSourceTypes } = req.body;
+      console.log("[PUT /api/preferences] userId:", userId, "favoriteTopics:", favoriteTopics, "preferredSourceTypes:", preferredSourceTypes);
       
+      // Validate favoriteTopics
       if (!favoriteTopics || !Array.isArray(favoriteTopics)) {
         console.error("[PUT /api/preferences] Invalid favoriteTopics:", favoriteTopics);
         return res.status(400).json({ message: "favoriteTopics must be an array" });
       }
       
+      const validTopics = new Set(topics);
+      const invalidTopics = favoriteTopics.filter((topic: any) => !validTopics.has(topic));
+      if (invalidTopics.length > 0) {
+        console.error("[PUT /api/preferences] Invalid topic values:", invalidTopics);
+        return res.status(400).json({ message: `Invalid topics: ${invalidTopics.join(', ')}` });
+      }
+      
+      // Validate preferredSourceTypes
+      if (!preferredSourceTypes || !Array.isArray(preferredSourceTypes)) {
+        console.error("[PUT /api/preferences] Invalid preferredSourceTypes:", preferredSourceTypes);
+        return res.status(400).json({ message: "preferredSourceTypes must be an array" });
+      }
+      
+      const validSourceTypes = new Set(sourceTypes);
+      const invalidSourceTypes = preferredSourceTypes.filter((st: any) => !validSourceTypes.has(st));
+      if (invalidSourceTypes.length > 0) {
+        console.error("[PUT /api/preferences] Invalid source type values:", invalidSourceTypes);
+        return res.status(400).json({ message: `Invalid source types: ${invalidSourceTypes.join(', ')}` });
+      }
+      
       const prefs = await storage.upsertUserPreferences({
         userId,
         favoriteTopics,
+        preferredSourceTypes,
       });
       console.log("[PUT /api/preferences] Success:", prefs);
       res.json(prefs);

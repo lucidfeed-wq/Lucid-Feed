@@ -8,13 +8,53 @@ export const methodologies = ['RCT', 'Cohort', 'Case', 'Review', 'Meta', 'Prepri
 export const evidenceLevels = ['A', 'B', 'C'] as const;
 
 export const topics = [
+  // Health & Wellness
   'metabolic', 'chronic_fatigue', 'chronic_EBV', 'autoimmune', 'leaky_gut',
   'carnivore', 'keto', 'IV_therapy', 'HRT', 'TRT', 'mold_CIRS', 'weight_loss',
   'PANS_PANDAS', 'insulin_resistance', 'gut_health', 'hormone_optimization',
   'biohacking', 'mitochondrial_health', 'thyroid_health', 'adrenal_fatigue',
   'brain_fog', 'inflammation', 'SIBO', 'candida', 'histamine_DAO', 'NAD_therapy',
   'ozone_therapy', 'red_light_therapy', 'cold_exposure', 'sauna_therapy',
-  'fasting', 'autophagy'
+  'fasting', 'autophagy', 'longevity', 'nutrition_science', 'fitness_recovery',
+  'sleep_optimization', 'mindfulness', 'mental_health', 'preventive_medicine',
+  'supplementation',
+  
+  // Science & Nature
+  'neuroscience', 'psychology', 'genetics', 'space_exploration', 'physics',
+  'biology', 'ecology', 'chemistry', 'cognitive_science',
+  
+  // Technology & AI
+  'artificial_intelligence', 'machine_learning', 'automation', 'robotics',
+  'data_science', 'cybersecurity', 'software_development', 'tech_policy',
+  'emerging_tech',
+  
+  // Productivity & Self-Improvement
+  'focus_flow', 'habit_building', 'learning_techniques', 'time_management',
+  'stoicism', 'motivation', 'journaling', 'decision_making', 'systems_thinking',
+  
+  // Finance & Business
+  'investing', 'personal_finance', 'startups', 'entrepreneurship', 'economics',
+  'real_estate', 'crypto_web3', 'marketing', 'productivity_founders',
+  
+  // Society & Culture
+  'politics', 'ethics', 'media_studies', 'philosophy', 'education_reform',
+  'gender_identity', 'sociology', 'global_affairs', 'history',
+  
+  // Environment & Sustainability
+  'climate_change', 'renewable_energy', 'agriculture_food_systems',
+  'conservation', 'environmental_policy', 'urban_design', 'sustainable_living',
+  
+  // Creativity & Media
+  'writing', 'art_design', 'storytelling', 'film_tv', 'music', 'photography',
+  'branding', 'digital_creation', 'creative_process',
+  
+  // Education & Learning
+  'teaching', 'online_learning', 'skill_development', 'learning_technology',
+  'critical_thinking', 'memory_optimization',
+  
+  // Lifestyle & Travel
+  'minimalism', 'relationships', 'parenting', 'adventure_travel', 'outdoor_life',
+  'work_life_balance', 'home_design', 'spirituality'
 ] as const;
 
 export type SourceType = typeof sourceTypes[number];
@@ -249,6 +289,7 @@ export type User = typeof users.$inferSelect;
 export const userPreferences = pgTable("user_preferences", {
   userId: varchar("user_id").primaryKey().references(() => users.id, { onDelete: 'cascade' }),
   favoriteTopics: json("favorite_topics").$type<Topic[]>().notNull().default(sql`'[]'::json`),
+  preferredSourceTypes: json("preferred_source_types").$type<SourceType[]>().notNull().default(sql`'[]'::json`),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

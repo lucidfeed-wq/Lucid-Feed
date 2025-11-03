@@ -7,10 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Sparkles, Rss, CheckCircle, ArrowRight } from "lucide-react";
+import { Sparkles, Rss, CheckCircle, ArrowRight, BookOpen, Mail, Video, MessageCircle, Mic } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { Topic } from "@shared/schema";
+import type { Topic, SourceType } from "@shared/schema";
 
 interface CategoryGroup {
   category: string;
@@ -24,103 +24,90 @@ const TOPIC_CATEGORIES: CategoryGroup[] = [
     description: "Physical and mental health optimization",
     subtopics: [
       { value: "metabolic", label: "Functional Medicine" },
-      { value: "chronic_fatigue", label: "Longevity" },
-      { value: "gut_health", label: "Nutrition Science" },
-      { value: "weight_loss", label: "Fitness & Recovery" },
-      { value: "chronic_EBV", label: "Sleep Optimization" },
-      { value: "autoimmune", label: "Mindfulness" },
-      { value: "leaky_gut", label: "Mental Health" },
+      { value: "longevity", label: "Longevity" },
+      { value: "nutrition_science", label: "Nutrition Science" },
+      { value: "fitness_recovery", label: "Fitness & Recovery" },
+      { value: "sleep_optimization", label: "Sleep Optimization" },
+      { value: "mindfulness", label: "Mindfulness" },
+      { value: "mental_health", label: "Mental Health" },
       { value: "hormone_optimization", label: "Hormones & Metabolism" },
-      { value: "IV_therapy", label: "Supplementation" },
-      { value: "insulin_resistance", label: "Preventive Medicine" },
+      { value: "supplementation", label: "Supplementation" },
+      { value: "preventive_medicine", label: "Preventive Medicine" },
     ],
   },
   {
     category: "Science & Nature",
     description: "Scientific discoveries and natural phenomena",
     subtopics: [
-      { value: "mitochondrial_health", label: "Neuroscience" },
-      { value: "HRT", label: "Psychology" },
-      { value: "TRT", label: "Genetics" },
-      { value: "keto", label: "Space Exploration" },
-      { value: "carnivore", label: "Physics" },
-      { value: "mold_CIRS", label: "Biology" },
+      { value: "neuroscience", label: "Neuroscience" },
+      { value: "psychology", label: "Psychology" },
+      { value: "genetics", label: "Genetics" },
+      { value: "space_exploration", label: "Space Exploration" },
+      { value: "physics", label: "Physics" },
+      { value: "biology", label: "Biology" },
+      { value: "ecology", label: "Ecology" },
+      { value: "chemistry", label: "Chemistry" },
+      { value: "cognitive_science", label: "Cognitive Science" },
     ],
   },
   {
     category: "Technology & AI",
     description: "Emerging tech and digital innovation",
     subtopics: [
-      { value: "metabolic", label: "Artificial Intelligence" },
-      { value: "chronic_fatigue", label: "Machine Learning" },
-      { value: "gut_health", label: "Automation" },
-      { value: "weight_loss", label: "Robotics" },
+      { value: "artificial_intelligence", label: "Artificial Intelligence" },
+      { value: "machine_learning", label: "Machine Learning" },
+      { value: "automation", label: "Automation" },
+      { value: "robotics", label: "Robotics" },
+      { value: "data_science", label: "Data Science" },
+      { value: "cybersecurity", label: "Cybersecurity" },
+      { value: "software_development", label: "Software Development" },
+      { value: "tech_policy", label: "Tech Policy" },
+      { value: "emerging_tech", label: "Emerging Tech" },
     ],
   },
   {
     category: "Productivity & Self-Improvement",
     description: "Personal growth and effectiveness",
     subtopics: [
-      { value: "chronic_EBV", label: "Focus & Flow" },
-      { value: "autoimmune", label: "Habit Building" },
-      { value: "leaky_gut", label: "Learning Techniques" },
-      { value: "hormone_optimization", label: "Time Management" },
+      { value: "focus_flow", label: "Focus & Flow" },
+      { value: "habit_building", label: "Habit Building" },
+      { value: "learning_techniques", label: "Learning Techniques" },
+      { value: "time_management", label: "Time Management" },
+      { value: "stoicism", label: "Stoicism" },
+      { value: "motivation", label: "Motivation" },
+      { value: "journaling", label: "Journaling" },
+      { value: "decision_making", label: "Decision-Making" },
+      { value: "systems_thinking", label: "Systems Thinking" },
     ],
   },
   {
     category: "Finance & Business",
     description: "Money, markets, and entrepreneurship",
     subtopics: [
-      { value: "IV_therapy", label: "Investing" },
-      { value: "insulin_resistance", label: "Personal Finance" },
-      { value: "mitochondrial_health", label: "Startups" },
-      { value: "HRT", label: "Entrepreneurship" },
+      { value: "investing", label: "Investing" },
+      { value: "personal_finance", label: "Personal Finance" },
+      { value: "startups", label: "Startups" },
+      { value: "entrepreneurship", label: "Entrepreneurship" },
+      { value: "economics", label: "Economics" },
+      { value: "real_estate", label: "Real Estate" },
+      { value: "crypto_web3", label: "Crypto/Web3" },
+      { value: "marketing", label: "Marketing" },
+      { value: "productivity_founders", label: "Productivity for Founders" },
     ],
   },
   {
     category: "Society & Culture",
     description: "Social systems and cultural trends",
     subtopics: [
-      { value: "TRT", label: "Politics" },
-      { value: "keto", label: "Ethics" },
-      { value: "carnivore", label: "Media Studies" },
-      { value: "mold_CIRS", label: "Philosophy" },
-    ],
-  },
-  {
-    category: "Environment & Sustainability",
-    description: "Climate, ecology, and green living",
-    subtopics: [
-      { value: "metabolic", label: "Climate Change" },
-      { value: "chronic_fatigue", label: "Renewable Energy" },
-      { value: "gut_health", label: "Agriculture & Food Systems" },
-    ],
-  },
-  {
-    category: "Creativity & Media",
-    description: "Arts, design, and creative expression",
-    subtopics: [
-      { value: "weight_loss", label: "Writing" },
-      { value: "chronic_EBV", label: "Art & Design" },
-      { value: "autoimmune", label: "Storytelling" },
-    ],
-  },
-  {
-    category: "Education & Learning",
-    description: "Learning science and skill development",
-    subtopics: [
-      { value: "leaky_gut", label: "Cognitive Science" },
-      { value: "hormone_optimization", label: "Teaching" },
-      { value: "IV_therapy", label: "Online Learning" },
-    ],
-  },
-  {
-    category: "Lifestyle & Travel",
-    description: "Life design and exploration",
-    subtopics: [
-      { value: "insulin_resistance", label: "Minimalism" },
-      { value: "mitochondrial_health", label: "Relationships" },
-      { value: "HRT", label: "Adventure & Travel" },
+      { value: "politics", label: "Politics" },
+      { value: "ethics", label: "Ethics" },
+      { value: "media_studies", label: "Media Studies" },
+      { value: "philosophy", label: "Philosophy" },
+      { value: "education_reform", label: "Education Reform" },
+      { value: "gender_identity", label: "Gender & Identity" },
+      { value: "sociology", label: "Sociology" },
+      { value: "global_affairs", label: "Global Affairs" },
+      { value: "history", label: "History" },
     ],
   },
 ];
@@ -134,17 +121,26 @@ const getTopicLabel = (topicValue: Topic): string => {
   return topicValue;
 };
 
+const SOURCE_TYPES: { value: SourceType; label: string; description: string; Icon: typeof BookOpen }[] = [
+  { value: "journal", label: "Academic Journals", description: "Peer-reviewed research papers", Icon: BookOpen },
+  { value: "substack", label: "Substacks", description: "Independent newsletters and analysis", Icon: Mail },
+  { value: "youtube", label: "YouTube", description: "Video content and talks", Icon: Video },
+  { value: "reddit", label: "Reddit", description: "Community discussions and threads", Icon: MessageCircle },
+  { value: "podcast", label: "Podcasts", description: "Audio interviews and shows", Icon: Mic },
+];
+
 export default function Onboarding() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<Topic[]>([]);
+  const [selectedSourceTypes, setSelectedSourceTypes] = useState<SourceType[]>([]);
   const [subscribedFeeds, setSubscribedFeeds] = useState<string[]>([]);
 
   const { data: feeds, isLoading: feedsLoading } = useQuery({
     queryKey: ["/api/catalog/feeds"],
-    enabled: currentStep === 2,
+    enabled: currentStep === 4,
   });
 
   const { data: user } = useQuery({
@@ -153,17 +149,18 @@ export default function Onboarding() {
 
   const savePreferencesMutation = useMutation({
     mutationFn: async () => {
-      console.log("[Onboarding] Saving topics:", selectedTopics);
+      console.log("[Onboarding] Saving preferences - topics:", selectedTopics, "sourceTypes:", selectedSourceTypes);
       const response = await apiRequest("/api/preferences", "PUT", {
         favoriteTopics: selectedTopics,
+        preferredSourceTypes: selectedSourceTypes,
       });
       console.log("[Onboarding] Save response:", response);
       return response;
     },
     onSuccess: () => {
-      console.log("[Onboarding] Save successful, moving to step 2");
+      console.log("[Onboarding] Save successful, moving to step 4 (feeds)");
       queryClient.invalidateQueries({ queryKey: ["/api/preferences"] });
-      setCurrentStep(2);
+      setCurrentStep(4);
     },
     onError: (error) => {
       console.error("[Onboarding] Save error:", error);
@@ -208,11 +205,43 @@ export default function Onboarding() {
     );
   };
 
-  const handleContinueToFeeds = () => {
+  const handleSourceTypeToggle = (sourceType: SourceType) => {
+    setSelectedSourceTypes((prev) =>
+      prev.includes(sourceType)
+        ? prev.filter((st) => st !== sourceType)
+        : [...prev, sourceType]
+    );
+  };
+
+  const handleContinueToSubtopics = () => {
+    if (selectedCategories.length === 0) {
+      toast({
+        title: "Select categories",
+        description: "Please select at least one category to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setCurrentStep(2);
+  };
+
+  const handleContinueToSourceTypes = () => {
     if (selectedTopics.length === 0) {
       toast({
         title: "Select topics",
         description: "Please select at least one topic to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setCurrentStep(3);
+  };
+
+  const handleSaveAndContinue = () => {
+    if (selectedSourceTypes.length === 0) {
+      toast({
+        title: "Select source types",
+        description: "Please select at least one source type to continue.",
         variant: "destructive",
       });
       return;
@@ -241,7 +270,7 @@ export default function Onboarding() {
     navigate("/");
   };
 
-  const progress = ((currentStep - 1) / 2) * 100;
+  const progress = ((currentStep - 1) / 4) * 100;
 
   const filteredFeeds = Array.isArray(feeds) 
     ? feeds.filter((feed: any) =>
@@ -264,91 +293,164 @@ export default function Onboarding() {
         </div>
 
         {currentStep === 1 && (
-          <Card data-testid="card-topic-selection">
+          <Card data-testid="card-category-selection">
             <CardHeader>
-              <CardTitle data-testid="text-step-title">Select Your Interests</CardTitle>
+              <CardTitle data-testid="text-step-title">Choose what you love</CardTitle>
               <CardDescription data-testid="text-step-description">
-                First, choose broad categories you're interested in, then select specific subtopics.
+                Select the broad areas that interest you most
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Category Selection */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium" data-testid="text-categories-label">
-                  Step 1: Choose Categories
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {TOPIC_CATEGORIES.map((category) => (
-                    <div
-                      key={category.category}
-                      className={`p-4 rounded-md border cursor-pointer transition-colors ${
-                        selectedCategories.includes(category.category)
-                          ? "bg-primary/10 border-primary"
-                          : "hover-elevate"
-                      }`}
-                      onClick={() => handleCategoryToggle(category.category)}
-                      data-testid={`category-${category.category.toLowerCase().replace(/\s+/g, "-")}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={selectedCategories.includes(category.category)}
-                          onCheckedChange={() => handleCategoryToggle(category.category)}
-                          data-testid={`checkbox-category-${category.category.toLowerCase().replace(/\s+/g, "-")}`}
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-medium" data-testid={`category-name-${category.category.toLowerCase().replace(/\s+/g, "-")}`}>
-                            {category.category}
-                          </h4>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {category.description}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Subtopic Selection - only show for selected categories */}
-              {selectedCategories.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium" data-testid="text-subtopics-label">
-                    Step 2: Choose Specific Topics
-                  </h3>
-                  {TOPIC_CATEGORIES.filter((cat) => selectedCategories.includes(cat.category)).map(
-                    (category) => (
-                      <div key={category.category} className="space-y-2">
-                        <h4 className="text-sm font-medium text-muted-foreground" data-testid={`subtopics-header-${category.category.toLowerCase().replace(/\s+/g, "-")}`}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {TOPIC_CATEGORIES.map((category) => (
+                  <div
+                    key={category.category}
+                    className={`p-4 rounded-md border cursor-pointer transition-colors ${
+                      selectedCategories.includes(category.category)
+                        ? "bg-primary/10 border-primary"
+                        : "hover-elevate"
+                    }`}
+                    onClick={() => handleCategoryToggle(category.category)}
+                    data-testid={`category-${category.category.toLowerCase().replace(/\s+/g, "-")}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        checked={selectedCategories.includes(category.category)}
+                        onCheckedChange={() => handleCategoryToggle(category.category)}
+                        data-testid={`checkbox-category-${category.category.toLowerCase().replace(/\s+/g, "-")}`}
+                      />
+                      <div className="flex-1">
+                        <h4 className="font-medium" data-testid={`category-name-${category.category.toLowerCase().replace(/\s+/g, "-")}`}>
                           {category.category}
                         </h4>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                          {category.subtopics.map((subtopic) => (
-                            <Badge
-                              key={subtopic.value}
-                              variant={selectedTopics.includes(subtopic.value) ? "default" : "outline"}
-                              className="cursor-pointer justify-center py-2 hover-elevate"
-                              onClick={() => handleTopicToggle(subtopic.value)}
-                              data-testid={`subtopic-${subtopic.value}`}
-                            >
-                              {subtopic.label}
-                            </Badge>
-                          ))}
-                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {category.description}
+                        </p>
                       </div>
-                    )
-                  )}
-                </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-end items-center pt-4 border-t">
+                <Button
+                  onClick={handleContinueToSubtopics}
+                  disabled={selectedCategories.length === 0}
+                  data-testid="button-continue-subtopics"
+                >
+                  Continue
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {currentStep === 2 && (
+          <Card data-testid="card-subtopic-selection">
+            <CardHeader>
+              <CardTitle data-testid="text-step-title">Now pick a few focus areas</CardTitle>
+              <CardDescription data-testid="text-step-description">
+                Choose specific topics within your selected categories
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {TOPIC_CATEGORIES.filter((cat) => selectedCategories.includes(cat.category)).map(
+                (category) => (
+                  <div key={category.category} className="space-y-2">
+                    <h4 className="text-sm font-medium text-muted-foreground" data-testid={`subtopics-header-${category.category.toLowerCase().replace(/\s+/g, "-")}`}>
+                      {category.category}
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {category.subtopics.map((subtopic) => (
+                        <Badge
+                          key={subtopic.value}
+                          variant={selectedTopics.includes(subtopic.value) ? "default" : "outline"}
+                          className="cursor-pointer justify-center py-2 hover-elevate"
+                          onClick={() => handleTopicToggle(subtopic.value)}
+                          data-testid={`subtopic-${subtopic.value}`}
+                        >
+                          {subtopic.label}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )
               )}
 
               <div className="flex justify-between items-center pt-4 border-t">
-                <p className="text-sm text-muted-foreground" data-testid="text-selected-count">
-                  {selectedCategories.length} {selectedCategories.length !== 1 ? "categories" : "category"} •{" "}
-                  {selectedTopics.length} {selectedTopics.length !== 1 ? "topics" : "topic"}
-                </p>
                 <Button
-                  onClick={handleContinueToFeeds}
-                  disabled={selectedTopics.length === 0 || savePreferencesMutation.isPending}
-                  data-testid="button-continue-feeds"
+                  variant="outline"
+                  onClick={() => setCurrentStep(1)}
+                  data-testid="button-back"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleContinueToSourceTypes}
+                  disabled={selectedTopics.length === 0}
+                  data-testid="button-continue-sources"
+                >
+                  Continue
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {currentStep === 3 && (
+          <Card data-testid="card-source-selection">
+            <CardHeader>
+              <CardTitle data-testid="text-step-title">Select your favorite source types</CardTitle>
+              <CardDescription data-testid="text-step-description">
+                Choose the types of content you prefer to read or watch
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {SOURCE_TYPES.map((sourceType) => (
+                  <div
+                    key={sourceType.value}
+                    className={`p-4 rounded-md border cursor-pointer transition-colors ${
+                      selectedSourceTypes.includes(sourceType.value)
+                        ? "bg-primary/10 border-primary"
+                        : "hover-elevate"
+                    }`}
+                    onClick={() => handleSourceTypeToggle(sourceType.value)}
+                    data-testid={`source-type-${sourceType.value}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <sourceType.Icon className="h-6 w-6 text-muted-foreground" data-testid={`icon-${sourceType.value}`} />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium" data-testid={`source-name-${sourceType.value}`}>{sourceType.label}</h4>
+                          {selectedSourceTypes.includes(sourceType.value) && (
+                            <CheckCircle className="h-4 w-4 text-primary" />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {sourceType.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-between items-center pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep(2)}
+                  data-testid="button-back"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleSaveAndContinue}
+                  disabled={selectedSourceTypes.length === 0 || savePreferencesMutation.isPending}
+                  data-testid="button-save-continue"
                 >
                   {savePreferencesMutation.isPending ? "Saving..." : "Continue to Feeds"}
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -358,7 +460,7 @@ export default function Onboarding() {
           </Card>
         )}
 
-        {currentStep === 2 && (
+        {currentStep === 4 && (
           <Card data-testid="card-feed-selection">
             <CardHeader>
               <CardTitle data-testid="text-feed-step-title">Subscribe to Feeds</CardTitle>
