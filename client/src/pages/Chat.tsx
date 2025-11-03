@@ -46,8 +46,9 @@ export default function Chat() {
         conversationHistory: history,
         digestId: digest?.id, // Filter search to current digest
       });
-      console.log('Chat API response:', response);
-      return response as unknown as ChatResponse;
+      const data = await response.json();
+      console.log('Chat API response:', data);
+      return data as ChatResponse;
     },
     onSuccess: (data) => {
       console.log('Chat mutation success, data:', data);
