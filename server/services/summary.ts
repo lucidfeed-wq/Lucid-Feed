@@ -35,16 +35,29 @@ Methodology types:
 
 Focus on extracting maximum clinical value from the content.`;
 
+  // Use full text if available, otherwise use excerpt
+  // For journal articles, this will be the complete PDF text (if open access)
+  // For YouTube, this will be the full transcript
+  // For Reddit/Substack, this will be the full post
+  const contentToAnalyze = item.fullText || item.rawExcerpt;
+  
+  // Truncate very long content (>10k chars) to manage token limits
+  const truncatedContent = contentToAnalyze.length > 10000 
+    ? contentToAnalyze.slice(0, 10000) + '\n\n[Content truncated - full text analyzed]'
+    : contentToAnalyze;
+
   const userPrompt = `Source: ${item.sourceType}
 Title: ${item.title}
 Author/Channel: ${item.authorOrChannel}
 ${item.journalName ? `Journal: ${item.journalName}` : ''}
+${item.doi ? `DOI: ${item.doi}` : ''}
 Is Preprint: ${item.isPreprint}
+${item.fullText ? '**Full content available for analysis**' : 'Content excerpt:'}
 
-Content excerpt:
-${item.rawExcerpt.slice(0, 2000)}
+Content:
+${truncatedContent}
 
-Generate a summary with key insights, clinical takeaway, methodology classification, and evidence level.`;
+Generate a summary with key insights, clinical takeaway, methodology classification, and evidence level. ${item.fullText ? 'This is the complete content - provide comprehensive analysis.' : ''}`;
 
   try {
     const completion = await openai.chat.completions.create({

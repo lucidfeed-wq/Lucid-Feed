@@ -105,6 +105,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Community rating endpoints (protected)
+  app.post('/api/ratings/:itemId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { itemId } = req.params;
+      const { rating, comment } = req.body;
+      
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ message: "Rating must be between 1 and 5" });
+      }
+      
+      const userRating = await storage.upsertUserRating({
+        userId,
+        itemId,
+        rating,
+        comment: comment || null,
+      });
+      
+      res.json(userRating);
+    } catch (error) {
+      console.error("Error submitting rating:", error);
+      res.status(500).json({ message: "Failed to submit rating" });
+    }
+  });
+
+  app.get('/api/ratings/:itemId/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { itemId } = req.params;
+      const rating = await storage.getUserRating(userId, itemId);
+      res.json(rating || null);
+    } catch (error) {
+      console.error("Error fetching user rating:", error);
+      res.status(500).json({ message: "Failed to fetch rating" });
+    }
+  });
+
+  app.get('/api/ratings/:itemId/stats', async (req, res) => {
+    try {
+      const { itemId } = req.params;
+      const stats = await storage.getRatingStats(itemId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching rating stats:", error);
+      res.status(500).json({ message: "Failed to fetch rating stats" });
+    }
+  });
+
   // Digest endpoints (public)
   app.get("/api/digest/latest", async (req, res) => {
     try {

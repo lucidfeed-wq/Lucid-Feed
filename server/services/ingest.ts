@@ -3,15 +3,17 @@ import { fetchJournalFeeds } from "../sources/journals";
 import { fetchRedditFeeds } from "../sources/reddit";
 import { fetchSubstackFeeds } from "../sources/substack";
 import { fetchYouTubeFeeds } from "../sources/youtube";
+import { enrichContentBatch } from "./content-enrichment";
 import type { InsertItem, Topic } from "@shared/schema";
 
 export interface IngestOptions {
   topics?: Topic[]; // If provided, only ingest items with these topics
+  enrichContent?: boolean; // Whether to fetch full content and quality metrics (default: true)
 }
 
 export async function runIngestJob(options: IngestOptions = {}): Promise<{ inserted: number; skipped: number; merged: number; filtered: number }> {
-  const { topics } = options;
-  console.log(`Starting ingestion job${topics ? ` (filtering for ${topics.length} topics)` : ''}...`);
+  const { topics, enrichContent = true } = options;
+  console.log(`Starting ingestion job${topics ? ` (filtering for ${topics.length} topics)` : ''}${enrichContent ? ' (with enrichment)' : ''}...`);
 
   let inserted = 0;
   let skipped = 0;
@@ -48,6 +50,12 @@ export async function runIngestJob(options: IngestOptions = {}): Promise<{ inser
       );
       filtered = beforeFilter - allItems.length;
       console.log(`Filtered to ${allItems.length} items matching ${topics.length} topics (excluded ${filtered} items)`);
+    }
+
+    // Enrich content with full text and quality metrics
+    if (enrichContent) {
+      console.log('\n🔬 Enriching content with full text and quality scoring...');
+      allItems = await enrichContentBatch(allItems);
     }
 
     // Process each item

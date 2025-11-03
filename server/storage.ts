@@ -1,8 +1,8 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users, userPreferences, savedItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef } from "@shared/schema";
-import { eq, and, gte, lte, desc, inArray, or, like, sql } from "drizzle-orm";
+import { items, summaries, digests, users, userPreferences, savedItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating } from "@shared/schema";
+import { eq, and, gte, lte, desc, inArray, or, like, sql, avg, count } from "drizzle-orm";
 
 export interface IStorage {
   // Items
@@ -53,6 +53,11 @@ export interface IStorage {
   createRelatedRef(ref: InsertRelatedRef): Promise<RelatedRef>;
   getRelatedRefsByItemId(itemId: string): Promise<RelatedRef[]>;
   getItemByDOI(doi: string): Promise<Item | undefined>;
+  
+  // User Ratings (community quality assessment)
+  upsertUserRating(rating: InsertUserRating): Promise<UserRating>;
+  getUserRating(userId: string, itemId: string): Promise<UserRating | undefined>;
+  getRatingStats(itemId: string): Promise<{ averageRating: number; totalRatings: number }>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -443,6 +448,82 @@ export class PostgresStorage implements IStorage {
       .where(eq(items.doi, doi))
       .limit(1);
     return item;
+  }
+
+  // User Ratings (community quality assessment)
+  async upsertUserRating(insertRating: InsertUserRating): Promise<UserRating> {
+    const id = nanoid();
+    const now = new Date();
+    
+    // Check if rating already exists
+    const [existing] = await db
+      .select()
+      .from(userRatings)
+      .where(
+        and(
+          eq(userRatings.userId, insertRating.userId),
+          eq(userRatings.itemId, insertRating.itemId)
+        )
+      )
+      .limit(1);
+    
+    if (existing) {
+      // Update existing rating
+      const [updated] = await db
+        .update(userRatings)
+        .set({
+          rating: insertRating.rating,
+          comment: insertRating.comment,
+          updatedAt: now,
+        })
+        .where(eq(userRatings.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      // Insert new rating
+      const [created] = await db
+        .insert(userRatings)
+        .values({
+          ...insertRating,
+          id,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+      return created;
+    }
+  }
+
+  async getUserRating(userId: string, itemId: string): Promise<UserRating | undefined> {
+    const [rating] = await db
+      .select()
+      .from(userRatings)
+      .where(
+        and(
+          eq(userRatings.userId, userId),
+          eq(userRatings.itemId, itemId)
+        )
+      )
+      .limit(1);
+    return rating;
+  }
+
+  async getRatingStats(itemId: string): Promise<{ averageRating: number; totalRatings: number }> {
+    const result = await db
+      .select({
+        avgRating: avg(userRatings.rating),
+        totalCount: count(userRatings.id),
+      })
+      .from(userRatings)
+      .where(eq(userRatings.itemId, itemId));
+    
+    const avgRating = result[0]?.avgRating ? parseFloat(result[0].avgRating as string) : 0;
+    const totalCount = result[0]?.totalCount ? Number(result[0].totalCount) : 0;
+    
+    return {
+      averageRating: Math.round(avgRating * 10) / 10, // Round to 1 decimal
+      totalRatings: totalCount,
+    };
   }
 }
 

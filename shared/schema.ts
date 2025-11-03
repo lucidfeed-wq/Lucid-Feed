@@ -238,6 +238,25 @@ export const insertSavedItemSchema = createInsertSchema(savedItems).omit({ id: t
 export type SavedItem = typeof savedItems.$inferSelect;
 export type InsertSavedItem = z.infer<typeof insertSavedItemSchema>;
 
+// User ratings table for community quality assessment
+export const userRatings = pgTable("user_ratings", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  itemId: varchar("item_id", { length: 255 }).notNull().references(() => items.id, { onDelete: 'cascade' }),
+  rating: integer("rating").notNull(), // 1-5 stars
+  comment: text("comment"), // Optional feedback
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userItemIdx: index("user_ratings_user_item_idx").on(table.userId, table.itemId),
+  itemIdx: index("user_ratings_item_idx").on(table.itemId),
+}));
+
+export const insertUserRatingSchema = createInsertSchema(userRatings).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type UserRating = typeof userRatings.$inferSelect;
+export type InsertUserRating = z.infer<typeof insertUserRatingSchema>;
+
 // Feed catalog domains and categories
 export const feedDomains = ['health', 'technology', 'finance', 'science', 'climate', 'general'] as const;
 export type FeedDomain = typeof feedDomains[number];

@@ -33,6 +33,22 @@ The application is a full-stack JavaScript project utilizing React for the front
 - **DOI Tracking for Research Quality**: Items table now includes DOI field for journal articles. DOI parsing extracts Digital Object Identifiers from RSS feeds and content, enabling future cross-source reference matching and research quality verification.
 - **UTM Attribution Tracking**: All outbound links in digest items include UTM parameters (utm_source=digest, utm_medium=web, utm_campaign=weekly_digest) for analytics tracking and referral attribution.
 - **Evidence Quality Badges**: Digest items display methodology badges (RCT, Meta-Analysis, Cohort, Case Study, Review, Preprint) and evidence level badges (Level A, B, C) based on AI-generated summary analysis, providing at-a-glance research quality indicators for practitioners.
+- **Full Content Ingestion Pipeline**: Implemented comprehensive content enrichment system that fetches complete content instead of excerpts:
+  - **Journal Articles**: Unpaywall API integration fetches open-access PDF URLs and extracts full text for comprehensive analysis
+  - **YouTube Videos**: Complete video transcripts extracted for in-depth content analysis
+  - **Reddit/Substack**: Full post content ingested (no longer limited to excerpts)
+- **Transparent Multi-Signal Quality Scoring**: Built unbiased, transparent quality assessment system combining 5 weighted signals:
+  - **Citation Metrics (30%)**: Citation count, influential citations, citation velocity (Crossref + Semantic Scholar)
+  - **Author Credibility (25%)**: H-index and publication track record (Semantic Scholar)
+  - **Methodology Quality (25%)**: Study design assessment with built-in bias detection (pharma/ag funding flags, conflict of interest detection)
+  - **Community Verification (10%)**: Practitioner ratings and peer feedback system
+  - **Recency (10%)**: Time-decay factor for scientific currency
+- **Community Rating System**: User ratings table (userRatings) enables practitioners to rate content quality (1-5 stars) with optional comments. API endpoints support rating submission and aggregation. UI components display community ratings and individual contribution forms.
+- **Enhanced AI Summaries**: Updated summary generation to analyze full content when available (10,000 char limit), providing comprehensive insights from complete papers, transcripts, and posts instead of excerpts.
+- **Quality Transparency UI**: Built React components for displaying quality scores:
+  - **QualityScoreCard**: Shows comprehensive breakdown of all 5 scoring components with progress bars and explanations
+  - **CommunityRating**: Star-based rating widget with comment support
+  - Both compact and expanded views available for different contexts
 
 ### Feature Specifications
 - **RSS Feed Ingestion**: Supports ingestion from journals, Reddit, Substack, and YouTube, with expanded source lists.
