@@ -1,0 +1,155 @@
+Replit Prompt — Pragmatic Implementation Plan for LucidFeed
+
+Goal: Implement ChatGPT’s architecture (RSS-first, canonical merge, selective enrichment, two-stage chat) but simplify infrastructure for a rapid, 2–3 week MVP, then scale after validation.
+
+⸻
+
+🚀 Phase 1: Launch-Ready MVP (Weeks 1–3)
+
+✅ Implement Now (Core Architecture)
+	•	RSS-first discovery for all sources (YouTube, Podcasts, Reddit, Substack, Journals)
+	•	Selective enrichment pipeline:
+	•	Score items
+	•	Top 20% → fetch transcripts (YouTube)
+	•	Top 5% or in user digests → summarize with AI
+	•	Canonical merge (DOI/URL deduplication + related_refs linkage)
+	•	Two-stage chat:
+	•	Stage 1: Retrieve top N items
+	•	Stage 2: Summarize/synthesize with guardrails and citations
+	•	Feed discovery UI with topic search and curation
+	•	Onboarding wizard for source selection and first digest setup
+	•	Stripe subscriptions + feature gates (Free / Premium / Pro tiers)
+	•	User-level digests (weekly/daily)
+	•	Chat history persistence for continuity
+
+⏳ Simplify for MVP
+	•	BullMQ → PostgreSQL-based job queue (simple table with polling or lightweight cron)
+	•	Sentry → basic server error logging
+	•	PostHog → internal events table for user tracking
+	•	Email digests → in-app digest view only (no send infrastructure yet)
+	•	Quality badges & starter bundles → manual curation post-launch
+
+⸻
+
+⚙️ Phase 2: Scale Infrastructure (Post-Validation, Weeks 4–6+)
+	•	BullMQ + Redis for distributed job queues, retries, and backoff
+	•	Sentry for structured error monitoring
+	•	PostHog or Plausible for analytics + activation funnels
+	•	Email infrastructure (Resend/Postmark + SPF/DKIM/DMARC)
+	•	Quality badges (Peer-reviewed, Preprint, Opinion)
+	•	Starter bundles (auto-curated source collections)
+
+⸻
+
+🧠 Architectural Core (Keep as-is)
+	•	Ingestion Strategy: RSS for discovery; selective transcript/summarization enrichment.
+	•	Canonicalization: DOI or normalized URL as canonicalId, with related_refs for linked discussions.
+	•	Chat Architecture: Two-stage model with guardrails and prompt version tracking.
+	•	Storage & Indexing:
+	•	Index published_at, topics (GIN), and full-text (tsvector)
+	•	Use pgvector later for semantic search
+	•	Feature Gates: Enforce per-tier limits on chat tokens, digest frequency, and feed count.
+
+⸻
+
+🗂️ Consolidated Implementation Tasks
+
+From Replit “Ready to Implement”
+	•	Feed Discovery Service (RSS-first, YouTube, Podcasts, Reddit, Substack)
+	•	Feed Discovery UI with search and source curation
+	•	Onboarding wizard for topic + source selection
+	•	Stripe Subscription Flow with feature gating
+	•	User-level Digest Generation (weekly/daily)
+	•	Enhanced Conversational Chat (two-stage)
+	•	Chat History Persistence
+
+ChatGPT Additions to Retain
+	•	Canonical Merge (DOI/URL deduplication + related_refs)
+	•	Selective Enrichment (score → transcript → summary)
+	•	Guardrails in Chat Prompts (cite-only answers)
+	•	Basic Indexes (published_at, topics GIN, tsvector)
+	•	Event Tracking Table for onboarding and usage analytics
+	•	PostgreSQL-based lightweight queue (replace BullMQ temporarily)
+
+⸻
+
+🧩 Rollout Plan
+
+Week	Focus	Deliverables
+1–2	Feed Discovery + Onboarding + Stripe	RSS ingestion, discovery UI, onboarding wizard, payments setup
+3	Canonical Merge + Selective Enrichment + Digests	DOI/URL merge, transcript scoring, digest builder, caching
+4	Two-Stage Chat + Chat Persistence	Summarizer w/ guardrails, citations, chat memory
+5	Polish + Testing + Launch	End-to-end QA, logging, cost metrics
+6+	Scale Infrastructure	Redis, BullMQ, Sentry, Email, Analytics, Bundles
+
+
+⸻
+
+🧭 Summary
+	•	Keep ChatGPT’s full architecture, but defer complex infra until traction.
+	•	MVP runs entirely on Replit + PostgreSQL, using simple tables for queues and events.
+	•	Focus on delivering value fast: usable digests, smart chat, Stripe payments.
+	•	Upgrade to Redis + Sentry + PostHog + Email once user engagement justifies it.
+
+⸻
+
+✅ Replit Response — Confirmation & Tweaks
+
+We agree with Replit’s pragmatic plan. Minor additions to make it safer:
+	1.	Durable pseudo‑queue: job_queue(id, type, payload JSONB, status, retries, next_run_at, created_at, fail_reason) + 30s polling worker.
+	2.	Exponential backoff: retries at 2s → 4s → 8s (+ jitter) per job type.
+	3.	Client‑side concurrency caps: wrap transcript fetchers in a small semaphore (e.g., p-limit(8)).
+	4.	Local caching: cache(key, value, expires_at) for transcripts/summaries; hash by videoId:lang.
+	5.	Metrics placeholder: metrics_daily(metric, value, day); log rss_items_fetched, items_merged, transcripts_ok, summaries_created, token_spend_user.
+
+⸻
+
+🚚 Fast Handoff to Vercel (or Cloud Run/Fly) — Deployment Playbook
+
+Aim: Zero‑drama migration from Replit once traffic grows.
+
+A) Prep Now (so migration is trivial later)
+	•	Dockerfile (even if unused on Replit): multi‑stage build for server + Vite client.
+	•	12‑factor env: all secrets via env vars (DATABASE_URL, OPENAI_API_KEY, STRIPE_*).
+	•	Drizzle/Prisma migrations: one command to migrate (pnpm db:migrate).
+	•	Health endpoints: /healthz, /readiness return 200.
+	•	Static asset build: pnpm build outputs client to /dist.
+
+B) Vercel Option (Serverless Front + Worker for Jobs)
+	•	Front/API: Next/Express on Vercel; map routes under /api/*.
+	•	Background jobs: use Vercel Cron for lightweight tasks; for queues, run a tiny worker on Railway/Fly/Cloud Run connected to the same DB/Redis.
+	•	Redis: Upstash Redis (serverless) for BullMQ when you upgrade.
+	•	Postgres: Neon (keep the same DB), enable pooling (pgBouncer/Neon pooler).
+	•	Env setup: vercel env pull/vercel env push; mirror Replit env.
+
+Cutover steps (zero‑downtime):
+	1.	Deploy to Vercel with production env; run db:migrate against Neon shadow.
+	2.	Warm caches; verify /healthz.
+	3.	Freeze writes for 60–120s (maintenance banner), run final migrate.
+	4.	Flip DNS to Vercel (low TTL pre‑set), keep Replit up as hot‑standby for 24–48h.
+
+C) Cloud Run Option (Container Full‑stack)
+	•	Build Docker image; deploy service with min instances = 1.
+	•	Cloud Tasks or Cloud Scheduler + Pub/Sub for jobs.
+	•	Use MemoryStore (Redis) for BullMQ when needed.
+	•	HTTPS via Cloud Run domain mapping; set CI with GitHub Actions.
+
+D) CI/CD Skeleton
+	•	GitHub Actions:
+	•	lint/test on PR
+	•	build on main
+	•	migrate + deploy on tag v*
+	•	Artifacts: Docker image to GHCR; Vercel auto‑build for frontend.
+
+E) Rollback Plan
+	•	Keep previous Vercel deployment alias.
+	•	DB migrations are forward‑only; ship reversible guards (feature flags) around risky features.
+
+⸻
+
+📋 Shareable Plan Back to Replit
+	•	Adopt pragmatic MVP now; preserve interfaces for queues/analytics.
+	•	Prepare Dockerfile, health checks, and env discipline to enable fast handoff.
+	•	Choose one scale path (Vercel front + worker, or Cloud Run full‑stack) and keep config files ready in the repo.
+
+This lets us start on Replit today, launch in weeks, and switch to Vercel/Cloud Run in hours if needed — without rewrites.
