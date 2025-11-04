@@ -9,9 +9,10 @@ interface DigestSectionProps {
   items: DigestSectionItem[];
   categorySummary?: CategorySummaryType;
   onTopicClick?: (topic: Topic) => void;
+  readItemIds?: Set<string>;
 }
 
-export function DigestSection({ title, description, items, categorySummary, onTopicClick }: DigestSectionProps) {
+export function DigestSection({ title, description, items, categorySummary, onTopicClick, readItemIds }: DigestSectionProps) {
   if (!items || items.length === 0) {
     return null;
   }
@@ -34,7 +35,12 @@ export function DigestSection({ title, description, items, categorySummary, onTo
 
       <div className="space-y-6 md:space-y-8">
         {items.map((item) => (
-          <ItemCard key={item.itemId} item={item} onTopicClick={onTopicClick} />
+          <ItemCard
+            key={item.itemId}
+            item={item}
+            onTopicClick={onTopicClick}
+            isRead={readItemIds?.has(item.itemId) || false}
+          />
         ))}
       </div>
     </section>

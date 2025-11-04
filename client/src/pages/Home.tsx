@@ -25,6 +25,7 @@ export default function Home() {
   const [, navigate] = useLocation();
   const [selectedTopics, setSelectedTopics] = useState<Topic[]>([]);
   const [selectedSourceTypes, setSelectedSourceTypes] = useState<SourceType[]>([]);
+  const [showReadFilter, setShowReadFilter] = useState<'all' | 'unread' | 'read'>('all');
 
   const { user, isLoading: isLoadingUser, isAuthenticated } = useAuth();
 
@@ -38,6 +39,33 @@ export default function Home() {
     enabled: !!user,
   });
 
+  // Fetch read status for all items in digest
+  const digest = rawDigest as Digest | undefined;
+  const allItemIds = digest
+    ? [
+        ...((digest.sections as any)?.researchHighlights || []).map((i: any) => i.itemId),
+        ...((digest.sections as any)?.communityTrends || []).map((i: any) => i.itemId),
+        ...((digest.sections as any)?.expertCommentary || []).map((i: any) => i.itemId),
+      ]
+    : [];
+
+  const { data: readStatusData } = useQuery({
+    queryKey: ['/api/read-items/bulk', { itemIds: allItemIds }],
+    enabled: !!user && allItemIds.length > 0,
+    queryFn: async () => {
+      const response = await fetch('/api/read-items/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ itemIds: allItemIds }),
+      });
+      if (!response.ok) throw new Error('Failed to fetch read status');
+      return response.json();
+    },
+  });
+
+  const readItemIds = new Set((readStatusData as { readIds?: string[] })?.readIds || []);
+
   // Redirect to onboarding if user has no topics selected
   useEffect(() => {
     if (user && preferences && (!preferences.favoriteTopics || preferences.favoriteTopics.length === 0)) {
@@ -49,8 +77,6 @@ export default function Home() {
   if (!isLoadingUser && !isAuthenticated) {
     return <LandingPage />;
   }
-
-  const digest = rawDigest as Digest | undefined;
 
   const handleTopicToggle = (topic: Topic) => {
     setSelectedTopics(prev =>
@@ -92,6 +118,13 @@ export default function Home() {
       filtered = filtered.filter(item =>
         selectedSourceTypes.includes(item.sourceType)
       );
+    }
+
+    // Filter by read status
+    if (showReadFilter === 'read') {
+      filtered = filtered.filter(item => readItemIds.has(item.itemId));
+    } else if (showReadFilter === 'unread') {
+      filtered = filtered.filter(item => !readItemIds.has(item.itemId));
     }
 
     return filtered;
@@ -136,11 +169,49 @@ export default function Home() {
 
   const FilterContent = () => (
     <div className="space-y-8">
-      <SourceTypeFilter
-        selectedTypes={selectedSourceTypes}
-        onTypeToggle={handleSourceTypeToggle}
-        onClearTypes={handleClearSourceTypes}
-      />
+      {/* Read/Unread Filter */}
+      <div>
+        <h3 className="text-sm font-semibold mb-4 text-foreground" data-testid="heading-read-filter">
+          Read Status
+        </h3>
+        <div className="flex gap-2">
+          <Button
+            variant={showReadFilter === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowReadFilter('all')}
+            data-testid="button-filter-all"
+            className="flex-1"
+          >
+            All
+          </Button>
+          <Button
+            variant={showReadFilter === 'unread' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowReadFilter('unread')}
+            data-testid="button-filter-unread"
+            className="flex-1"
+          >
+            Unread
+          </Button>
+          <Button
+            variant={showReadFilter === 'read' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowReadFilter('read')}
+            data-testid="button-filter-read"
+            className="flex-1"
+          >
+            Read
+          </Button>
+        </div>
+      </div>
+
+      <div className="border-t pt-8">
+        <SourceTypeFilter
+          selectedTypes={selectedSourceTypes}
+          onTypeToggle={handleSourceTypeToggle}
+          onClearTypes={handleClearSourceTypes}
+        />
+      </div>
       <div className="border-t pt-8">
         <TopicFilter
           selectedTopics={selectedTopics}
@@ -213,6 +284,7 @@ export default function Home() {
                   items={filteredSections.researchHighlights}
                   categorySummary={(digest.sections as any)?.researchHighlightsSummary}
                   onTopicClick={handleTopicToggle}
+                  readItemIds={readItemIds}
                 />
 
                 <DigestSection
@@ -221,6 +293,7 @@ export default function Home() {
                   items={filteredSections.communityTrends}
                   categorySummary={(digest.sections as any)?.communityTrendsSummary}
                   onTopicClick={handleTopicToggle}
+                  readItemIds={readItemIds}
                 />
 
                 <DigestSection
@@ -229,6 +302,7 @@ export default function Home() {
                   items={filteredSections.expertCommentary}
                   categorySummary={(digest.sections as any)?.expertCommentarySummary}
                   onTopicClick={handleTopicToggle}
+                  readItemIds={readItemIds}
                 />
               </>
             )}

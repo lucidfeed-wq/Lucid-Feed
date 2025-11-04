@@ -128,12 +128,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/saved-items/:itemId/status', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { itemId } = req.params;
+      const { itemId} = req.params;
       const isSaved = await storage.isItemSaved(userId, itemId);
       res.json({ isSaved });
     } catch (error) {
       console.error("Error checking saved status:", error);
       res.status(500).json({ message: "Failed to check saved status" });
+    }
+  });
+
+  // Read items endpoints (protected)
+  // NOTE: Bulk endpoint MUST come before :itemId route to avoid "bulk" being treated as an itemId
+  app.post('/api/read-items/bulk', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { itemIds } = req.body;
+      if (!Array.isArray(itemIds)) {
+        return res.status(400).json({ message: "itemIds must be an array" });
+      }
+      const readIds = await storage.getReadItemIds(userId, itemIds);
+      res.json({ readIds });
+    } catch (error) {
+      console.error("Error fetching read status:", error);
+      res.status(500).json({ message: "Failed to fetch read status" });
+    }
+  });
+
+  app.post('/api/read-items/:itemId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { itemId } = req.params;
+      const read = await storage.markItemAsRead(userId, itemId);
+      res.json(read);
+    } catch (error) {
+      console.error("Error marking item as read:", error);
+      res.status(500).json({ message: "Failed to mark item as read" });
+    }
+  });
+
+  app.delete('/api/read-items/:itemId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { itemId } = req.params;
+      await storage.markItemAsUnread(userId, itemId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking item as unread:", error);
+      res.status(500).json({ message: "Failed to mark item as unread" });
     }
   });
 

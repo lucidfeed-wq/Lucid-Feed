@@ -18,6 +18,32 @@ export default function DigestView() {
     enabled: !!params?.slug,
   });
 
+  // Fetch read status for all items in digest
+  const allItemIds = digest
+    ? [
+        ...((digest.sections as any)?.researchHighlights || []).map((i: any) => i.itemId),
+        ...((digest.sections as any)?.communityTrends || []).map((i: any) => i.itemId),
+        ...((digest.sections as any)?.expertCommentary || []).map((i: any) => i.itemId),
+      ]
+    : [];
+
+  const { data: readStatusData } = useQuery({
+    queryKey: ['/api/read-items/bulk', { itemIds: allItemIds }],
+    enabled: allItemIds.length > 0,
+    queryFn: async () => {
+      const response = await fetch('/api/read-items/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ itemIds: allItemIds }),
+      });
+      if (!response.ok) throw new Error('Failed to fetch read status');
+      return response.json();
+    },
+  });
+
+  const readItemIds = new Set((readStatusData as { readIds?: string[] })?.readIds || []);
+
   const handleTopicToggle = (topic: Topic) => {
     setSelectedTopics(prev =>
       prev.includes(topic)
@@ -63,9 +89,9 @@ export default function DigestView() {
   }
 
   const filteredSections = {
-    researchHighlights: filterItems(digest.sections.researchHighlights || []),
-    communityTrends: filterItems(digest.sections.communityTrends || []),
-    expertCommentary: filterItems(digest.sections.expertCommentary || []),
+    researchHighlights: filterItems((digest.sections as any)?.researchHighlights || []),
+    communityTrends: filterItems((digest.sections as any)?.communityTrends || []),
+    expertCommentary: filterItems((digest.sections as any)?.expertCommentary || []),
   };
 
   const hasResults = filteredSections.researchHighlights.length > 0 ||
@@ -109,6 +135,7 @@ export default function DigestView() {
                   description="Top peer-reviewed studies and preprints from leading medical journals."
                   items={filteredSections.researchHighlights}
                   onTopicClick={handleTopicToggle}
+                  readItemIds={readItemIds}
                 />
 
                 <DigestSection
@@ -116,6 +143,7 @@ export default function DigestView() {
                   description="Trending discussions and insights from health communities on Reddit and Substack."
                   items={filteredSections.communityTrends}
                   onTopicClick={handleTopicToggle}
+                  readItemIds={readItemIds}
                 />
 
                 <DigestSection
@@ -123,6 +151,7 @@ export default function DigestView() {
                   description="Educational videos and analysis from leading health practitioners and researchers."
                   items={filteredSections.expertCommentary}
                   onTopicClick={handleTopicToggle}
+                  readItemIds={readItemIds}
                 />
               </>
             )}

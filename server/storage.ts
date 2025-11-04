@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users, userPreferences, savedItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription } from "@shared/schema";
+import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription } from "@shared/schema";
 import { eq, and, gte, lte, desc, inArray, or, like, sql, avg, count } from "drizzle-orm";
 
 export interface IStorage {
@@ -39,6 +39,12 @@ export interface IStorage {
   unsaveItem(userId: string, itemId: string): Promise<void>;
   getSavedItemsByUser(userId: string): Promise<Item[]>;
   isItemSaved(userId: string, itemId: string): Promise<boolean>;
+  
+  // Read Items
+  markItemAsRead(userId: string, itemId: string): Promise<ReadItem>;
+  markItemAsUnread(userId: string, itemId: string): Promise<void>;
+  isItemRead(userId: string, itemId: string): Promise<boolean>;
+  getReadItemIds(userId: string, itemIds: string[]): Promise<string[]>;
   
   // Feed Catalog
   getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string }): Promise<FeedCatalog[]>;
@@ -290,6 +296,56 @@ export class PostgresStorage implements IStorage {
       )
       .limit(1);
     return !!result;
+  }
+
+  // Read Items
+  async markItemAsRead(userId: string, itemId: string): Promise<ReadItem> {
+    const id = nanoid();
+    const [read] = await db
+      .insert(readItems)
+      .values({ id, userId, itemId })
+      .onConflictDoNothing()
+      .returning();
+    return read;
+  }
+
+  async markItemAsUnread(userId: string, itemId: string): Promise<void> {
+    await db
+      .delete(readItems)
+      .where(
+        and(
+          eq(readItems.userId, userId),
+          eq(readItems.itemId, itemId)
+        )
+      );
+  }
+
+  async isItemRead(userId: string, itemId: string): Promise<boolean> {
+    const [result] = await db
+      .select()
+      .from(readItems)
+      .where(
+        and(
+          eq(readItems.userId, userId),
+          eq(readItems.itemId, itemId)
+        )
+      )
+      .limit(1);
+    return !!result;
+  }
+
+  async getReadItemIds(userId: string, itemIds: string[]): Promise<string[]> {
+    if (itemIds.length === 0) return [];
+    const results = await db
+      .select({ itemId: readItems.itemId })
+      .from(readItems)
+      .where(
+        and(
+          eq(readItems.userId, userId),
+          inArray(readItems.itemId, itemIds)
+        )
+      );
+    return results.map(r => r.itemId);
   }
 
   // Feed Catalog
