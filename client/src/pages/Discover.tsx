@@ -77,11 +77,14 @@ export default function Discover() {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto py-8 px-4 max-w-6xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2" data-testid="text-page-title">
-            Discover Feeds
-          </h1>
-          <p className="text-muted-foreground">
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-1 h-10 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
+            <h1 className="text-4xl font-bold tracking-tight" data-testid="text-page-title">
+              Discover Feeds
+            </h1>
+          </div>
+          <p className="text-lg text-muted-foreground ml-4">
             Search across YouTube channels, podcasts, Reddit communities, and Substack publications
           </p>
         </div>

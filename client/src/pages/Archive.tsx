@@ -57,58 +57,60 @@ export default function Archive() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-semibold mb-2 tracking-tight">Digest Archive</h1>
-          <p className="text-muted-foreground">Browse past weekly digests</p>
+        {/* Page Header with modern styling */}
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-1 h-10 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
+            <h1 className="text-4xl font-bold tracking-tight">Digest Archive</h1>
+          </div>
+          <p className="text-lg text-muted-foreground ml-4">Browse and revisit your past weekly digests</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {digests.map((digest) => {
             const startDate = format(new Date(digest.windowStart), "MMM d");
             const endDate = format(new Date(digest.windowEnd), "MMM d, yyyy");
-            const totalItems = (digest.sections.researchHighlights?.length || 0) +
-              (digest.sections.communityTrends?.length || 0) +
-              (digest.sections.expertCommentary?.length || 0);
+            const sections = digest.sections as any;
+            const researchCount = sections?.researchHighlights?.length || 0;
+            const communityCount = sections?.communityTrends?.length || 0;
+            const expertCount = sections?.expertCommentary?.length || 0;
+            const totalItems = researchCount + communityCount + expertCount;
 
             return (
-              <Card key={digest.id} className="hover-elevate transition-shadow" data-testid={`card-digest-${digest.publicSlug}`}>
-                <CardHeader>
-                  <h2 className="text-xl font-semibold mb-1">
+              <Card key={digest.id} className="hover-elevate transition-all duration-200" data-testid={`card-digest-${digest.slug}`}>
+                <CardHeader className="pb-4">
+                  <h2 className="text-xl font-bold mb-1">
                     Week of {startDate}
                   </h2>
                   <p className="text-sm text-muted-foreground">{endDate}</p>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm mb-4">
-                    {totalItems} total item{totalItems !== 1 ? 's' : ''} across research, community, and expert sources
-                  </p>
-                  <div className="space-y-2">
-                    {digest.sections.researchHighlights && digest.sections.researchHighlights.length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {digest.sections.researchHighlights.length} Research
+                  <div className="mb-4">
+                    <p className="text-sm font-medium mb-3">
+                      {totalItems} total item{totalItems !== 1 ? 's' : ''}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {researchCount > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          {researchCount} Research
                         </Badge>
-                      </div>
-                    )}
-                    {digest.sections.communityTrends && digest.sections.communityTrends.length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {digest.sections.communityTrends.length} Community
+                      )}
+                      {communityCount > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          {communityCount} Community
                         </Badge>
-                      </div>
-                    )}
-                    {digest.sections.expertCommentary && digest.sections.expertCommentary.length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {digest.sections.expertCommentary.length} Expert
+                      )}
+                      {expertCount > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          {expertCount} Expert
                         </Badge>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Link href={`/digest/${digest.publicSlug}`}>
-                    <Button variant="outline" className="w-full" data-testid={`button-view-${digest.publicSlug}`}>
+                  <Link href={`/digest/${digest.slug}`}>
+                    <Button variant="default" className="w-full" data-testid={`button-view-${digest.slug}`}>
                       View Digest
                     </Button>
                   </Link>

@@ -128,11 +128,19 @@ export default function Preferences() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-1 h-10 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
+          <h1 className="text-4xl font-bold tracking-tight">Topic Preferences</h1>
+        </div>
+        <p className="text-lg text-muted-foreground ml-4">
+          Select your favorite topics to personalize your digest content
+        </p>
+      </div>
       <Card>
-        <CardHeader>
-          <CardTitle>Topic Preferences</CardTitle>
+        <CardHeader className="pb-4">
           <CardDescription>
-            Select your favorite topics to personalize your digest content. Items matching your selected topics will be highlighted.
+            Items matching your selected topics will be highlighted in your weekly digests.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

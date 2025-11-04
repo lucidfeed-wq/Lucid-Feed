@@ -45,7 +45,7 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
   const trackedUrl = addUTMParams(item.url);
 
   return (
-    <Card className="hover-elevate transition-shadow" data-testid={`card-item-${item.itemId}`}>
+    <Card className="hover-elevate transition-all duration-200" data-testid={`card-item-${item.itemId}`}>
       <CardHeader className="pb-3 md:pb-4">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 md:gap-4 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
@@ -98,9 +98,9 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
           className="group"
           data-testid="link-item-title"
         >
-          <h3 className="text-base md:text-lg font-medium leading-snug group-hover:underline max-w-prose">
+          <h3 className="text-lg md:text-xl font-semibold leading-snug group-hover:text-primary transition-colors max-w-prose">
             {item.title}
-            <ExternalLink className="inline-block w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ExternalLink className="inline-block w-3.5 h-3.5 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity" />
           </h3>
         </a>
         {item.journalName && (
@@ -115,20 +115,26 @@ export function ItemCard({ item, onTopicClick, isSaved = false }: ItemCardProps)
         )}
       </CardHeader>
 
-      <CardContent className="space-y-3 md:space-y-4">
+      <CardContent className="space-y-4 md:space-y-5">
         {item.keyInsights && (
-          <div>
-            <h4 className="text-xs md:text-sm font-medium mb-2">Key Insights</h4>
-            <p className="text-sm md:text-base leading-relaxed" data-testid="text-insights">
+          <div className="rounded-lg bg-accent/20 p-4 border border-accent/30">
+            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <div className="w-1 h-4 bg-primary rounded-full" />
+              Key Insights
+            </h4>
+            <p className="text-sm md:text-base leading-relaxed text-muted-foreground" data-testid="text-insights">
               {item.keyInsights}
             </p>
           </div>
         )}
 
         {item.clinicalTakeaway && (
-          <div className="border-l-2 border-primary pl-3 md:pl-4">
-            <h4 className="text-xs md:text-sm font-medium mb-2">Clinical Takeaway</h4>
-            <p className="text-xs md:text-sm leading-relaxed" data-testid="text-takeaway">
+          <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
+            <h4 className="text-sm font-semibold mb-2 flex items-center gap-2 text-primary">
+              <div className="w-1 h-4 bg-primary rounded-full" />
+              Clinical Takeaway
+            </h4>
+            <p className="text-sm leading-relaxed" data-testid="text-takeaway">
               {item.clinicalTakeaway}
             </p>
           </div>
