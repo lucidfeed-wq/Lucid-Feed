@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Send, MessageSquare, ExternalLink, Loader2 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { ChatScopeSelector, type ScopeType, type SearchScope } from '@/components/ChatScopeSelector';
 import type { Digest } from '@shared/schema';
 
 interface ChatMessage {
@@ -35,6 +36,7 @@ export default function Chat() {
   const [conversationHistory, setConversationHistory] = useState<ChatMessage[]>([]);
   const [sources, setSources] = useState<ChatSource[]>([]);
   const [chatMode, setChatMode] = useState<'rag' | 'hybrid' | 'general' | null>(null);
+  const [selectedScope, setSelectedScope] = useState<ScopeType>('current_digest');
   const [limitError, setLimitError] = useState<{ 
     tier?: string; 
     limit?: number | 'unlimited'; 
@@ -47,8 +49,27 @@ export default function Chat() {
   });
   const digest = rawDigest as Digest | undefined;
 
+  // Fetch user tier info
+  const { data: rawUserInfo } = useQuery({
+    queryKey: ['/api/user/tier-info'],
+  });
+  const userTierInfo = rawUserInfo as { tier: 'free' | 'premium' | 'pro' } | undefined;
+
   const chatMutation = useMutation({
     mutationFn: async ({ message, history }: { message: string; history: ChatMessage[] }): Promise<ChatResponse> => {
+      // Build scope object based on selected scope type
+      let scope: SearchScope | undefined;
+      
+      if (selectedScope === 'current_digest' && digest?.id) {
+        scope = { type: 'current_digest', digestId: digest.id };
+      } else if (selectedScope === 'all_digests') {
+        scope = { type: 'all_digests' };
+      } else if (selectedScope === 'saved_items') {
+        scope = { type: 'saved_items' };
+      } else if (selectedScope === 'folder') {
+        scope = { type: 'folder' };
+      }
+      
       // Use fetch directly to handle tier limit errors
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -57,10 +78,7 @@ export default function Chat() {
         body: JSON.stringify({
           query: message,
           conversationHistory: history,
-          scope: digest?.id ? {
-            type: 'current_digest',
-            digestId: digest.id,
-          } : undefined,
+          scope,
         }),
       });
       
@@ -147,6 +165,18 @@ export default function Chat() {
 
       <div className="flex-1 overflow-hidden flex flex-col">
         <div className="max-w-4xl mx-auto flex-1 flex flex-col px-6 py-6">
+          {/* Scope Selector */}
+          {userTierInfo && (
+            <div className="mb-4">
+              <ChatScopeSelector
+                selectedScope={selectedScope}
+                onScopeChange={setSelectedScope}
+                userTier={userTierInfo.tier}
+                digestId={digest?.id}
+              />
+            </div>
+          )}
+          
           {/* Messages */}
           <ScrollArea className="flex-1 pr-4">
             {conversationHistory.length === 0 ? (
