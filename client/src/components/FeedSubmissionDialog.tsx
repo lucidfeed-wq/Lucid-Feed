@@ -49,11 +49,11 @@ const categories = [
   'Health Communities',
   'Expert Newsletters',
   'Educational Videos',
-  'Functional Medicine',
   'Metabolic Health',
   'Gut Health',
   'Hormone Optimization',
   'Longevity',
+  'Science & Research',
   'Other',
 ];
 
@@ -155,7 +155,7 @@ export function FeedSubmissionDialog({ children }: FeedSubmissionDialogProps) {
                   <FormLabel>Feed Name</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="e.g., Journal of Functional Medicine"
+                      placeholder="e.g., Journal of Metabolic Health"
                       {...field}
                       data-testid="input-feed-name"
                     />

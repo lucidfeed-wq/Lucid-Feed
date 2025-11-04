@@ -76,7 +76,7 @@ export function QualityScoreCard({
       max: 10,
       icon: Users,
       color: "text-orange-600 dark:text-orange-400",
-      description: "Practitioner ratings and peer feedback from functional medicine community",
+      description: "Practitioner ratings and peer feedback from health community",
     },
     {
       name: "Recency",

@@ -100,7 +100,7 @@ export function CommunityRating({ itemId, isAuthenticated }: CommunityRatingProp
                   className={`h-5 w-5 ${
                     star <= Math.round(stats.averageRating)
                       ? "fill-yellow-400 text-yellow-400"
-                      : "text-gray-300"
+                      : "text-muted-foreground/30"
                   }`}
                 />
               ))}
@@ -129,7 +129,7 @@ export function CommunityRating({ itemId, isAuthenticated }: CommunityRatingProp
                     className={`h-6 w-6 cursor-pointer transition-colors ${
                       star <= displayRating
                         ? "fill-yellow-400 text-yellow-400"
-                        : "text-gray-300 hover:text-yellow-200"
+                        : "text-muted-foreground/30 hover:text-yellow-200"
                     }`}
                     onClick={() => setSelectedRating(star)}
                     onMouseEnter={() => setHoveredRating(star)}

@@ -211,7 +211,7 @@ export default function Home() {
 
                 <DigestSection
                   title="Community Trends"
-                  description="Trending discussions and insights from functional medicine communities on Reddit and Substack."
+                  description="Trending discussions and insights from health communities on Reddit and Substack."
                   items={filteredSections.communityTrends}
                   categorySummary={(digest.sections as any)?.communityTrendsSummary}
                   onTopicClick={handleTopicToggle}
@@ -219,7 +219,7 @@ export default function Home() {
 
                 <DigestSection
                   title="Expert Commentary"
-                  description="Educational videos and analysis from leading functional medicine practitioners."
+                  description="Educational videos and analysis from leading health practitioners and researchers."
                   items={filteredSections.expertCommentary}
                   categorySummary={(digest.sections as any)?.expertCommentarySummary}
                   onTopicClick={handleTopicToggle}

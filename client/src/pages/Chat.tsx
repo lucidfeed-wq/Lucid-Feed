@@ -111,7 +111,7 @@ export default function Chat() {
                   <h3 className="text-lg font-medium mb-2">Start a conversation</h3>
                   <p className="text-sm text-muted-foreground mb-6">
                     Ask about metabolic health, gut microbiome, hormone optimization,
-                    or any other functional medicine topic covered in the digest.
+                    or any other health topic covered in the digest.
                   </p>
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Example questions:</p>

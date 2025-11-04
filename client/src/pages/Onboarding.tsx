@@ -23,7 +23,7 @@ const TOPIC_CATEGORIES: CategoryGroup[] = [
     category: "Health & Wellness",
     description: "Physical and mental health optimization",
     subtopics: [
-      { value: "metabolic", label: "Functional Medicine" },
+      { value: "metabolic", label: "Metabolic Health" },
       { value: "longevity", label: "Longevity" },
       { value: "nutrition_science", label: "Nutrition Science" },
       { value: "fitness_recovery", label: "Fitness & Recovery" },

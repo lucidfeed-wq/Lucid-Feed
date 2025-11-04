@@ -182,7 +182,7 @@ export default function Discover() {
               <Search className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <p className="text-muted-foreground mb-2">Search to discover feeds</p>
               <p className="text-sm text-muted-foreground">
-                Enter topics like "functional medicine", "longevity", or "biohacking"
+                Enter topics like "metabolic health", "longevity", or "biohacking"
               </p>
             </CardContent>
           </Card>

@@ -113,14 +113,14 @@ export default function DigestView() {
 
                 <DigestSection
                   title="Community Trends"
-                  description="Trending discussions and insights from functional medicine communities on Reddit and Substack."
+                  description="Trending discussions and insights from health communities on Reddit and Substack."
                   items={filteredSections.communityTrends}
                   onTopicClick={handleTopicToggle}
                 />
 
                 <DigestSection
                   title="Expert Commentary"
-                  description="Educational videos and analysis from leading functional medicine practitioners."
+                  description="Educational videos and analysis from leading health practitioners and researchers."
                   items={filteredSections.expertCommentary}
                   onTopicClick={handleTopicToggle}
                 />
