@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,12 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Send, MessageSquare, ExternalLink, Loader2, History, Settings as SettingsIcon } from 'lucide-react';
+import { Send, MessageSquare, ExternalLink, Loader2, History, Settings as SettingsIcon, Save, Trash2 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { ChatScopeSelector, type ScopeType, type SearchScope } from '@/components/ChatScopeSelector';
 import { ConversationHistory } from '@/components/ConversationHistory';
 import { Link } from 'wouter';
+import { useToast } from '@/hooks/use-toast';
 import type { Digest } from '@shared/schema';
 
 interface ChatMessage {
@@ -35,11 +36,14 @@ interface ChatResponse {
 }
 
 export default function Chat() {
+  const { toast } = useToast();
   const [query, setQuery] = useState('');
   const [conversationHistory, setConversationHistory] = useState<ChatMessage[]>([]);
   const [sources, setSources] = useState<ChatSource[]>([]);
   const [chatMode, setChatMode] = useState<'rag' | 'hybrid' | 'general' | null>(null);
   const [selectedScope, setSelectedScope] = useState<ScopeType>('current_digest');
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [historySheetOpen, setHistorySheetOpen] = useState(false);
   const [limitError, setLimitError] = useState<{ 
     tier?: string; 
     limit?: number | 'unlimited'; 
@@ -125,6 +129,96 @@ export default function Chat() {
     },
   });
 
+  // Load conversation
+  const loadConversationMutation = useMutation({
+    mutationFn: async (conversationId: string) => {
+      const response = await fetch(`/api/chat/conversations/${conversationId}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to load conversation');
+      }
+      return response.json();
+    },
+    onSuccess: (conversation: any) => {
+      // Restore conversation messages
+      const messages = conversation.messages || [];
+      setConversationHistory(messages.map((m: any) => ({
+        role: m.role,
+        content: m.content,
+      })));
+      
+      // Restore scope if available
+      if (conversation.scope?.type) {
+        setSelectedScope(conversation.scope.type);
+      }
+      
+      setCurrentConversationId(conversation.id);
+      setHistorySheetOpen(false);
+      
+      toast({
+        title: 'Conversation loaded',
+        description: conversation.title || 'Previous conversation restored',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to load conversation',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Save conversation
+  const saveConversationMutation = useMutation({
+    mutationFn: async () => {
+      const title = conversationHistory.length > 0
+        ? conversationHistory[0].content.slice(0, 50) + (conversationHistory[0].content.length > 50 ? '...' : '')
+        : 'New conversation';
+      
+      const messages = conversationHistory.map(m => ({
+        ...m,
+        timestamp: new Date().toISOString(),
+      }));
+      
+      const scope = {
+        type: selectedScope,
+        ...(selectedScope === 'current_digest' && digest?.id ? { digestId: digest.id } : {}),
+      };
+      
+      return await apiRequest('/api/chat/conversations', {
+        method: 'POST',
+        body: JSON.stringify({ title, messages, scope }),
+      });
+    },
+    onSuccess: (data: any) => {
+      setCurrentConversationId(data.id);
+      queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
+      toast({
+        title: 'Conversation saved',
+        description: 'You can access this conversation from your history',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to save conversation',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Clear conversation
+  const handleNewConversation = () => {
+    setConversationHistory([]);
+    setSources([]);
+    setChatMode(null);
+    setCurrentConversationId(null);
+    setQuery('');
+  };
+
   const handleSend = () => {
     if (!query.trim() || chatMutation.isPending || !digest) return;
 
@@ -135,6 +229,7 @@ export default function Chat() {
     ];
     setConversationHistory(nextHistory);
     setQuery('');
+    setCurrentConversationId(null); // Mark as unsaved when new messages added
     chatMutation.mutate({ message: userMessage, history: nextHistory });
   };
 
@@ -167,8 +262,36 @@ export default function Chat() {
             
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
+              {/* Clear Conversation */}
+              {conversationHistory.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleNewConversation}
+                  data-testid="button-new-conversation"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear
+                </Button>
+              )}
+              
+              {/* Save Conversation (Pro only) */}
+              {userTierInfo?.tier === 'pro' && conversationHistory.length > 0 && !currentConversationId && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => saveConversationMutation.mutate()}
+                  disabled={saveConversationMutation.isPending}
+                  data-testid="button-save-conversation"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {saveConversationMutation.isPending ? 'Saving...' : 'Save'}
+                </Button>
+              )}
+              
+              {/* Conversation History (Pro only) */}
               {userTierInfo?.tier === 'pro' && (
-                <Sheet>
+                <Sheet open={historySheetOpen} onOpenChange={setHistorySheetOpen}>
                   <SheetTrigger asChild>
                     <Button variant="outline" size="sm" data-testid="button-conversation-history">
                       <History className="w-4 h-4 mr-2" />
@@ -181,10 +304,7 @@ export default function Chat() {
                     </SheetHeader>
                     <div className="mt-6">
                       <ConversationHistory
-                        onLoadConversation={(id) => {
-                          console.log('Load conversation:', id);
-                          // TODO: Implement conversation loading
-                        }}
+                        onLoadConversation={(id) => loadConversationMutation.mutate(id)}
                         userTier={userTierInfo?.tier || 'free'}
                       />
                     </div>
