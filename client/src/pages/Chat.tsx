@@ -42,6 +42,7 @@ export default function Chat() {
   const [sources, setSources] = useState<ChatSource[]>([]);
   const [chatMode, setChatMode] = useState<'rag' | 'hybrid' | 'general' | null>(null);
   const [selectedScope, setSelectedScope] = useState<ScopeType>('current_digest');
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [historySheetOpen, setHistorySheetOpen] = useState(false);
   const [limitError, setLimitError] = useState<{ 
@@ -73,8 +74,8 @@ export default function Chat() {
         scope = { type: 'all_digests' };
       } else if (selectedScope === 'saved_items') {
         scope = { type: 'saved_items' };
-      } else if (selectedScope === 'folder') {
-        scope = { type: 'folder' };
+      } else if (selectedScope === 'folder' && selectedFolderId) {
+        scope = { type: 'folder', folderId: selectedFolderId };
       }
       
       // Use fetch directly to handle tier limit errors
@@ -188,10 +189,16 @@ export default function Chat() {
         ...(selectedScope === 'current_digest' && digest?.id ? { digestId: digest.id } : {}),
       };
       
-      return await apiRequest('/api/chat/conversations', {
+      const response = await fetch('/api/chat/conversations', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ title, messages, scope }),
       });
+      if (!response.ok) {
+        throw new Error('Failed to save conversation');
+      }
+      return response.json();
     },
     onSuccess: (data: any) => {
       setCurrentConversationId(data.id);
@@ -330,6 +337,8 @@ export default function Chat() {
               <ChatScopeSelector
                 selectedScope={selectedScope}
                 onScopeChange={setSelectedScope}
+                selectedFolderId={selectedFolderId}
+                onFolderChange={setSelectedFolderId}
                 userTier={userTierInfo.tier}
                 digestId={digest?.id}
               />

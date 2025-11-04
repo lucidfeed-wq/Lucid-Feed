@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Database, BookMarked, Folder, Layers } from 'lucide-react';
@@ -11,9 +12,17 @@ export interface SearchScope {
   userId?: string;
 }
 
+interface FolderType {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
 interface ChatScopeSelectorProps {
   selectedScope: ScopeType;
   onScopeChange: (scope: ScopeType) => void;
+  selectedFolderId?: string | null;
+  onFolderChange?: (folderId: string | null) => void;
   userTier: 'free' | 'premium' | 'pro';
   digestId?: string;
   className?: string;
@@ -55,24 +64,40 @@ const tierHierarchy = { free: 1, premium: 2, pro: 3 };
 export function ChatScopeSelector({
   selectedScope,
   onScopeChange,
+  selectedFolderId = null,
+  onFolderChange,
   userTier,
   digestId,
   className = '',
 }: ChatScopeSelectorProps) {
   const userTierLevel = tierHierarchy[userTier];
 
+  // Fetch folders for Pro users
+  const { data: rawFolders } = useQuery({
+    queryKey: ['/api/folders'],
+    enabled: userTier === 'pro' && selectedScope === 'folder',
+  });
+  const folders = (rawFolders as FolderType[] | undefined) || [];
+
   const isOptionAvailable = (requiredTier: 'free' | 'premium' | 'pro') => {
     return tierHierarchy[requiredTier] <= userTierLevel;
   };
 
   const selectedOption = scopeOptions.find(opt => opt.value === selectedScope);
+  const selectedFolder = folders.find(f => f.id === selectedFolderId);
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       <span className="text-sm text-muted-foreground">Search in:</span>
       <Select 
         value={selectedScope} 
-        onValueChange={(value) => onScopeChange(value as ScopeType)}
+        onValueChange={(value) => {
+          onScopeChange(value as ScopeType);
+          // Reset folder selection when changing scopes
+          if (value !== 'folder' && onFolderChange) {
+            onFolderChange(null);
+          }
+        }}
         data-testid="select-chat-scope"
       >
         <SelectTrigger className="w-48" data-testid="button-chat-scope-trigger">
@@ -116,6 +141,56 @@ export function ChatScopeSelector({
           })}
         </SelectContent>
       </Select>
+
+      {/* Folder Picker - Show when folder scope is selected */}
+      {selectedScope === 'folder' && userTier === 'pro' && onFolderChange && (
+        <>
+          <span className="text-sm text-muted-foreground">→</span>
+          <Select 
+            value={selectedFolderId || undefined} 
+            onValueChange={onFolderChange}
+            data-testid="select-folder"
+          >
+            <SelectTrigger className="w-48" data-testid="button-folder-trigger">
+              <SelectValue placeholder="Select folder">
+                {selectedFolder && (
+                  <div className="flex items-center gap-2">
+                    <Folder className="w-4 h-4" />
+                    <span className="truncate">{selectedFolder.name}</span>
+                  </div>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {folders.length === 0 ? (
+                <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                  No folders available
+                </div>
+              ) : (
+                folders.map((folder) => (
+                  <SelectItem
+                    key={folder.id}
+                    value={folder.id}
+                    data-testid={`option-folder-${folder.id}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Folder className="w-4 h-4" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">{folder.name}</span>
+                        {folder.description && (
+                          <span className="text-xs text-muted-foreground line-clamp-1">
+                            {folder.description}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        </>
+      )}
     </div>
   );
 }
