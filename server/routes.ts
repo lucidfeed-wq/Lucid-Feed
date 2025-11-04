@@ -19,7 +19,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
 }
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2024-11-20.acacia",
+  apiVersion: "2025-10-29.clover",
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -235,14 +235,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Server-side tier to price ID mapping (NEVER trust client-provided price IDs)
+  const TIER_PRICE_IDS: Record<string, string> = {
+    premium: process.env.STRIPE_PREMIUM_PRICE_ID || '',
+    pro: process.env.STRIPE_PRO_PRICE_ID || '',
+  };
+
+  // Reverse mapping: price ID to tier (for webhook validation)
+  const PRICE_ID_TO_TIER: Record<string, 'free' | 'premium' | 'pro'> = {
+    [process.env.STRIPE_PREMIUM_PRICE_ID || '']: 'premium',
+    [process.env.STRIPE_PRO_PRICE_ID || '']: 'pro',
+  };
+
+  // Helper function to get tier from Stripe subscription (NEVER trust metadata)
+  function getTierFromSubscription(subscription: Stripe.Subscription): 'free' | 'premium' | 'pro' {
+    if (!subscription.items || subscription.items.data.length === 0) {
+      console.warn('No subscription items found, defaulting to free');
+      return 'free';
+    }
+
+    const priceId = subscription.items.data[0].price.id;
+    const tier = PRICE_ID_TO_TIER[priceId];
+
+    if (!tier) {
+      console.error(`Unknown Stripe price ID: ${priceId}, defaulting to free`);
+      return 'free';
+    }
+
+    return tier;
+  }
+
   // Stripe Subscription endpoints (protected)
   app.post('/api/subscriptions/create-checkout', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { priceId, tier } = req.body;
+      const { tier } = req.body;
       
-      if (!priceId || !tier) {
-        return res.status(400).json({ message: "priceId and tier are required" });
+      // Validate tier
+      if (!tier || (tier !== 'premium' && tier !== 'pro')) {
+        return res.status(400).json({ message: "Invalid tier. Must be 'premium' or 'pro'" });
+      }
+      
+      // Get server-side price ID (NEVER trust client)
+      const priceId = TIER_PRICE_IDS[tier];
+      if (!priceId) {
+        return res.status(500).json({ message: `Stripe price ID not configured for ${tier} tier` });
       }
       
       const user = await storage.getUser(userId);
@@ -272,6 +309,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success_url: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/pricing`,
         metadata: { userId, tier },
+        subscription_data: {
+          metadata: { userId },
+        },
       });
       
       res.json({ sessionId: session.id, url: session.url });
@@ -335,12 +375,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         case 'checkout.session.completed': {
           const session = event.data.object as Stripe.Checkout.Session;
           const userId = session.metadata?.userId;
-          const tier = session.metadata?.tier;
           
           if (userId && session.subscription) {
+            const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+            const tier = getTierFromSubscription(subscription);
+            
             await storage.upsertUserSubscription({
               userId,
-              tier: tier as any || 'premium',
+              tier,
               stripeCustomerId: session.customer as string,
               stripeSubscriptionId: session.subscription as string,
               status: 'active',
@@ -354,14 +396,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const userId = subscription.metadata?.userId;
           
           if (userId) {
+            const tier = getTierFromSubscription(subscription);
+            
             await storage.upsertUserSubscription({
               userId,
-              tier: subscription.metadata?.tier as any || 'premium',
+              tier,
               stripeCustomerId: subscription.customer as string,
               stripeSubscriptionId: subscription.id,
               status: subscription.status as any,
-              currentPeriodStart: new Date(subscription.current_period_start * 1000),
-              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
               cancelAtPeriodEnd: subscription.cancel_at_period_end,
             });
           }

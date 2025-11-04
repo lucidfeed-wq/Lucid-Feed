@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Crown } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface UpgradePromptProps {
   title: string;
@@ -8,7 +9,6 @@ interface UpgradePromptProps {
   currentTier?: string;
   currentUsage?: number;
   limit?: number | 'unlimited';
-  onUpgrade?: () => void;
 }
 
 export function UpgradePrompt({ 
@@ -16,9 +16,10 @@ export function UpgradePrompt({
   message, 
   currentTier, 
   currentUsage, 
-  limit,
-  onUpgrade 
+  limit
 }: UpgradePromptProps) {
+  const [, setLocation] = useLocation();
+
   return (
     <Card className="p-6 border-primary/20" data-testid="card-upgrade-prompt">
       <div className="flex flex-col items-center text-center gap-4">
@@ -62,7 +63,7 @@ export function UpgradePrompt({
         )}
 
         <Button 
-          onClick={onUpgrade}
+          onClick={() => setLocation('/pricing')}
           className="w-full"
           data-testid="button-upgrade"
         >

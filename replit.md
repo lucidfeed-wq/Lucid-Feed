@@ -25,6 +25,7 @@ The application is a full-stack TypeScript project using React for the frontend 
 - **Multi-Tenant SaaS**: Supports user-level feed subscriptions and personalized digests.
 - **Subscription Tiers**: Free (weekly), Premium (daily), Pro (real-time + analytics).
 - **Tier-Based Usage Limits**: Enforced limits for feed subscriptions (Free: 5, Premium: 20, Pro: unlimited), daily chat messages (Free: 10, Premium: 50, Pro: unlimited), and digest frequency (Free: weekly, Premium: daily, Pro: real-time). Usage tracked in `dailyUsage` table with automatic enforcement via middleware in routes. Frontend displays UpgradePrompt component when limits are exceeded.
+- **Stripe Subscription Integration**: Complete payment processing with Stripe Checkout for subscription upgrades. Backend routes handle checkout session creation, subscription status, billing portal access, and webhook events (checkout.session.completed, customer.subscription.updated, customer.subscription.deleted). User subscription data stored in `userSubscriptions` table with tier, status, and Stripe customer/subscription IDs. Frontend pricing page displays tiered plans with real-time subscription status. UpgradePrompt redirects to /pricing for seamless upgrade flow.
 - **Automated Scheduling**: Daily ingestion and digest generation managed by `node-cron`.
 - **Feed Discovery**: Browsable directory with filters and user submission for admin approval.
 - **Job Management**: Lightweight PostgreSQL job queue with retry logic and dead-letter queue.

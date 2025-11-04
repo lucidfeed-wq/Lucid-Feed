@@ -13,6 +13,8 @@ import FeedCatalog from "@/pages/FeedCatalog";
 import Discover from "@/pages/Discover";
 import Onboarding from "@/pages/Onboarding";
 import Admin from "@/pages/Admin";
+import Pricing from "@/pages/Pricing";
+import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -28,6 +30,8 @@ function Router() {
       <Route path="/discover" component={Discover} />
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/admin" component={Admin} />
+      <Route path="/pricing" component={Pricing} />
+      <Route path="/subscription-success" component={SubscriptionSuccess} />
       <Route component={NotFound} />
     </Switch>
   );
