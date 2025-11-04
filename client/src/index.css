@@ -28,11 +28,12 @@ body {
 
   --border: 200 10% 85%;
 
-  --card: 0 0% 100%;
+  /* Cards slightly elevated from background */
+  --card: 0 0% 98%;
 
   --card-foreground: 195 11% 21%;
 
-  --card-border: 200 10% 90%;
+  --card-border: 200 10% 88%;
 
   --sidebar: 200 14% 96%;
 
