@@ -313,6 +313,21 @@ export const insertSavedItemSchema = createInsertSchema(savedItems).omit({ id: t
 export type SavedItem = typeof savedItems.$inferSelect;
 export type InsertSavedItem = z.infer<typeof insertSavedItemSchema>;
 
+// Read items table - track which items users have marked as read
+export const readItems = pgTable("read_items", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  itemId: varchar("item_id", { length: 255 }).notNull().references(() => items.id, { onDelete: 'cascade' }),
+  readAt: timestamp("read_at").defaultNow(),
+}, (table) => ({
+  userItemIdx: index("read_items_user_item_idx").on(table.userId, table.itemId),
+}));
+
+export const insertReadItemSchema = createInsertSchema(readItems).omit({ id: true, readAt: true });
+
+export type ReadItem = typeof readItems.$inferSelect;
+export type InsertReadItem = z.infer<typeof insertReadItemSchema>;
+
 // User ratings table for community quality assessment
 export const userRatings = pgTable("user_ratings", {
   id: varchar("id", { length: 255 }).primaryKey(),
