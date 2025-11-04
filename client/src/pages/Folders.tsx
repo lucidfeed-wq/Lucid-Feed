@@ -50,11 +50,11 @@ export default function Folders() {
 
   // Fetch user tier
   const { data: rawUserInfo } = useQuery({
-    queryKey: ['/api/user/tier-info'],
+    queryKey: ['/api/subscription'],
   });
   const userTierInfo = rawUserInfo as { tier: 'free' | 'premium' | 'pro' } | undefined;
 
-  // Fetch folders
+  // Fetch folders - Pro feature
   const { data: rawFolders, isLoading } = useQuery({
     queryKey: ['/api/folders'],
     enabled: userTierInfo?.tier === 'pro',
