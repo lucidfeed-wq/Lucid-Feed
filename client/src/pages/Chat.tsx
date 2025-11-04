@@ -251,10 +251,6 @@ export default function Chat() {
                 currentTier={limitError.tier}
                 currentUsage={limitError.currentUsage}
                 limit={limitError.limit}
-                onUpgrade={() => {
-                  // TODO: Navigate to pricing/upgrade page
-                  console.log('Navigate to upgrade page');
-                }}
               />
             </div>
           )}
