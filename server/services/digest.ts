@@ -3,7 +3,13 @@ import { format, subDays } from "date-fns";
 import { storage } from "../storage";
 import { rankItems } from "../core/ranking";
 import { generateBatchSummaries, generateCategorySummary } from "./summary";
-import type { InsertDigest, DigestSectionItem, Item, Summary, CategorySummary } from "@shared/schema";
+import { enrichContentBatch } from "./content-enrichment";
+import { fetchJournalFeeds } from "../sources/journals";
+import { fetchRedditFeeds } from "../sources/reddit";
+import { fetchSubstackFeeds } from "../sources/substack";
+import { fetchYouTubeFeeds } from "../sources/youtube";
+import { fetchPodcastFeeds } from "../sources/podcasts";
+import type { InsertDigest, DigestSectionItem, Item, Summary, CategorySummary, InsertItem } from "@shared/schema";
 
 interface DigestGenerationOptions {
   itemCounts?: {
@@ -212,6 +218,216 @@ export async function generateWeeklyDigest(options: DigestGenerationOptions = {}
       errorMessage: error instanceof Error ? error.message : 'Unknown error',
     });
     
+    throw error;
+  }
+}
+
+/**
+ * Generate a personalized digest for a specific user with immediate enrichment
+ * This allows on-demand digest creation (e.g., after onboarding) without waiting for cron
+ */
+export async function generatePersonalizedDigest(userId: string, options: DigestGenerationOptions = {}): Promise<{ id: string; slug: string }> {
+  console.log(`Starting personalized digest generation for user ${userId}...`);
+
+  // Default item counts (smaller for personalized)
+  const itemCounts = {
+    research: options.itemCounts?.research ?? 10,
+    community: options.itemCounts?.community ?? 10,
+    expert: options.itemCounts?.expert ?? 8,
+  };
+
+  let totalTokenSpend = 0;
+
+  try {
+    // Get user's subscribed feeds
+    const userFeeds = await storage.getUserSubscribedFeeds(userId);
+    console.log(`User has ${userFeeds.length} subscribed feeds`);
+
+    if (userFeeds.length === 0) {
+      throw new Error('User has no subscribed feeds. Cannot generate personalized digest.');
+    }
+
+    // Fetch fresh items from RSS for user's feeds (last 7 days)
+    const windowDays = options.windowDays ?? 7;
+    const windowEnd = new Date();
+    const windowStart = subDays(windowEnd, windowDays);
+
+    console.log('Fetching fresh RSS items from subscribed feeds...');
+    
+    // Fetch from all sources
+    const [journals, reddit, substack, youtube, podcasts] = await Promise.all([
+      fetchJournalFeeds(),
+      fetchRedditFeeds(),
+      fetchSubstackFeeds(),
+      fetchYouTubeFeeds(),
+      fetchPodcastFeeds(),
+    ]);
+
+    let allFreshItems: InsertItem[] = [...journals, ...reddit, ...substack, ...youtube, ...podcasts];
+    
+    // Filter to only items from user's subscribed feeds
+    const userFeedIds = new Set(userFeeds.map(f => f.id));
+    allFreshItems = allFreshItems.filter(item => {
+      // Match by sourceType and domain/name
+      return userFeeds.some(feed => {
+        if (feed.sourceType !== item.sourceType) return false;
+        // For journals, match by domain
+        if (feed.sourceType === 'journal' && item.journalName) {
+          return feed.name.toLowerCase().includes(item.journalName.toLowerCase()) ||
+                 item.journalName.toLowerCase().includes(feed.name.toLowerCase());
+        }
+        // For other types, match by author/channel
+        if (item.authorOrChannel) {
+          return feed.name.toLowerCase() === item.authorOrChannel.toLowerCase();
+        }
+        return false;
+      });
+    });
+
+    // Filter by date window
+    allFreshItems = allFreshItems.filter(item => {
+      const pubDate = new Date(item.publishedAt);
+      return pubDate >= windowStart && pubDate <= windowEnd;
+    });
+
+    console.log(`Found ${allFreshItems.length} fresh items from user's feeds`);
+
+    if (allFreshItems.length === 0) {
+      throw new Error('No recent items found from subscribed feeds. Try subscribing to more active feeds.');
+    }
+
+    // IMMEDIATE ENRICHMENT: Enrich all items right now (don't wait for cron)
+    console.log('Enriching items with full content and quality scoring...');
+    const enrichedItems = await enrichContentBatch(allFreshItems);
+    
+    // Save enriched items to database
+    const savedItems: Item[] = [];
+    for (const item of enrichedItems) {
+      const existing = await storage.getItemByHash(item.hashDedupe);
+      if (!existing) {
+        const saved = await storage.createItem(item);
+        savedItems.push(saved);
+      } else {
+        savedItems.push(existing);
+      }
+    }
+
+    console.log(`Saved/retrieved ${savedItems.length} enriched items`);
+
+    // Rank items
+    const rankedItems = rankItems(savedItems);
+
+    // Filter by quality
+    const qualityFilteredItems = rankedItems.filter(item => {
+      if (!item.scoreBreakdown) return true;
+      const contentQuality = item.scoreBreakdown.contentQuality || 0;
+      return contentQuality >= 10;
+    });
+
+    // Separate by source type
+    const journalItems = qualityFilteredItems.filter(i => i.sourceType === 'journal');
+    const redditItems = qualityFilteredItems.filter(i => i.sourceType === 'reddit');
+    const substackItems = qualityFilteredItems.filter(i => i.sourceType === 'substack');
+    const youtubeItems = qualityFilteredItems.filter(i => i.sourceType === 'youtube');
+    const podcastItems = qualityFilteredItems.filter(i => i.sourceType === 'podcast');
+
+    // Select top items for each section
+    const topJournals = journalItems.slice(0, itemCounts.research);
+    const topCommunity = [...redditItems, ...substackItems, ...podcastItems].slice(0, itemCounts.community);
+    const topExperts = youtubeItems.slice(0, itemCounts.expert);
+
+    const allTopItems = [...topJournals, ...topCommunity, ...topExperts];
+
+    if (allTopItems.length === 0) {
+      throw new Error('No quality items found after filtering. Try subscribing to more feeds.');
+    }
+
+    console.log(`Generating AI summaries for ${allTopItems.length} items...`);
+
+    // Generate AI summaries
+    const allItemIds = allTopItems.map(i => i.id);
+    const existingSummaries = await storage.getSummariesByItemIds(allItemIds);
+    const existingSummaryMap = new Map(existingSummaries.map(s => [s.itemId, s]));
+
+    const itemsNeedingSummaries = allTopItems.filter(item => !existingSummaryMap.has(item.id));
+
+    if (itemsNeedingSummaries.length > 0) {
+      const newSummaries = await generateBatchSummaries(itemsNeedingSummaries, 5);
+      await storage.createBatchSummaries(newSummaries);
+      newSummaries.forEach(s => existingSummaryMap.set(s.itemId, s));
+    }
+
+    // Build digest sections
+    const researchHighlights: DigestSectionItem[] = topJournals.map(item =>
+      buildDigestItem(item, existingSummaryMap.get(item.id))
+    );
+
+    const communityTrends: DigestSectionItem[] = topCommunity.map(item =>
+      buildDigestItem(item, existingSummaryMap.get(item.id))
+    );
+
+    const expertCommentary: DigestSectionItem[] = topExperts.map(item =>
+      buildDigestItem(item, existingSummaryMap.get(item.id))
+    );
+
+    // Generate category summaries
+    const [resSummary, commSummary, expSummary] = await Promise.all([
+      topJournals.length > 0
+        ? generateCategorySummary(
+            'Research Articles & Scientific Journals',
+            topJournals,
+            topJournals.map(item => existingSummaryMap.get(item.id)) as Array<Summary | undefined>
+          )
+        : Promise.resolve(undefined),
+
+      topCommunity.length > 0
+        ? generateCategorySummary(
+            'Community Discussions & Expert Newsletters',
+            topCommunity,
+            topCommunity.map(item => existingSummaryMap.get(item.id)) as Array<Summary | undefined>
+          )
+        : Promise.resolve(undefined),
+
+      topExperts.length > 0
+        ? generateCategorySummary(
+            'Expert Commentary & Educational Videos',
+            topExperts,
+            topExperts.map(item => existingSummaryMap.get(item.id)) as Array<Summary | undefined>
+          )
+        : Promise.resolve(undefined),
+    ]);
+
+    // Generate unique slug for personalized digest
+    const timestamp = Math.floor(Date.now() / 1000);
+    const slug = `personal-${userId.substring(0, 8)}-${timestamp}`;
+
+    const digest: InsertDigest = {
+      slug,
+      windowStart: windowStart.toISOString(),
+      windowEnd: windowEnd.toISOString(),
+      sections: {
+        researchHighlights,
+        communityTrends,
+        expertCommentary,
+        researchHighlightsSummary: resSummary,
+        communityTrendsSummary: commSummary,
+        expertCommentarySummary: expSummary,
+      } as any,
+    };
+
+    const created = await storage.createDigest(digest);
+    console.log(`Personalized digest created: ${created.id} (${slug})`);
+
+    // Link digest to user
+    await storage.linkDigestToUser(userId, created.id);
+
+    // Estimate token spend
+    totalTokenSpend = (itemsNeedingSummaries.length * 500) + 
+                      ([resSummary, commSummary, expSummary].filter(Boolean).length * 300);
+
+    return { id: created.id, slug };
+  } catch (error) {
+    console.error(`Error generating personalized digest for user ${userId}:`, error);
     throw error;
   }
 }

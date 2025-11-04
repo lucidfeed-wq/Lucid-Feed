@@ -517,60 +517,71 @@ export class PostgresStorage implements IStorage {
     return results;
   }
 
-  async getSuggestedFeeds(topics: string[], sourceTypes: string[], limit: number = 12): Promise<FeedCatalog[]> {
-    // Strategy: Prioritize featured feeds that match user preferences, then high-quality non-featured feeds
+  async getSuggestedFeeds(topics: string[], sourceTypes: string[], limit: number = 50): Promise<FeedCatalog[]> {
+    // Strategy: Distribute feeds evenly across source types, prioritize featured feeds and topic matches
     
-    // First get featured feeds matching topics and source types
-    const featuredFeeds = await db
-      .select()
-      .from(feedCatalog)
-      .where(
-        and(
-          eq(feedCatalog.isApproved, true),
-          eq(feedCatalog.isActive, true),
-          eq(feedCatalog.featured, true),
-          inArray(feedCatalog.sourceType, sourceTypes)
+    const perSourceLimit = Math.ceil(limit / sourceTypes.length);
+    const allResults: FeedCatalog[] = [];
+    
+    // Get feeds for each source type separately to ensure good distribution
+    for (const sourceType of sourceTypes) {
+      // Get featured feeds for this source type
+      const featuredFeeds = await db
+        .select()
+        .from(feedCatalog)
+        .where(
+          and(
+            eq(feedCatalog.isApproved, true),
+            eq(feedCatalog.isActive, true),
+            eq(feedCatalog.featured, true),
+            eq(feedCatalog.sourceType, sourceType)
+          )
         )
-      )
-      .orderBy(feedCatalog.starterRank, desc(feedCatalog.qualityScore))
-      .limit(limit);
-    
-    // Filter featured feeds to only those that have at least one matching topic
-    const matchingFeatured = featuredFeeds.filter((feed) => {
-      const feedTopics = feed.topics as string[];
-      return feedTopics.some((t: string) => topics.includes(t));
-    });
-    
-    // If we have enough featured feeds, return them
-    if (matchingFeatured.length >= limit) {
-      return matchingFeatured.slice(0, limit);
-    }
-    
-    // Otherwise, supplement with high-quality non-featured feeds
-    const remainingLimit = limit - matchingFeatured.length;
-    const nonFeaturedFeeds = await db
-      .select()
-      .from(feedCatalog)
-      .where(
-        and(
-          eq(feedCatalog.isApproved, true),
-          eq(feedCatalog.isActive, true),
-          eq(feedCatalog.featured, false),
-          inArray(feedCatalog.sourceType, sourceTypes)
-        )
-      )
-      .orderBy(desc(feedCatalog.qualityScore))
-      .limit(remainingLimit * 2); // Get more to filter
-    
-    // Filter non-featured feeds by topics
-    const matchingNonFeatured = nonFeaturedFeeds
-      .filter((feed) => {
+        .orderBy(feedCatalog.starterRank, desc(feedCatalog.qualityScore))
+        .limit(perSourceLimit * 2); // Get extra to filter
+      
+      // Filter featured feeds by topics
+      const matchingFeatured = featuredFeeds.filter((feed) => {
         const feedTopics = feed.topics as string[];
         return feedTopics.some((t: string) => topics.includes(t));
-      })
-      .slice(0, remainingLimit);
+      });
+      
+      // Get non-featured feeds to supplement
+      const nonFeaturedFeeds = await db
+        .select()
+        .from(feedCatalog)
+        .where(
+          and(
+            eq(feedCatalog.isApproved, true),
+            eq(feedCatalog.isActive, true),
+            eq(feedCatalog.featured, false),
+            eq(feedCatalog.sourceType, sourceType)
+          )
+        )
+        .orderBy(desc(feedCatalog.qualityScore))
+        .limit(perSourceLimit * 2); // Get extra to filter
+      
+      // Filter non-featured feeds by topics
+      const matchingNonFeatured = nonFeaturedFeeds.filter((feed) => {
+        const feedTopics = feed.topics as string[];
+        return feedTopics.some((t: string) => topics.includes(t));
+      });
+      
+      // Combine and dedupe
+      const combined = [...matchingFeatured, ...matchingNonFeatured];
+      const seen = new Set<string>();
+      const deduped = combined.filter(feed => {
+        if (seen.has(feed.id)) return false;
+        seen.add(feed.id);
+        return true;
+      });
+      
+      // Take up to perSourceLimit for this source type
+      allResults.push(...deduped.slice(0, perSourceLimit));
+    }
     
-    return [...matchingFeatured, ...matchingNonFeatured];
+    // Return all results, up to the total limit
+    return allResults.slice(0, limit);
   }
 
   async submitFeed(submission: InsertUserFeedSubmission): Promise<UserFeedSubmission> {

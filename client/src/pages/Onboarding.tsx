@@ -139,14 +139,16 @@ export default function Onboarding() {
   const [selectedSourceTypes, setSelectedSourceTypes] = useState<SourceType[]>([]);
   const [subscribedFeeds, setSubscribedFeeds] = useState<string[]>([]);
 
-  // Build feed suggestions query URL with params
-  const feedSuggestionsUrl = currentStep === 4 && selectedTopics.length > 0 && selectedSourceTypes.length > 0
-    ? `/api/feeds/suggestions?topics=${selectedTopics.join(',')}&sourceTypes=${selectedSourceTypes.join(',')}&limit=12`
+  // Build feed suggestions query URL with params (increased limit from 12 to 50 for better variety)
+  // LIVE FILTERING: Updates dynamically as user selects topics/source types
+  const feedSuggestionsUrl = selectedTopics.length > 0 && selectedSourceTypes.length > 0
+    ? `/api/feeds/suggestions?topics=${selectedTopics.join(',')}&sourceTypes=${selectedSourceTypes.join(',')}&limit=50`
     : null;
 
   const { data: feeds, isLoading: feedsLoading } = useQuery({
     queryKey: [feedSuggestionsUrl || "/api/feeds/suggestions"],
-    enabled: feedSuggestionsUrl !== null,
+    enabled: feedSuggestionsUrl !== null && currentStep >= 3, // Enable from step 3 onwards (after source types selected)
+    staleTime: 30000, // Cache for 30 seconds to reduce unnecessary refetches
   });
 
   const { data: user } = useQuery({
@@ -286,6 +288,32 @@ export default function Onboarding() {
     subscribeFeedMutation.mutate(feedId);
   };
 
+  const generateDigestMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/digest/generate", {});
+    },
+    onSuccess: (data: any) => {
+      console.log("[Onboarding] Digest generated:", data);
+      toast({
+        title: "Welcome to Lucid Feed!",
+        description: "Your personalized digest is ready! Taking you there now...",
+      });
+      // Navigate directly to the generated digest using the slug
+      const digestSlug = data.slug || '';
+      setTimeout(() => navigate(digestSlug ? `/digest/${digestSlug}` : '/'), 1500);
+    },
+    onError: (error: any) => {
+      console.error("[Onboarding] Digest generation error:", error);
+      // Still allow completion even if digest fails
+      toast({
+        title: "Welcome to Lucid Feed!",
+        description: "We'll generate your digest in the background.",
+        variant: "default",
+      });
+      setTimeout(() => navigate("/"), 1500);
+    },
+  });
+
   const handleComplete = () => {
     if (subscribedFeeds.length === 0) {
       toast({
@@ -295,11 +323,14 @@ export default function Onboarding() {
       });
       return;
     }
+    
+    // Trigger digest generation with loading toast
     toast({
-      title: "Welcome to Lucid Feed!",
-      description: "Your personalized digest will be generated soon.",
+      title: "Generating your digest...",
+      description: "This may take a moment as we fetch and analyze content.",
     });
-    navigate("/");
+    
+    generateDigestMutation.mutate();
   };
 
   const progress = ((currentStep - 1) / 4) * 100;
@@ -575,10 +606,10 @@ export default function Onboarding() {
                   </p>
                   <Button
                     onClick={handleComplete}
-                    disabled={subscribedFeeds.length === 0}
+                    disabled={subscribedFeeds.length === 0 || generateDigestMutation.isPending}
                     data-testid="button-complete"
                   >
-                    Complete Onboarding
+                    {generateDigestMutation.isPending ? 'Generating Digest...' : 'Complete Onboarding'}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>

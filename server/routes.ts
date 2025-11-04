@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { runIngestJob } from "./services/ingest";
-import { generateWeeklyDigest } from "./services/digest";
+import { generateWeeklyDigest, generatePersonalizedDigest } from "./services/digest";
 import { exportDigestJSON, exportDigestMarkdown, exportDigestRSS } from "./services/exports";
 import { enrichContentBatch } from "./services/content-enrichment";
 import { z } from "zod";
@@ -897,6 +897,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate on-demand personalized digest for authenticated user
+  app.post("/api/digest/generate", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      console.log(`[POST /api/digest/generate] Generating personalized digest for user ${userId}`);
+      
+      const { id, slug } = await generatePersonalizedDigest(userId);
+      
+      res.json({ 
+        success: true, 
+        digestId: id, 
+        slug,
+        message: 'Personalized digest generated successfully' 
+      });
+    } catch (error) {
+      console.error("Error generating personalized digest:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate digest';
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
   // Admin endpoints
   app.post("/admin/run/ingest", isAuthenticated, isAdmin, async (req, res) => {
     try {
@@ -1099,7 +1120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Parse topics and sourceTypes from query params (expect comma-separated strings)
       const topics = typeof topicsParam === 'string' ? topicsParam.split(',').filter(Boolean) : [];
       const sourceTypes = typeof sourceTypesParam === 'string' ? sourceTypesParam.split(',').filter(Boolean) : [];
-      const limit = typeof limitParam === 'string' ? parseInt(limitParam, 10) : 12;
+      const limit = typeof limitParam === 'string' ? parseInt(limitParam, 10) : 50; // Increased default from 12 to 50
       
       console.log("[GET /api/feeds/suggestions] topics:", topics, "sourceTypes:", sourceTypes, "limit:", limit);
       
