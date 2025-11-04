@@ -16,6 +16,7 @@ import { DigestHeader } from "@/components/DigestHeader";
 import { DigestSection } from "@/components/DigestSection";
 import { TopicFilter } from "@/components/TopicFilter";
 import { SourceTypeFilter } from "@/components/SourceTypeFilter";
+import { SortSelector, type SortOption } from "@/components/SortSelector";
 import { LoadingState } from "@/components/LoadingState";
 import { EmptyState } from "@/components/EmptyState";
 import { LandingPage } from "@/components/LandingPage";
@@ -26,6 +27,7 @@ export default function Home() {
   const [selectedTopics, setSelectedTopics] = useState<Topic[]>([]);
   const [selectedSourceTypes, setSelectedSourceTypes] = useState<SourceType[]>([]);
   const [showReadFilter, setShowReadFilter] = useState<'all' | 'unread' | 'read'>('all');
+  const [sortOption, setSortOption] = useState<SortOption>('quality-desc');
 
   const { user, isLoading: isLoadingUser, isAuthenticated } = useAuth();
 
@@ -103,7 +105,7 @@ export default function Home() {
     setSelectedSourceTypes([]);
   };
 
-  const filterItems = (items: any[]) => {
+  const filterAndSortItems = (items: any[]) => {
     let filtered = items;
 
     // Filter by topic
@@ -127,7 +129,31 @@ export default function Home() {
       filtered = filtered.filter(item => !readItemIds.has(item.itemId));
     }
 
-    return filtered;
+    // Sort items
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortOption) {
+        case 'quality-desc':
+          return (b.scoreBreakdown?.totalScore || 0) - (a.scoreBreakdown?.totalScore || 0);
+        case 'quality-asc':
+          return (a.scoreBreakdown?.totalScore || 0) - (b.scoreBreakdown?.totalScore || 0);
+        case 'recency-desc':
+          return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+        case 'recency-asc':
+          return new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime();
+        case 'engagement-desc':
+          const aEngagement = (a.engagement?.upvotes || 0) + (a.engagement?.views || 0) + (a.engagement?.comments || 0);
+          const bEngagement = (b.engagement?.upvotes || 0) + (b.engagement?.views || 0) + (b.engagement?.comments || 0);
+          return bEngagement - aEngagement;
+        case 'title-asc':
+          return a.title.localeCompare(b.title);
+        case 'title-desc':
+          return b.title.localeCompare(a.title);
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
   };
 
   if (isLoading) {
@@ -156,9 +182,9 @@ export default function Home() {
   }
 
   const filteredSections = {
-    researchHighlights: filterItems((digest.sections as any)?.researchHighlights || []),
-    communityTrends: filterItems((digest.sections as any)?.communityTrends || []),
-    expertCommentary: filterItems((digest.sections as any)?.expertCommentary || []),
+    researchHighlights: filterAndSortItems((digest.sections as any)?.researchHighlights || []),
+    communityTrends: filterAndSortItems((digest.sections as any)?.communityTrends || []),
+    expertCommentary: filterAndSortItems((digest.sections as any)?.expertCommentary || []),
   };
 
   const hasResults = filteredSections.researchHighlights.length > 0 ||
@@ -268,6 +294,14 @@ export default function Home() {
                 expert: filteredSections.expertCommentary.length,
               }}
             />
+
+            {/* Sort Controls */}
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-sm text-muted-foreground">
+                Showing {filteredSections.researchHighlights.length + filteredSections.communityTrends.length + filteredSections.expertCommentary.length} items
+              </p>
+              <SortSelector currentSort={sortOption} onSortChange={setSortOption} />
+            </div>
 
             {!hasResults ? (
               <EmptyState

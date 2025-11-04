@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { ItemCard } from "@/components/ItemCard";
+import { SortSelector, type SortOption } from "@/components/SortSelector";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Item } from "@shared/schema";
 
 export default function SavedItems() {
+  const [sortOption, setSortOption] = useState<SortOption>('quality-desc');
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const { data: savedItems, isLoading: itemsLoading } = useQuery<Item[]>({
@@ -45,7 +48,31 @@ export default function SavedItems() {
     );
   }
 
-  const items = savedItems || [];
+  const rawItems = savedItems || [];
+
+  // Sort items based on selected option
+  const items = [...rawItems].sort((a, b) => {
+    switch (sortOption) {
+      case 'quality-desc':
+        return (b.scoreBreakdown?.totalScore || 0) - (a.scoreBreakdown?.totalScore || 0);
+      case 'quality-asc':
+        return (a.scoreBreakdown?.totalScore || 0) - (b.scoreBreakdown?.totalScore || 0);
+      case 'recency-desc':
+        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+      case 'recency-asc':
+        return new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime();
+      case 'engagement-desc':
+        const aEngagement = (a.engagement?.upvotes || 0) + (a.engagement?.views || 0) + (a.engagement?.comments || 0);
+        const bEngagement = (b.engagement?.upvotes || 0) + (b.engagement?.views || 0) + (b.engagement?.comments || 0);
+        return bEngagement - aEngagement;
+      case 'title-asc':
+        return a.title.localeCompare(b.title);
+      case 'title-desc':
+        return b.title.localeCompare(a.title);
+      default:
+        return 0;
+    }
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
@@ -62,6 +89,16 @@ export default function SavedItems() {
           </div>
         </div>
       </div>
+
+      {/* Sort Controls */}
+      {items.length > 0 && (
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-sm text-muted-foreground">
+            Showing {items.length} saved items
+          </p>
+          <SortSelector currentSort={sortOption} onSortChange={setSortOption} />
+        </div>
+      )}
 
       {items.length === 0 ? (
         <Card>
@@ -86,7 +123,9 @@ export default function SavedItems() {
                 topics: item.topics as any[],
                 journalName: item.journalName,
                 authorOrChannel: item.authorOrChannel,
+                pdfUrl: item.pdfUrl,
                 engagement: item.engagement,
+                scoreBreakdown: item.scoreBreakdown as any,
               }}
               isSaved={true}
             />
