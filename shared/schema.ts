@@ -695,6 +695,12 @@ export const chatConversations = pgTable("chat_conversations", {
     content: string;
     timestamp: string;
   }>>().notNull().default(sql`'[]'::json`),
+  scope: json("scope").$type<{
+    type: 'current_digest' | 'all_digests' | 'saved_items' | 'folder';
+    digestId?: string;
+    userId?: string;
+    folderId?: string;
+  } | null>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({

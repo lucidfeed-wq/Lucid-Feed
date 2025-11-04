@@ -1063,7 +1063,7 @@ export class PostgresStorage implements IStorage {
       .set({
         ...updates,
         updatedAt: now,
-      })
+      } as any)
       .where(
         and(
           eq(chatConversations.id, conversationId),

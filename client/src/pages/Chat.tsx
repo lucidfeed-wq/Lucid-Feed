@@ -27,12 +27,14 @@ interface ChatSource {
 interface ChatResponse {
   response: string;
   sources: ChatSource[];
+  mode: 'rag' | 'hybrid' | 'general';
 }
 
 export default function Chat() {
   const [query, setQuery] = useState('');
   const [conversationHistory, setConversationHistory] = useState<ChatMessage[]>([]);
   const [sources, setSources] = useState<ChatSource[]>([]);
+  const [chatMode, setChatMode] = useState<'rag' | 'hybrid' | 'general' | null>(null);
   const [limitError, setLimitError] = useState<{ 
     tier?: string; 
     limit?: number | 'unlimited'; 
@@ -55,14 +57,17 @@ export default function Chat() {
         body: JSON.stringify({
           query: message,
           conversationHistory: history,
-          digestId: digest?.id,
+          scope: digest?.id ? {
+            type: 'current_digest',
+            digestId: digest.id,
+          } : undefined,
         }),
       });
       
       // Check for tier limit errors
       if (!response.ok) {
         const errorData = await response.json();
-        if (errorData.error === 'CHAT_LIMIT_EXCEEDED') {
+        if (errorData.limitReached || errorData.upgradeRequired) {
           throw { 
             isTierLimit: true, 
             ...errorData 
@@ -79,11 +84,13 @@ export default function Chat() {
       console.log('Chat mutation success, data:', data);
       console.log('Assistant response:', data.response);
       console.log('Sources:', data.sources);
+      console.log('Mode:', data.mode);
       setConversationHistory((prev) => [
         ...prev,
         { role: 'assistant', content: data.response },
       ]);
       setSources(data.sources || []);
+      setChatMode(data.mode);
       setLimitError(null); // Clear any previous limit errors
     },
     onError: (error: any) => {
@@ -206,9 +213,23 @@ export default function Chat() {
             )}
           </ScrollArea>
 
-          {/* Sources Panel */}
+          {/* Mode Indicator & Sources Panel */}
+          {chatMode && (
+            <div className="mt-4 mb-2">
+              <Badge 
+                variant={chatMode === 'rag' ? 'default' : chatMode === 'hybrid' ? 'secondary' : 'outline'}
+                className="text-xs"
+                data-testid="chat-mode-indicator"
+              >
+                {chatMode === 'rag' && '📚 RAG Mode: Answer from digest sources'}
+                {chatMode === 'hybrid' && '🔀 Hybrid Mode: Digest sources + general knowledge'}
+                {chatMode === 'general' && '💡 General Mode: No specific digest sources found'}
+              </Badge>
+            </div>
+          )}
+          
           {sources && sources.length > 0 && (
-            <div className="mt-4 mb-4">
+            <div className="mt-2 mb-4">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base font-medium">Sources</CardTitle>

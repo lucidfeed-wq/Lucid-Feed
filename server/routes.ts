@@ -300,25 +300,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Query is required" });
       }
       
+      // Import tier check utilities
+      const { canSendChatMessage, getUserTier } = await import('./tierChecks');
+      
       // Check tier limits for chat messages
-      const today = new Date().toISOString().split('T')[0];
-      const messageCount = await storage.getDailyChatMessageCount(userId, today);
-      const subscription = await storage.getUserSubscription(userId);
-      const tier = subscription?.tier || 'free';
-      
-      const limits = {
-        free: 10,
-        premium: 50,
-        pro: Infinity,
-      };
-      
-      if (messageCount >= limits[tier as keyof typeof limits]) {
+      const messageCheck = await canSendChatMessage(storage, userId);
+      if (!messageCheck.allowed) {
         return res.status(403).json({ 
-          message: `Daily chat message limit reached (${limits[tier as keyof typeof limits]} messages for ${tier} tier)`,
+          message: messageCheck.reason,
+          error: 'CHAT_LIMIT_EXCEEDED',
           limitReached: true,
-          tier
+          tier: messageCheck.tier,
+          currentUsage: messageCheck.currentUsage,
+          limit: messageCheck.limit
         });
       }
+      
+      // Get user tier for scope validation
+      const tier = await getUserTier(storage, userId);
       
       // Validate scope access based on tier
       if (scope) {
@@ -350,6 +349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await chatWithDigest(query, conversationHistory || [], scope);
       
       // Increment message count
+      const today = new Date().toISOString().split('T')[0];
       await storage.incrementDailyChatMessageCount(userId, today);
       
       res.json(response);
