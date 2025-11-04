@@ -7,10 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Send, MessageSquare, ExternalLink, Loader2 } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Send, MessageSquare, ExternalLink, Loader2, History, Settings as SettingsIcon } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { ChatScopeSelector, type ScopeType, type SearchScope } from '@/components/ChatScopeSelector';
+import { ConversationHistory } from '@/components/ConversationHistory';
+import { Link } from 'wouter';
 import type { Digest } from '@shared/schema';
 
 interface ChatMessage {
@@ -148,16 +151,52 @@ export default function Chat() {
       {/* Page Header */}
       <div className="border-b px-6 py-6 bg-gradient-to-r from-background via-primary/5 to-background">
         <div className="max-w-4xl mx-auto">
-          <div className="flex flex-wrap items-start gap-4">
-            <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary/50 rounded-full mt-3"></div>
-            <div className="flex flex-wrap items-center gap-3 flex-1">
-              <MessageSquare className="w-10 h-10 text-primary" />
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1">Chat with Digest</h1>
-                <p className="text-sm md:text-base text-muted-foreground">
-                  Ask questions about research, protocols, and clinical insights from the latest digest
-                </p>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex flex-wrap items-start gap-4 flex-1">
+              <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary/50 rounded-full mt-3"></div>
+              <div className="flex flex-wrap items-center gap-3 flex-1">
+                <MessageSquare className="w-10 h-10 text-primary" />
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1">Chat with Digest</h1>
+                  <p className="text-sm md:text-base text-muted-foreground">
+                    Ask questions about research, protocols, and clinical insights from the latest digest
+                  </p>
+                </div>
               </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              {userTierInfo?.tier === 'pro' && (
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm" data-testid="button-conversation-history">
+                      <History className="w-4 h-4 mr-2" />
+                      History
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-full sm:w-96 sm:max-w-96">
+                    <SheetHeader>
+                      <SheetTitle>Conversation History</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-6">
+                      <ConversationHistory
+                        onLoadConversation={(id) => {
+                          console.log('Load conversation:', id);
+                          // TODO: Implement conversation loading
+                        }}
+                        userTier={userTierInfo?.tier || 'free'}
+                      />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              )}
+              
+              <Link href="/chat/settings">
+                <Button variant="ghost" size="sm" data-testid="button-chat-settings">
+                  <SettingsIcon className="w-4 h-4" />
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

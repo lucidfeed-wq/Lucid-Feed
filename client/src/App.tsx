@@ -9,6 +9,7 @@ import DigestView from "@/pages/DigestView";
 import Preferences from "@/pages/Preferences";
 import SavedItems from "@/pages/SavedItems";
 import Chat from "@/pages/Chat";
+import ChatSettings from "@/pages/ChatSettings";
 import FeedCatalog from "@/pages/FeedCatalog";
 import Discover from "@/pages/Discover";
 import Onboarding from "@/pages/Onboarding";
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/preferences" component={Preferences} />
       <Route path="/saved" component={SavedItems} />
       <Route path="/chat" component={Chat} />
+      <Route path="/chat/settings" component={ChatSettings} />
       <Route path="/feeds" component={FeedCatalog} />
       <Route path="/discover" component={Discover} />
       <Route path="/onboarding" component={Onboarding} />
