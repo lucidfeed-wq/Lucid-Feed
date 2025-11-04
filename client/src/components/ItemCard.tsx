@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ExternalLink, BookOpen, BookOpenCheck, ChevronDown, ChevronUp } from "lucide-react";
+import { ExternalLink, BookOpen, BookOpenCheck, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SourceBadge } from "./SourceBadge";
@@ -133,23 +133,39 @@ export function ItemCard({ item, onTopicClick, isSaved = false, isRead = false }
           </h3>
         </a>
 
-        {/* Author/Journal and Source Link */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Author/Journal and Source Links */}
+        <div className="flex items-center gap-3 flex-wrap">
           {(item.journalName || item.authorOrChannel) && (
             <p className="text-sm text-muted-foreground" data-testid="text-author">
               {item.journalName || item.authorOrChannel}
             </p>
           )}
-          <a
-            href={trackedUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            data-testid="link-source"
-          >
-            <ExternalLink className="h-3 w-3" />
-            View Source
-          </a>
+          <div className="flex items-center gap-3">
+            {/* Open Access PDF Link (when available) */}
+            {item.pdfUrl && (
+              <a
+                href={item.pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                data-testid="link-pdf"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                Read Full Text (PDF)
+              </a>
+            )}
+            {/* Original Source Link */}
+            <a
+              href={trackedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary hover:underline"
+              data-testid="link-source"
+            >
+              <ExternalLink className="h-3 w-3" />
+              View Source
+            </a>
+          </div>
         </div>
 
         {/* One sentence summary */}

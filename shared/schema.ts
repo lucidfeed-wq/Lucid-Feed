@@ -212,6 +212,7 @@ export const digestSectionItemSchema = z.object({
   levelOfEvidence: z.enum(evidenceLevels).optional(),
   journalName: z.string().nullable().optional(),
   authorOrChannel: z.string().optional(),
+  pdfUrl: z.string().nullable().optional(), // Open access PDF URL from Unpaywall
   engagement: z.object({
     comments: z.number(),
     upvotes: z.number(),

@@ -441,6 +441,7 @@ function buildDigestItem(item: Item, summary?: Summary): DigestSectionItem {
     publishedAt: item.publishedAt,
     topics: item.topics as any,
     authorOrChannel: item.authorOrChannel,
+    pdfUrl: item.pdfUrl, // Include Unpaywall PDF URL for open access papers
     engagement: item.engagement,
     scoreBreakdown: item.scoreBreakdown as any,
   };
