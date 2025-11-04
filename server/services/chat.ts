@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { db } from '../db';
-import { items, summaries } from '@shared/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { items, summaries, savedItems, itemFolders, folders, digests } from '@shared/schema';
+import { eq, inArray, and } from 'drizzle-orm';
 import { semanticSearch, SearchScope } from './embeddings';
 
 const openai = new OpenAI({
@@ -80,8 +80,54 @@ async function generateDigestOverview(
   conversationHistory: ChatMessage[],
   scope?: SearchScope
 ): Promise<ChatResponse> {
-  // Retrieve a broader sample of items from the digest
-  let digestItems = await db
+  // Get filtered item IDs based on scope
+  let filteredItemIds: string[] | null = null;
+  
+  if (scope) {
+    if (scope.type === 'current_digest' && scope.digestId) {
+      // Extract item IDs from digest sections
+      const [digest] = await db
+        .select()
+        .from(digests)
+        .where(eq(digests.id, scope.digestId))
+        .limit(1);
+      
+      if (digest) {
+        const sections = digest.sections as any;
+        filteredItemIds = [
+          ...(sections.researchHighlights || []).map((item: any) => item.itemId),
+          ...(sections.communityTrends || []).map((item: any) => item.itemId),
+          ...(sections.expertCommentary || []).map((item: any) => item.itemId),
+        ];
+      }
+    } else if (scope.type === 'saved_items' && scope.userId) {
+      // Get saved item IDs
+      const savedItemsList = await db
+        .select({ itemId: savedItems.itemId })
+        .from(savedItems)
+        .where(eq(savedItems.userId, scope.userId));
+      
+      filteredItemIds = savedItemsList.map(si => si.itemId);
+    } else if (scope.type === 'folder' && scope.folderId && scope.userId) {
+      // Get folder item IDs with ownership validation
+      const folderItemsList = await db
+        .select({ itemId: itemFolders.itemId })
+        .from(itemFolders)
+        .innerJoin(folders, eq(itemFolders.folderId, folders.id))
+        .where(
+          and(
+            eq(itemFolders.folderId, scope.folderId),
+            eq(folders.userId, scope.userId)
+          )
+        );
+      
+      filteredItemIds = folderItemsList.map(fi => fi.itemId);
+    }
+    // For 'all_digests', filteredItemIds remains null (no filtering)
+  }
+  
+  // Build and execute final query with optional filtering
+  let itemsQuery = db
     .select({
       id: items.id,
       title: items.title,
@@ -95,7 +141,14 @@ async function generateDigestOverview(
       publishedAt: items.publishedAt,
     })
     .from(items)
-    .innerJoin(summaries, eq(items.id, summaries.itemId))
+    .innerJoin(summaries, eq(items.id, summaries.itemId));
+  
+  if (filteredItemIds && filteredItemIds.length > 0) {
+    itemsQuery = itemsQuery.where(inArray(items.id, filteredItemIds)) as any;
+  }
+  
+  // Retrieve items with scope filtering applied
+  const digestItemsResult = await itemsQuery
     .orderBy(items.publishedAt)
     .limit(20);
   
@@ -103,7 +156,7 @@ async function generateDigestOverview(
   const topicCounts: Record<string, number> = {};
   const sourceTypeCounts: Record<string, number> = {};
   
-  digestItems.forEach(item => {
+  digestItemsResult.forEach(item => {
     item.topics?.forEach((topic: string) => {
       topicCounts[topic] = (topicCounts[topic] || 0) + 1;
     });
@@ -115,7 +168,7 @@ async function generateDigestOverview(
     .slice(0, 5)
     .map(([topic]) => topic);
   
-  const itemSummaries = digestItems.slice(0, 10).map((item, idx) => {
+  const itemSummaries = digestItemsResult.slice(0, 10).map((item, idx) => {
     const sourceInfo = item.journalName || item.authorOrChannel;
     return `${idx + 1}. "${item.title}" (${item.sourceType}) - ${sourceInfo}\n   ${item.clinicalTakeaway}`;
   }).join('\n\n');
@@ -124,7 +177,7 @@ async function generateDigestOverview(
 
 CONTEXT: Your digest is a curated collection of research articles, expert commentary, podcasts, and other content tailored to the user's interests. Each digest contains high-quality items with AI-generated summaries focusing on key insights and clinical takeaways.
 
-The current digest contains ${digestItems.length} items covering these main topics: ${topTopics.join(', ')}.
+The current digest contains ${digestItemsResult.length} items covering these main topics: ${topTopics.join(', ')}.
 
 Source breakdown: ${Object.entries(sourceTypeCounts).map(([type, count]) => `${count} ${type}`).join(', ')}.
 
@@ -160,7 +213,7 @@ Be conversational and helpful in your overview.`;
       throw new Error('No response from OpenAI');
     }
     
-    const sources = digestItems.slice(0, 5).map((item) => ({
+    const sources = digestItemsResult.slice(0, 5).map((item) => ({
       itemId: item.id,
       title: item.title,
       url: item.url,
