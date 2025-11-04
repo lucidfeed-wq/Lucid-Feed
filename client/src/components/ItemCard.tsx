@@ -6,6 +6,7 @@ import { SourceBadge } from "./SourceBadge";
 import { TopicTag } from "./TopicTag";
 import { SaveButton } from "./SaveButton";
 import { FolderSelector } from "./FolderSelector";
+import { QualityScoreCard } from "./QualityScoreCard";
 import type { DigestSectionItem, Topic } from "@shared/schema";
 import { format } from "date-fns";
 import { useMutation } from "@tanstack/react-query";
@@ -84,16 +85,17 @@ export function ItemCard({ item, onTopicClick, isSaved = false, isRead = false }
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <SourceBadge sourceType={item.sourceType} />
-            {item.topics && item.topics.length > 0 && (
+            {/* Show ALL topic tags */}
+            {item.topics && item.topics.map((topic, index) => (
               <TopicTag
-                topic={item.topics[0]}
+                key={`${topic}-${index}`}
+                topic={topic}
                 onClick={onTopicClick}
               />
-            )}
-            {item.topics && item.topics.length > 1 && (
-              <span className="text-xs text-muted-foreground">
-                +{item.topics.length - 1}
-              </span>
+            ))}
+            {/* Show quality score badge if available */}
+            {item.scoreBreakdown && (
+              <QualityScoreCard scoreBreakdown={item.scoreBreakdown} compact={true} />
             )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
