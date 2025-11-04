@@ -17,6 +17,7 @@ import { TopicFilter } from "@/components/TopicFilter";
 import { SourceTypeFilter } from "@/components/SourceTypeFilter";
 import { LoadingState } from "@/components/LoadingState";
 import { EmptyState } from "@/components/EmptyState";
+import { LandingPage } from "@/components/LandingPage";
 import type { Digest, Topic, SourceType, UserPreferences } from "@shared/schema";
 
 export default function Home() {
@@ -24,7 +25,7 @@ export default function Home() {
   const [selectedTopics, setSelectedTopics] = useState<Topic[]>([]);
   const [selectedSourceTypes, setSelectedSourceTypes] = useState<SourceType[]>([]);
 
-  const { data: user } = useQuery({
+  const { data: user, isLoading: isLoadingUser } = useQuery({
     queryKey: ["/api/auth/user"],
   });
 
@@ -35,7 +36,13 @@ export default function Home() {
 
   const { data: rawDigest, isLoading, error } = useQuery({
     queryKey: ['/api/digest/latest'],
+    enabled: !!user,
   });
+
+  // Show landing page for non-authenticated users
+  if (!isLoadingUser && !user) {
+    return <LandingPage />;
+  }
 
   const digest = rawDigest as Digest | undefined;
 
@@ -117,9 +124,9 @@ export default function Home() {
   }
 
   const filteredSections = {
-    researchHighlights: filterItems(digest.sections.researchHighlights || []),
-    communityTrends: filterItems(digest.sections.communityTrends || []),
-    expertCommentary: filterItems(digest.sections.expertCommentary || []),
+    researchHighlights: filterItems((digest.sections as any)?.researchHighlights || []),
+    communityTrends: filterItems((digest.sections as any)?.communityTrends || []),
+    expertCommentary: filterItems((digest.sections as any)?.expertCommentary || []),
   };
 
   const hasResults = filteredSections.researchHighlights.length > 0 ||
