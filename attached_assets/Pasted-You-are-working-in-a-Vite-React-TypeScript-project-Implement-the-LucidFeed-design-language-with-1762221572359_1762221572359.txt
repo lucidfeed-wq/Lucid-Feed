@@ -1,0 +1,94 @@
+You are working in a Vite + React + TypeScript project. Implement the LucidFeed design language with minimal, safe edits and a clean rollback plan. Do not restructure the project. Follow these steps exactly:
+
+1) Create brand folder + files
+- Create a folder: /design-system
+- Inside it add a file: /design-system/tokens.css   (content provided further down)
+- Create another folder: /design-system/tokens
+- Inside it add: /design-system/tokens/lucidfeed.colors.json   (content provided further down)
+
+2) Wire tokens in (safe route)
+- Open /index.html
+- In the <head> element, insert a single stylesheet link for the tokens, just after the Google Fonts <link> tags and before any <script> tags:
+  <link rel="stylesheet" href="/design-system/tokens.css" />
+- Do NOT import any new CSS in src/main.tsx. Do not touch bundler config.
+
+3) Add a non-breaking smoke test block (so we can visually confirm variables without altering React)
+- In /index.html, *after* <div id="root"></div> and before the <script type="module"> tag, insert:
+  <div id="lf-smoke" style="margin:16px;padding:16px;border:1px solid var(--lf-border);background:var(--lf-surface);color:var(--lf-text);border-radius:8px;">
+    <h2 style="margin:0 0 8px 0;color:var(--lf-primary);">LucidFeed Design Tokens Active</h2>
+    <button style="background:var(--lf-accent);color:var(--lf-surface);padding:8px 12px;border-radius:6px;border:0;">CTA • Gold</button>
+    <a href="#" style="margin-left:12px;color:var(--lf-link);text-underline-offset:3px;">Link • Blue</a>
+  </div>
+
+4) Make a backup + commit
+- Before editing index.html, save a copy as /index.html.bak
+- After changes, commit with message: "feat(design-system): add LucidFeed brand tokens + safe wiring"
+
+5) Run and verify
+- Run the app. Confirm:
+  - background is light neutral,
+  - text is neutral dark,
+  - the smoke test shows a navy heading, gold button, and blue link.
+
+6) Provide a short summary in the console:
+- Where you added files
+- What line in index.html you added the <link>
+- How to rollback:
+  - `mv index.html.bak index.html` and remove /design-system
+
+----- tokens.css (paste exact) -----
+:root {
+  --lf-primary:#0E2A36;  /* navy */
+  --lf-accent:#B59A46;   /* refined gold */
+  --lf-link:#1F6AA5;
+
+  --lf-bg:#F4F7F8;       /* page background */
+  --lf-surface:#FFFFFF;  /* cards, panels */
+  --lf-text:#2F3A3D;     /* strong body text */
+  --lf-muted:#474A4A;    /* headings, labels */
+  --lf-border:#D9E1E3;
+
+  --lf-success:#1B7F5F;
+  --lf-warning:#C27A36;
+  --lf-danger:#B23B3B;
+  --lf-focus:rgba(31,106,165,0.35);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --lf-bg:#0E2A36;
+    --lf-surface:#1A3138;
+    --lf-text:#E8EEF0;
+    --lf-muted:#C9D4D8;
+    --lf-border:#2B4650;
+    --lf-link:#69B1E0;
+  }
+}
+.lf-btn{background:var(--lf-accent);color:var(--lf-surface);border:1px solid transparent;
+  padding:.675rem 1rem;border-radius:.6rem;font-weight:600;}
+.lf-card{background:var(--lf-surface);border:1px solid var(--lf-border);
+  color:var(--lf-text);border-radius:.8rem;padding:1rem;}
+.lf-link{color:var(--lf-link);text-underline-offset:3px;}
+
+----- lucidfeed.colors.json (paste exact) -----
+{
+  "color": {
+    "brand": {
+      "primary": { "value": "#0E2A36" },
+      "accent":  { "value": "#B59A46" },
+      "link":    { "value": "#1F6AA5" }
+    },
+    "neutral": {
+      "bg":      { "value": "#F4F7F8" },
+      "surface": { "value": "#FFFFFF" },
+      "text":    { "value": "#2F3A3D" },
+      "muted":   { "value": "#474A4A" },
+      "border":  { "value": "#D9E1E3" }
+    },
+    "state": {
+      "success": { "value": "#1B7F5F" },
+      "warning": { "value": "#C27A36" },
+      "danger":  { "value": "#B23B3B" },
+      "focus":   { "value": "rgba(31,106,165,0.35)" }
+    }
+  }
+}
