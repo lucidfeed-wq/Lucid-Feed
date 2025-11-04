@@ -686,6 +686,33 @@ export const insertChatConversationSchema = createInsertSchema(chatConversations
 export type ChatConversation = typeof chatConversations.$inferSelect;
 export type InsertChatConversation = z.infer<typeof insertChatConversationSchema>;
 
+// Daily usage tracking - track message counts for tier limits
+export const dailyUsage = pgTable("daily_usage", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD format
+  chatMessages: integer("chat_messages").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userDateIdx: index("daily_usage_user_date_idx").on(table.userId, table.date),
+  dateIdx: index("daily_usage_date_idx").on(table.date),
+}));
+
+export const dailyUsageSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  date: z.string(),
+  chatMessages: z.number(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
+
+export const insertDailyUsageSchema = createInsertSchema(dailyUsage).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type DailyUsage = typeof dailyUsage.$inferSelect;
+export type InsertDailyUsage = z.infer<typeof insertDailyUsageSchema>;
+
 // Feed discovery cache - cache search results for performance
 export const feedDiscoveryCache = pgTable("feed_discovery_cache", {
   id: varchar("id", { length: 255 }).primaryKey(),
