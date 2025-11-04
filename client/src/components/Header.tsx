@@ -1,7 +1,8 @@
 import { Link } from "wouter";
 import { useState } from "react";
-import { FileJson, FileText, Rss, LogIn, LogOut, Settings, Bookmark, MessageSquare, Library, Shield, Menu, Home, Archive, Search } from "lucide-react";
+import { FileJson, FileText, Rss, LogIn, LogOut, Settings, Bookmark, MessageSquare, Library, Shield, Menu, Home, Archive, Search, Folder } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FolderManager } from "@/components/FolderManager";
 import logoImage from "@assets/lucidfeed-primary-2025-11-03_1762262224861.png";
 import {
   DropdownMenu,
@@ -257,6 +258,15 @@ export function Header() {
                         Saved Items
                       </Link>
                     </DropdownMenuItem>
+                    <FolderManager>
+                      <DropdownMenuItem
+                        onSelect={(e) => e.preventDefault()}
+                        data-testid="menuitem-folders"
+                      >
+                        <Folder className="w-4 h-4 mr-2" />
+                        Manage Folders
+                      </DropdownMenuItem>
+                    </FolderManager>
                     <DropdownMenuItem asChild>
                       <Link href="/preferences" data-testid="link-preferences">
                         <Settings className="w-4 h-4 mr-2" />
