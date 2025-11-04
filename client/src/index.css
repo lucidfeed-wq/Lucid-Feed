@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Apply brand background globally */
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
 /* LIGHT MODE - Brand Colors */
 :root {
   --button-outline: rgba(0,0,0, .10);

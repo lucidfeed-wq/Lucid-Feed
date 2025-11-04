@@ -165,7 +165,7 @@ export function Header() {
             </Sheet>
 
             <Link href="/" className="flex items-center gap-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2" data-testid="link-home">
-              <span className="text-xl font-semibold tracking-tight">FM Intelligence</span>
+              <img src="/logo.png" alt="LucidFeed" className="h-8" />
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               <Link href="/" className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-latest">
