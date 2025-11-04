@@ -328,6 +328,40 @@ export const insertReadItemSchema = createInsertSchema(readItems).omit({ id: tru
 export type ReadItem = typeof readItems.$inferSelect;
 export type InsertReadItem = z.infer<typeof insertReadItemSchema>;
 
+// User folders table - custom organizational folders
+export const folders = pgTable("folders", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: text("name").notNull(),
+  color: varchar("color", { length: 20 }).default('#6366f1'), // Hex color for visual distinction
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("folders_user_id_idx").on(table.userId),
+}));
+
+export const insertFolderSchema = createInsertSchema(folders).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type Folder = typeof folders.$inferSelect;
+export type InsertFolder = z.infer<typeof insertFolderSchema>;
+
+// Item folders junction table - assigns items to folders
+export const itemFolders = pgTable("item_folders", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  itemId: varchar("item_id", { length: 255 }).notNull().references(() => items.id, { onDelete: 'cascade' }),
+  folderId: varchar("folder_id", { length: 255 }).notNull().references(() => folders.id, { onDelete: 'cascade' }),
+  addedAt: timestamp("added_at").defaultNow(),
+}, (table) => ({
+  userItemFolderIdx: index("item_folders_user_item_folder_idx").on(table.userId, table.itemId, table.folderId),
+  folderIdIdx: index("item_folders_folder_id_idx").on(table.folderId),
+}));
+
+export const insertItemFolderSchema = createInsertSchema(itemFolders).omit({ id: true, addedAt: true });
+
+export type ItemFolder = typeof itemFolders.$inferSelect;
+export type InsertItemFolder = z.infer<typeof insertItemFolderSchema>;
+
 // User ratings table for community quality assessment
 export const userRatings = pgTable("user_ratings", {
   id: varchar("id", { length: 255 }).primaryKey(),

@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions, dailyUsage } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription, DailyUsage, InsertDailyUsage } from "@shared/schema";
+import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions, dailyUsage, folders, itemFolders } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription, DailyUsage, InsertDailyUsage, Folder, InsertFolder, ItemFolder, InsertItemFolder } from "@shared/schema";
 import { eq, and, gte, lte, desc, inArray, or, like, sql, avg, count } from "drizzle-orm";
 
 export interface IStorage {
@@ -45,6 +45,16 @@ export interface IStorage {
   markItemAsUnread(userId: string, itemId: string): Promise<void>;
   isItemRead(userId: string, itemId: string): Promise<boolean>;
   getReadItemIds(userId: string, itemIds: string[]): Promise<string[]>;
+  
+  // Folders
+  createFolder(userId: string, folder: Omit<InsertFolder, 'userId'>): Promise<Folder>;
+  getUserFolders(userId: string): Promise<Folder[]>;
+  updateFolder(folderId: string, userId: string, updates: Partial<InsertFolder>): Promise<Folder>;
+  deleteFolder(folderId: string, userId: string): Promise<void>;
+  addItemToFolder(userId: string, itemId: string, folderId: string): Promise<ItemFolder>;
+  removeItemFromFolder(userId: string, itemId: string, folderId: string): Promise<void>;
+  getItemFolders(userId: string, itemId: string): Promise<Folder[]>;
+  getFolderItems(userId: string, folderId: string): Promise<Item[]>;
   
   // Feed Catalog
   getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string }): Promise<FeedCatalog[]>;
@@ -351,6 +361,118 @@ export class PostgresStorage implements IStorage {
         )
       );
     return results.map(r => r.itemId);
+  }
+
+  // Folders
+  async createFolder(userId: string, folder: Omit<InsertFolder, 'userId'>): Promise<Folder> {
+    const id = nanoid();
+    const [newFolder] = await db
+      .insert(folders)
+      .values({ id, userId, ...folder })
+      .returning();
+    return newFolder;
+  }
+
+  async getUserFolders(userId: string): Promise<Folder[]> {
+    return await db
+      .select()
+      .from(folders)
+      .where(eq(folders.userId, userId))
+      .orderBy(folders.createdAt);
+  }
+
+  async updateFolder(folderId: string, userId: string, updates: Partial<InsertFolder>): Promise<Folder> {
+    const [updated] = await db
+      .update(folders)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(eq(folders.id, folderId), eq(folders.userId, userId)))
+      .returning();
+    return updated;
+  }
+
+  async deleteFolder(folderId: string, userId: string): Promise<void> {
+    await db
+      .delete(folders)
+      .where(and(eq(folders.id, folderId), eq(folders.userId, userId)));
+  }
+
+  async addItemToFolder(userId: string, itemId: string, folderId: string): Promise<ItemFolder> {
+    const id = nanoid();
+    const [itemFolder] = await db
+      .insert(itemFolders)
+      .values({ id, userId, itemId, folderId })
+      .onConflictDoNothing()
+      .returning();
+    return itemFolder;
+  }
+
+  async removeItemFromFolder(userId: string, itemId: string, folderId: string): Promise<void> {
+    await db
+      .delete(itemFolders)
+      .where(
+        and(
+          eq(itemFolders.userId, userId),
+          eq(itemFolders.itemId, itemId),
+          eq(itemFolders.folderId, folderId)
+        )
+      );
+  }
+
+  async getItemFolders(userId: string, itemId: string): Promise<Folder[]> {
+    const results = await db
+      .select({
+        id: folders.id,
+        userId: folders.userId,
+        name: folders.name,
+        color: folders.color,
+        createdAt: folders.createdAt,
+        updatedAt: folders.updatedAt,
+      })
+      .from(itemFolders)
+      .innerJoin(folders, eq(itemFolders.folderId, folders.id))
+      .where(
+        and(
+          eq(itemFolders.userId, userId),
+          eq(itemFolders.itemId, itemId)
+        )
+      );
+    return results;
+  }
+
+  async getFolderItems(userId: string, folderId: string): Promise<Item[]> {
+    const results = await db
+      .select({
+        id: items.id,
+        title: items.title,
+        sourceType: items.sourceType,
+        sourceId: items.sourceId,
+        doi: items.doi,
+        url: items.url,
+        authorOrChannel: items.authorOrChannel,
+        publishedAt: items.publishedAt,
+        ingestedAt: items.ingestedAt,
+        rawExcerpt: items.rawExcerpt,
+        fullText: items.fullText,
+        pdfUrl: items.pdfUrl,
+        engagement: items.engagement,
+        topics: items.topics,
+        isPreprint: items.isPreprint,
+        journalName: items.journalName,
+        hashDedupe: items.hashDedupe,
+        qualityMetrics: items.qualityMetrics,
+        score: items.score,
+        scoreBreakdown: items.scoreBreakdown,
+      })
+      .from(itemFolders)
+      .innerJoin(items, eq(itemFolders.itemId, items.id))
+      .where(
+        and(
+          eq(itemFolders.userId, userId),
+          eq(itemFolders.folderId, folderId)
+        )
+      )
+      .orderBy(desc(itemFolders.addedAt));
+    return results;
   }
 
   // Feed Catalog

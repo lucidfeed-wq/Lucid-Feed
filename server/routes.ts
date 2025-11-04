@@ -187,6 +187,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Folder endpoints (protected)
+  app.get('/api/folders', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const folders = await storage.getUserFolders(userId);
+      res.json(folders);
+    } catch (error) {
+      console.error("Error fetching folders:", error);
+      res.status(500).json({ message: "Failed to fetch folders" });
+    }
+  });
+
+  app.post('/api/folders', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { name, color } = req.body;
+      
+      if (!name || name.trim().length === 0) {
+        return res.status(400).json({ message: "Folder name is required" });
+      }
+      
+      const folder = await storage.createFolder(userId, { name: name.trim(), color });
+      res.json(folder);
+    } catch (error) {
+      console.error("Error creating folder:", error);
+      res.status(500).json({ message: "Failed to create folder" });
+    }
+  });
+
+  app.patch('/api/folders/:folderId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { folderId } = req.params;
+      const { name, color } = req.body;
+      
+      const folder = await storage.updateFolder(folderId, userId, { name, color });
+      res.json(folder);
+    } catch (error) {
+      console.error("Error updating folder:", error);
+      res.status(500).json({ message: "Failed to update folder" });
+    }
+  });
+
+  app.delete('/api/folders/:folderId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { folderId } = req.params;
+      await storage.deleteFolder(folderId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting folder:", error);
+      res.status(500).json({ message: "Failed to delete folder" });
+    }
+  });
+
+  app.post('/api/folders/:folderId/items/:itemId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { folderId, itemId } = req.params;
+      const itemFolder = await storage.addItemToFolder(userId, itemId, folderId);
+      res.json(itemFolder);
+    } catch (error) {
+      console.error("Error adding item to folder:", error);
+      res.status(500).json({ message: "Failed to add item to folder" });
+    }
+  });
+
+  app.delete('/api/folders/:folderId/items/:itemId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { folderId, itemId } = req.params;
+      await storage.removeItemFromFolder(userId, itemId, folderId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing item from folder:", error);
+      res.status(500).json({ message: "Failed to remove item from folder" });
+    }
+  });
+
+  app.get('/api/items/:itemId/folders', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { itemId } = req.params;
+      const folders = await storage.getItemFolders(userId, itemId);
+      res.json(folders);
+    } catch (error) {
+      console.error("Error fetching item folders:", error);
+      res.status(500).json({ message: "Failed to fetch item folders" });
+    }
+  });
+
+  app.get('/api/folders/:folderId/items', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { folderId } = req.params;
+      const items = await storage.getFolderItems(userId, folderId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching folder items:", error);
+      res.status(500).json({ message: "Failed to fetch folder items" });
+    }
+  });
+
   // Community rating endpoints (protected)
   app.post('/api/ratings/:itemId', isAuthenticated, async (req: any, res) => {
     try {

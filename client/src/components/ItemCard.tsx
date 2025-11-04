@@ -1,5 +1,6 @@
-import { ExternalLink, BookOpen, BookOpenCheck } from "lucide-react";
-import { Card, CardHeader } from "@/components/ui/card";
+import { useState } from "react";
+import { ExternalLink, BookOpen, BookOpenCheck, ChevronDown, ChevronUp } from "lucide-react";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SourceBadge } from "./SourceBadge";
 import { TopicTag } from "./TopicTag";
@@ -36,6 +37,7 @@ function extractFirstSentence(text: string): string {
 }
 
 export function ItemCard({ item, onTopicClick, isSaved = false, isRead = false }: ItemCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const publishedDate = format(new Date(item.publishedAt), "MMM d, yyyy");
   
   // Add UTM tracking to all outbound links
@@ -47,6 +49,9 @@ export function ItemCard({ item, onTopicClick, isSaved = false, isRead = false }
     : item.clinicalTakeaway 
       ? extractFirstSentence(item.clinicalTakeaway)
       : "Click to read more about this item.";
+
+  // Check if there's more content to show
+  const hasExpandableContent = item.keyInsights || item.clinicalTakeaway;
 
   const toggleReadMutation = useMutation({
     mutationFn: async () => {
@@ -137,7 +142,53 @@ export function ItemCard({ item, onTopicClick, isSaved = false, isRead = false }
         <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-summary">
           {keySummary}
         </p>
+
+        {/* Expand/Collapse button */}
+        {hasExpandableContent && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="w-full mt-2 text-xs"
+            data-testid={`button-expand-${item.itemId}`}
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="h-3 w-3 mr-1" />
+                Show Less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3 w-3 mr-1" />
+                Show Full Insights
+              </>
+            )}
+          </Button>
+        )}
       </CardHeader>
+
+      {/* Expandable content */}
+      {isExpanded && hasExpandableContent && (
+        <CardContent className="pt-0 pb-4 space-y-4">
+          {item.keyInsights && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-foreground">Key Insights</h4>
+              <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line" data-testid="text-key-insights">
+                {item.keyInsights}
+              </div>
+            </div>
+          )}
+          
+          {item.clinicalTakeaway && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-foreground">Clinical Takeaway</h4>
+              <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line" data-testid="text-clinical-takeaway">
+                {item.clinicalTakeaway}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      )}
     </Card>
   );
 }
