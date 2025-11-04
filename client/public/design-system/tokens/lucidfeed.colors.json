@@ -1,0 +1,22 @@
+{
+  "color": {
+    "brand": {
+      "primary": { "value": "#0E2A36" },
+      "accent":  { "value": "#B59A46" },
+      "link":    { "value": "#1F6AA5" }
+    },
+    "neutral": {
+      "bg":      { "value": "#F4F7F8" },
+      "surface": { "value": "#FFFFFF" },
+      "text":    { "value": "#2F3A3D" },
+      "muted":   { "value": "#474A4A" },
+      "border":  { "value": "#D9E1E3" }
+    },
+    "state": {
+      "success": { "value": "#1B7F5F" },
+      "warning": { "value": "#C27A36" },
+      "danger":  { "value": "#B23B3B" },
+      "focus":   { "value": "rgba(31,106,165,0.35)" }
+    }
+  }
+}

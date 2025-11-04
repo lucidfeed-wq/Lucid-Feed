@@ -1,0 +1,58 @@
+/* LucidFeed – CSS Color Tokens (light mode) */
+:root {
+  /* brand */
+  --lf-primary:   #0E2A36;  /* navy */
+  --lf-accent:    #B59A46;  /* refined gold */
+  --lf-link:      #1F6AA5;
+
+  /* neutrals */
+  --lf-bg:        #F4F7F8;  /* page background */
+  --lf-surface:   #FFFFFF;  /* cards, panels */
+  --lf-text:      #2F3A3D;  /* strong body text */
+  --lf-muted:     #474A4A;  /* headings, labels */
+  --lf-border:    #D9E1E3;
+
+  /* states */
+  --lf-success:   #1B7F5F;
+  --lf-warning:   #C27A36;
+  --lf-danger:    #B23B3B;
+  --lf-focus:     rgba(31,106,165,0.35);
+}
+
+/* Dark mode override */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --lf-bg:      #0E2A36;
+    --lf-surface: #1A3138;
+    --lf-text:    #E8EEF0;
+    --lf-muted:   #C9D4D8;
+    --lf-border:  #2B4650;
+    --lf-link:    #69B1E0;
+  }
+}
+
+/* Helper classes for quick testing */
+.lf-btn {
+  background: var(--lf-accent);
+  color: var(--lf-surface);
+  border: 1px solid transparent;
+  padding: 0.675rem 1rem;
+  border-radius: 0.6rem;
+  font-weight: 600;
+  box-shadow: 0 0 0 0 var(--lf-focus);
+}
+.lf-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem var(--lf-focus);
+}
+.lf-card {
+  background: var(--lf-surface);
+  border: 1px solid var(--lf-border);
+  color: var(--lf-text);
+  border-radius: 0.8rem;
+  padding: 1rem;
+}
+.lf-link {
+  color: var(--lf-link);
+  text-underline-offset: 3px;
+}
