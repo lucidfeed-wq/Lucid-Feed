@@ -44,14 +44,17 @@ export default function FeedCatalogPage() {
     <div className="container mx-auto py-4 md:py-8 px-4 max-w-7xl">
       {/* Header */}
       <div className="mb-6 md:mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-2" data-testid="heading-feed-catalog">
-              Feed Catalog
-            </h1>
-            <p className="text-sm md:text-base text-muted-foreground">
-              Browse {feeds.filter(f => f.isApproved).length} curated RSS feeds across journals, communities, and expert commentary
-            </p>
+        <div className="flex flex-wrap flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+          <div className="flex flex-wrap items-start gap-4 flex-1">
+            <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary/50 rounded-full mt-3"></div>
+            <div>
+              <h1 className="text-2xl md:text-4xl font-bold tracking-tight mb-2" data-testid="heading-feed-catalog">
+                Feed Catalog
+              </h1>
+              <p className="text-sm md:text-lg text-muted-foreground">
+                Browse {feeds.filter(f => f.isApproved).length} curated RSS feeds across journals, communities, and expert commentary
+              </p>
+            </div>
           </div>
           <FeedSubmissionDialog />
         </div>

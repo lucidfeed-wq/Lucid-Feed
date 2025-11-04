@@ -284,14 +284,19 @@ export default function Onboarding() {
     <div className="min-h-screen bg-background">
       <div className="container max-w-4xl mx-auto py-12 px-4">
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="h-6 w-6 text-primary" data-testid="icon-sparkles" />
-            <h1 className="text-3xl font-bold" data-testid="text-onboarding-title">Welcome to Lucid Feed</h1>
+          <div className="flex flex-wrap items-start gap-4 mb-4">
+            <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary/50 rounded-full mt-3"></div>
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-3 mb-2">
+                <Sparkles className="h-7 w-7 text-primary" data-testid="icon-sparkles" />
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight" data-testid="text-onboarding-title">Welcome to Lucid Feed</h1>
+              </div>
+              <p className="text-base md:text-lg text-muted-foreground" data-testid="text-onboarding-subtitle">
+                Let's personalize your content curation experience
+              </p>
+            </div>
           </div>
-          <p className="text-muted-foreground" data-testid="text-onboarding-subtitle">
-            Let's personalize your content curation experience
-          </p>
-          <Progress value={progress} className="mt-4" data-testid="progress-onboarding" />
+          <Progress value={progress} className="mt-6" data-testid="progress-onboarding" />
         </div>
 
         {currentStep === 1 && (

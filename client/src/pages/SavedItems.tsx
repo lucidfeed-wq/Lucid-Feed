@@ -50,12 +50,17 @@ export default function SavedItems() {
   return (
     <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2" data-testid="heading-saved-items">
-          My Saved Items
-        </h1>
-        <p className="text-muted-foreground">
-          {items.length} item{items.length !== 1 ? 's' : ''} saved
-        </p>
+        <div className="flex flex-wrap items-start gap-4 mb-4">
+          <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary/50 rounded-full mt-3"></div>
+          <div className="flex-1">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2" data-testid="heading-saved-items">
+              My Saved Items
+            </h1>
+            <p className="text-base md:text-lg text-muted-foreground">
+              {items.length} item{items.length !== 1 ? 's' : ''} saved
+            </p>
+          </div>
+        </div>
       </div>
 
       {items.length === 0 ? (

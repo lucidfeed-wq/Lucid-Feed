@@ -182,12 +182,17 @@ export default function AdminPage() {
       <Header />
       <div className="container mx-auto py-4 md:py-8 px-4 max-w-7xl">
         <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2" data-testid="heading-admin">
-            Admin Dashboard
-          </h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Monitor system performance and review feed submissions
-          </p>
+          <div className="flex flex-wrap items-start gap-4 mb-4">
+            <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary/50 rounded-full mt-3"></div>
+            <div className="flex-1">
+              <h1 className="text-2xl md:text-4xl font-bold tracking-tight mb-2" data-testid="heading-admin">
+                Admin Dashboard
+              </h1>
+              <p className="text-sm md:text-lg text-muted-foreground">
+                Monitor system performance and review feed submissions
+              </p>
+            </div>
+          </div>
         </div>
 
       {/* Manual Job Triggers */}

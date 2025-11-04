@@ -86,15 +86,18 @@ export default function Chat() {
     <div className="min-h-screen flex flex-col">
       <Header />
       {/* Page Header */}
-      <div className="border-b px-6 py-4">
+      <div className="border-b px-6 py-6 bg-gradient-to-r from-background via-primary/5 to-background">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-3">
-            <MessageSquare className="w-8 h-8 text-primary" />
-            <div>
-              <h1 className="text-2xl font-semibold">Chat with Digest</h1>
-              <p className="text-sm text-muted-foreground">
-                Ask questions about research, protocols, and clinical insights from the latest digest
-              </p>
+          <div className="flex flex-wrap items-start gap-4">
+            <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary/50 rounded-full mt-3"></div>
+            <div className="flex flex-wrap items-center gap-3 flex-1">
+              <MessageSquare className="w-10 h-10 text-primary" />
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1">Chat with Digest</h1>
+                <p className="text-sm md:text-base text-muted-foreground">
+                  Ask questions about research, protocols, and clinical insights from the latest digest
+                </p>
+              </div>
             </div>
           </div>
         </div>
