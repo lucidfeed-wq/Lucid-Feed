@@ -133,12 +133,24 @@ export function ItemCard({ item, onTopicClick, isSaved = false, isRead = false }
           </h3>
         </a>
 
-        {/* Author/Journal */}
-        {(item.journalName || item.authorOrChannel) && (
-          <p className="text-sm text-muted-foreground" data-testid="text-author">
-            {item.journalName || item.authorOrChannel}
-          </p>
-        )}
+        {/* Author/Journal and Source Link */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {(item.journalName || item.authorOrChannel) && (
+            <p className="text-sm text-muted-foreground" data-testid="text-author">
+              {item.journalName || item.authorOrChannel}
+            </p>
+          )}
+          <a
+            href={trackedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            data-testid="link-source"
+          >
+            <ExternalLink className="h-3 w-3" />
+            View Source
+          </a>
+        </div>
 
         {/* One sentence summary */}
         <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-summary">
