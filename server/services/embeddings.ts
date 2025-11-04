@@ -143,14 +143,23 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
+export interface SearchScope {
+  type: 'current_digest' | 'all_digests' | 'saved_items' | 'folder';
+  digestId?: string; // For current_digest scope
+  userId?: string; // For saved_items and folder scopes
+  folderId?: string; // For folder scope
+}
+
 /**
- * Finds items most similar to query text
- * @param digestId - Optional digest ID to limit search to items in that digest
+ * Finds items most similar to query text with flexible scope filtering
+ * @param queryText - The search query
+ * @param limit - Maximum number of results to return
+ * @param scope - Search scope configuration
  */
 export async function semanticSearch(
   queryText: string,
   limit: number = 10,
-  digestId?: string
+  scope?: SearchScope
 ): Promise<Array<{ itemId: string; similarity: number }>> {
   // Generate embedding for query
   const queryEmbedding = await generateEmbedding(queryText);
@@ -158,28 +167,60 @@ export async function semanticSearch(
   // Get all embeddings from database
   let allEmbeddings = await db.select().from(itemEmbeddings);
   
-  // If digestId provided, filter to only items in that digest
-  if (digestId) {
-    const { digests } = await import('@shared/schema');
-    const { eq } = await import('drizzle-orm');
-    
-    const [digest] = await db.select().from(digests).where(eq(digests.id, digestId)).limit(1);
-    
-    if (digest) {
-      const sections = digest.sections as any;
-      const digestItemIds = new Set<string>([
-        ...(sections.researchHighlights || []).map((item: any) => item.itemId),
-        ...(sections.communityTrends || []).map((item: any) => item.itemId),
-        ...(sections.expertCommentary || []).map((item: any) => item.itemId),
-      ]);
+  // Apply scope filtering
+  if (scope) {
+    if (scope.type === 'current_digest' && scope.digestId) {
+      // Filter to specific digest
+      const { digests } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
       
-      allEmbeddings = allEmbeddings.filter(emb => digestItemIds.has(emb.itemId));
-      console.log(`Filtered to ${allEmbeddings.length} items from digest ${digestId}`);
+      const [digest] = await db.select().from(digests).where(eq(digests.id, scope.digestId)).limit(1);
+      
+      if (digest) {
+        const sections = digest.sections as any;
+        const digestItemIds = new Set<string>([
+          ...(sections.researchHighlights || []).map((item: any) => item.itemId),
+          ...(sections.communityTrends || []).map((item: any) => item.itemId),
+          ...(sections.expertCommentary || []).map((item: any) => item.itemId),
+        ]);
+        
+        allEmbeddings = allEmbeddings.filter(emb => digestItemIds.has(emb.itemId));
+        console.log(`Filtered to ${allEmbeddings.length} items from digest ${scope.digestId}`);
+      }
+    } else if (scope.type === 'all_digests') {
+      // No filtering - search all embeddings (default behavior)
+      console.log(`Searching across all ${allEmbeddings.length} digest items`);
+    } else if (scope.type === 'saved_items' && scope.userId) {
+      // Filter to user's saved items
+      const { savedItems } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      
+      const userSavedItems = await db
+        .select({ itemId: savedItems.itemId })
+        .from(savedItems)
+        .where(eq(savedItems.userId, scope.userId));
+      
+      const savedItemIds = new Set(userSavedItems.map(si => si.itemId));
+      allEmbeddings = allEmbeddings.filter(emb => savedItemIds.has(emb.itemId));
+      console.log(`Filtered to ${allEmbeddings.length} saved items for user ${scope.userId}`);
+    } else if (scope.type === 'folder' && scope.folderId && scope.userId) {
+      // Filter to items in specific folder
+      const { itemFolders } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      
+      const folderItems = await db
+        .select({ itemId: itemFolders.itemId })
+        .from(itemFolders)
+        .where(eq(itemFolders.folderId, scope.folderId));
+      
+      const folderItemIds = new Set(folderItems.map(fi => fi.itemId));
+      allEmbeddings = allEmbeddings.filter(emb => folderItemIds.has(emb.itemId));
+      console.log(`Filtered to ${allEmbeddings.length} items from folder ${scope.folderId}`);
     }
   }
   
   if (allEmbeddings.length === 0) {
-    console.warn('No embeddings found in database');
+    console.warn('No embeddings found in database for the specified scope');
     return [];
   }
   
