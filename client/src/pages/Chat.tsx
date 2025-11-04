@@ -153,6 +153,13 @@ export default function Chat() {
       // Restore scope if available
       if (conversation.scope?.type) {
         setSelectedScope(conversation.scope.type);
+        
+        // Restore folder ID if scope is folder
+        if (conversation.scope.type === 'folder' && conversation.scope.folderId) {
+          setSelectedFolderId(conversation.scope.folderId);
+        } else {
+          setSelectedFolderId(null);
+        }
       }
       
       setCurrentConversationId(conversation.id);
@@ -187,6 +194,7 @@ export default function Chat() {
       const scope = {
         type: selectedScope,
         ...(selectedScope === 'current_digest' && digest?.id ? { digestId: digest.id } : {}),
+        ...(selectedScope === 'folder' && selectedFolderId ? { folderId: selectedFolderId } : {}),
       };
       
       const response = await fetch('/api/chat/conversations', {
@@ -228,6 +236,11 @@ export default function Chat() {
 
   const handleSend = () => {
     if (!query.trim() || chatMutation.isPending || !digest) return;
+    
+    // Prevent sending if folder scope is selected but no folder chosen
+    if (selectedScope === 'folder' && !selectedFolderId) {
+      return;
+    }
 
     const userMessage = query.trim();
     const nextHistory: ChatMessage[] = [
@@ -476,6 +489,15 @@ export default function Chat() {
 
           {/* Input Area */}
           <div className="border-t pt-4">
+            {/* Folder selection warning */}
+            {selectedScope === 'folder' && !selectedFolderId && (
+              <div className="mb-3 p-3 bg-muted/50 rounded-md border">
+                <p className="text-sm text-muted-foreground">
+                  Please select a folder from the dropdown above to search in folder scope.
+                </p>
+              </div>
+            )}
+            
             <div className="flex gap-2">
               <Textarea
                 value={query}
@@ -488,7 +510,7 @@ export default function Chat() {
               />
               <Button
                 onClick={handleSend}
-                disabled={!query.trim() || chatMutation.isPending || !digest || !!limitError}
+                disabled={!query.trim() || chatMutation.isPending || !digest || !!limitError || (selectedScope === 'folder' && !selectedFolderId)}
                 size="icon"
                 className="shrink-0"
                 data-testid="button-send-message"
