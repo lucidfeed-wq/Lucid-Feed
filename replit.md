@@ -18,14 +18,17 @@ The application is a full-stack TypeScript project using React for the frontend 
 - **Topic Taxonomy**: Two-layer topic system with 10 major categories (Health & Wellness, Science & Nature, Technology & AI, Productivity & Self-Improvement, Finance & Business, Society & Culture, Environment & Sustainability, Creativity & Media, Education & Learning, Lifestyle & Travel) containing ~110 subtopics total with unique semantic values for flexible user personalization.
 - **Ranking Algorithm**: Items are ranked based on quality (40%), recency (30%), and engagement (30%).
 - **AI-Powered Summaries**: OpenAI (GPT-4o-mini) generates detailed individual item summaries (5-7 insights, 150-200 words, clinical takeaways) and category-level meta-summaries for digest sections.
-- **Hybrid RAG Chat System**: Three-mode intelligent chat architecture:
+- **Hybrid RAG Chat System**: Three-mode intelligent chat architecture with digest-aware context:
   - **RAG Mode** (similarity > 0.7): Answers strictly from digest sources with explicit citations, preventing hallucinations
   - **Hybrid Mode** (similarity 0.4-0.7): Combines weak digest sources with general knowledge, clearly attributing what comes from sources
   - **General Mode** (similarity < 0.4): Provides helpful general knowledge with clear disclaimers about lack of digest sources
+  - **Digest Context Awareness**: System prompts explain what digests are and enable meta-queries like "summarize the digest" or "what's in this week's digest"
   - **Multi-Scope Search**: Filters content by current digest (free), all digests (premium), saved items (premium), or folders (pro)
+  - **Scope-Aware Filtering**: generateDigestOverview respects selected scope to prevent content leakage across scopes
   - **Tier-Based Access**: Free (10 msgs/day, current digest), Premium (50 msgs/day, all digests + saved), Pro (unlimited, folders + history)
-  - **Conversation Persistence**: Stores chat history with scope tracking for Pro tier users
-  - **Privacy Controls**: Opt-in history learning (Pro only), session-only for lower tiers
+  - **ChatScopeSelector Component**: UI for switching search scopes with tier-gated feature access
+  - **ConversationHistory Component**: Pro-only sidebar for loading/deleting saved conversations
+  - **ChatSettings Page**: Privacy preferences with opt-in history learning (Pro only)
   - **Source Attribution**: All responses cite specific items with similarity scores to ensure transparency
 - **Personalization**: Users can select topics, bookmark items, and receive personalized digests based on their subscribed feeds.
 - **Digest Generation**: Weekly or daily personalized digests, with historical digests preserved through timestamp-based slugs.
