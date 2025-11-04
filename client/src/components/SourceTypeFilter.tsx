@@ -14,6 +14,7 @@ const sourceTypeLabels: Record<SourceType, string> = {
   reddit: "Reddit Discussions",
   substack: "Expert Newsletters",
   youtube: "Video Content",
+  podcast: "Podcasts",
 };
 
 const sourceTypeDescriptions: Record<SourceType, string> = {
@@ -21,6 +22,7 @@ const sourceTypeDescriptions: Record<SourceType, string> = {
   reddit: "Community discussions and trends",
   substack: "Expert analysis and commentary",
   youtube: "Educational videos and presentations",
+  podcast: "Audio content and expert interviews",
 };
 
 export function SourceTypeFilter({ selectedTypes, onTypeToggle, onClearTypes }: SourceTypeFilterProps) {
