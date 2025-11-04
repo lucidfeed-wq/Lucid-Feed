@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription } from "@shared/schema";
+import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions, dailyUsage } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription, DailyUsage, InsertDailyUsage } from "@shared/schema";
 import { eq, and, gte, lte, desc, inArray, or, like, sql, avg, count } from "drizzle-orm";
 
 export interface IStorage {
@@ -78,6 +78,11 @@ export interface IStorage {
   // User Subscription Management (Stripe tiers)
   getUserSubscription(userId: string): Promise<UserSubscription | undefined>;
   upsertUserSubscription(subscription: InsertUserSubscription): Promise<UserSubscription>;
+  
+  // Tier limit checks
+  getUserFeedCount(userId: string): Promise<number>;
+  getDailyChatMessageCount(userId: string, date: string): Promise<number>;
+  incrementDailyChatMessageCount(userId: string, date: string): Promise<void>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -807,6 +812,71 @@ export class PostgresStorage implements IStorage {
         })
         .returning();
       return created;
+    }
+  }
+
+  // Tier limit checks
+  async getUserFeedCount(userId: string): Promise<number> {
+    const subscriptions = await db
+      .select()
+      .from(userFeedSubscriptions)
+      .where(
+        and(
+          eq(userFeedSubscriptions.userId, userId),
+          eq(userFeedSubscriptions.isActive, true)
+        )
+      );
+    return subscriptions.length;
+  }
+
+  async getDailyChatMessageCount(userId: string, date: string): Promise<number> {
+    const [usage] = await db
+      .select()
+      .from(dailyUsage)
+      .where(
+        and(
+          eq(dailyUsage.userId, userId),
+          eq(dailyUsage.date, date)
+        )
+      )
+      .limit(1);
+    return usage?.chatMessages || 0;
+  }
+
+  async incrementDailyChatMessageCount(userId: string, date: string): Promise<void> {
+    const id = nanoid();
+    const now = new Date();
+    
+    const [existing] = await db
+      .select()
+      .from(dailyUsage)
+      .where(
+        and(
+          eq(dailyUsage.userId, userId),
+          eq(dailyUsage.date, date)
+        )
+      )
+      .limit(1);
+    
+    if (existing) {
+      await db
+        .update(dailyUsage)
+        .set({
+          chatMessages: existing.chatMessages + 1,
+          updatedAt: now,
+        })
+        .where(eq(dailyUsage.id, existing.id));
+    } else {
+      await db
+        .insert(dailyUsage)
+        .values({
+          id,
+          userId,
+          date,
+          chatMessages: 1,
+          createdAt: now,
+          updatedAt: now,
+        });
     }
   }
 }
