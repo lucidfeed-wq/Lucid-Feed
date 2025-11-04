@@ -720,6 +720,36 @@ export const insertChatConversationSchema = createInsertSchema(chatConversations
 export type ChatConversation = typeof chatConversations.$inferSelect;
 export type InsertChatConversation = z.infer<typeof insertChatConversationSchema>;
 
+// Chat settings - user privacy preferences for chat
+export const chatSettings = pgTable("chat_settings", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  enableHistoryTracking: boolean("enable_history_tracking").notNull().default(false), // Pro tier feature
+  enableHistoryLearning: boolean("enable_history_learning").notNull().default(false), // Pro tier feature - use history to improve responses
+  defaultScope: varchar("default_scope", { length: 50 }).notNull().default('current_digest'), // current_digest, all_digests, saved_items, folder
+  defaultFolderId: varchar("default_folder_id", { length: 255 }).references(() => folders.id, { onDelete: 'set null' }), // If scope is 'folder'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("chat_settings_user_id_idx").on(table.userId),
+}));
+
+export const chatSettingsSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  enableHistoryTracking: z.boolean(),
+  enableHistoryLearning: z.boolean(),
+  defaultScope: z.enum(['current_digest', 'all_digests', 'saved_items', 'folder']),
+  defaultFolderId: z.string().nullable().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
+
+export const insertChatSettingsSchema = createInsertSchema(chatSettings).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type ChatSettings = typeof chatSettings.$inferSelect;
+export type InsertChatSettings = z.infer<typeof insertChatSettingsSchema>;
+
 // Daily usage tracking - track message counts for tier limits
 export const dailyUsage = pgTable("daily_usage", {
   id: varchar("id", { length: 255 }).primaryKey(),
