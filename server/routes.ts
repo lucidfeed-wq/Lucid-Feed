@@ -13,6 +13,14 @@ import { chatWithDigest } from "./services/chat";
 import { generateMissingEmbeddings } from "./services/embeddings";
 import { discoverFeeds, verifyRssFeed } from "./services/feed-discovery/discovery-service";
 import { canSubscribeToFeed, canSendChatMessage } from "./tierChecks";
+import Stripe from "stripe";
+
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2024-11-20.acacia",
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -224,6 +232,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching rating stats:", error);
       res.status(500).json({ message: "Failed to fetch rating stats" });
+    }
+  });
+
+  // Stripe Subscription endpoints (protected)
+  app.post('/api/subscriptions/create-checkout', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { priceId, tier } = req.body;
+      
+      if (!priceId || !tier) {
+        return res.status(400).json({ message: "priceId and tier are required" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user || !user.email) {
+        return res.status(400).json({ message: "User email not found" });
+      }
+      
+      let subscription = await storage.getUserSubscription(userId);
+      let customerId = subscription?.stripeCustomerId;
+      
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          metadata: { userId },
+        });
+        customerId = customer.id;
+      }
+      
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [{
+          price: priceId,
+          quantity: 1,
+        }],
+        mode: 'subscription',
+        success_url: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/pricing`,
+        metadata: { userId, tier },
+      });
+      
+      res.json({ sessionId: session.id, url: session.url });
+    } catch (error: any) {
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ message: "Failed to create checkout session: " + error.message });
+    }
+  });
+  
+  app.get('/api/subscriptions/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const subscription = await storage.getUserSubscription(userId);
+      res.json(subscription || { tier: 'free', status: 'inactive' });
+    } catch (error) {
+      console.error("Error fetching subscription status:", error);
+      res.status(500).json({ message: "Failed to fetch subscription status" });
+    }
+  });
+  
+  app.post('/api/subscriptions/portal', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const subscription = await storage.getUserSubscription(userId);
+      
+      if (!subscription?.stripeCustomerId) {
+        return res.status(400).json({ message: "No active subscription found" });
+      }
+      
+      const session = await stripe.billingPortal.sessions.create({
+        customer: subscription.stripeCustomerId,
+        return_url: `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/account`,
+      });
+      
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error("Error creating portal session:", error);
+      res.status(500).json({ message: "Failed to create portal session: " + error.message });
+    }
+  });
+  
+  app.post('/api/webhooks/stripe', async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    if (!sig || !webhookSecret) {
+      return res.status(400).send('Webhook signature or secret missing');
+    }
+    
+    let event: Stripe.Event;
+    
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig as string, webhookSecret);
+    } catch (err: any) {
+      console.error('Webhook signature verification failed:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+    
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed': {
+          const session = event.data.object as Stripe.Checkout.Session;
+          const userId = session.metadata?.userId;
+          const tier = session.metadata?.tier;
+          
+          if (userId && session.subscription) {
+            await storage.upsertUserSubscription({
+              userId,
+              tier: tier as any || 'premium',
+              stripeCustomerId: session.customer as string,
+              stripeSubscriptionId: session.subscription as string,
+              status: 'active',
+            });
+          }
+          break;
+        }
+        
+        case 'customer.subscription.updated': {
+          const subscription = event.data.object as Stripe.Subscription;
+          const userId = subscription.metadata?.userId;
+          
+          if (userId) {
+            await storage.upsertUserSubscription({
+              userId,
+              tier: subscription.metadata?.tier as any || 'premium',
+              stripeCustomerId: subscription.customer as string,
+              stripeSubscriptionId: subscription.id,
+              status: subscription.status as any,
+              currentPeriodStart: new Date(subscription.current_period_start * 1000),
+              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              cancelAtPeriodEnd: subscription.cancel_at_period_end,
+            });
+          }
+          break;
+        }
+        
+        case 'customer.subscription.deleted': {
+          const subscription = event.data.object as Stripe.Subscription;
+          const userId = subscription.metadata?.userId;
+          
+          if (userId) {
+            await storage.upsertUserSubscription({
+              userId,
+              tier: 'free',
+              status: 'canceled',
+              cancelAtPeriodEnd: false,
+            });
+          }
+          break;
+        }
+      }
+      
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Error processing webhook:', error);
+      res.status(500).json({ message: 'Webhook processing failed' });
     }
   });
 
