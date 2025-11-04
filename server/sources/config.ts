@@ -159,6 +159,33 @@ export const substackFeeds = [
   { name: "Dr. Rhonda Patrick", url: "https://foundmyfitness.substack.com/feed" },
 ];
 
+export const podcastFeeds = [
+  // Top Functional Medicine & Longevity Podcasts
+  { name: "FoundMyFitness", url: "https://feeds.megaphone.fm/foundmyfitness" },
+  { name: "The Drive - Peter Attia", url: "https://feeds.megaphone.fm/thedrive" },
+  { name: "Huberman Lab", url: "https://feeds.megaphone.fm/hubermanlab" },
+  { name: "The Doctor's Farmacy", url: "https://feeds.megaphone.fm/doctorsfarmacy" },
+  { name: "The Model Health Show", url: "https://feeds.libsyn.com/113331/rss" },
+  
+  // Biohacking & Optimization
+  { name: "Ben Greenfield Fitness", url: "https://bengreenfieldfitness.libsyn.com/rss" },
+  { name: "Bulletproof Radio", url: "https://feeds.megaphone.fm/bulletproof-radio" },
+  { name: "Biohackers Lab", url: "https://biohackerslab.com/feed/podcast" },
+  
+  // Gut Health & Microbiome
+  { name: "The Gutsy Health Podcast", url: "https://feeds.buzzsprout.com/1385337.rss" },
+  { name: "Microbiome Mysteries", url: "https://feeds.transistor.fm/microbiome-mysteries" },
+  
+  // Metabolic Health & Nutrition
+  { name: "The Glucose Goddess Show", url: "https://feeds.megaphone.fm/glucosegoddess" },
+  { name: "Diet Doctor Podcast", url: "https://feeds.megaphone.fm/dietdoctor" },
+  
+  // Peptides & Hormones
+  { name: "Jay Campbell Show", url: "https://jaycampbell.libsyn.com/rss" },
+  { name: "Optimize with Dr. Gillett", url: "https://feeds.megaphone.fm/optimizedoc" },
+];
+
+
 export const youtubeFeeds = [
   // Functional Medicine & Metabolic Health
   { name: "Dr. Mark Hyman", channelId: "UCUZbmf0iB5FdAF4TdOSaHmA", url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCUZbmf0iB5FdAF4TdOSaHmA" },

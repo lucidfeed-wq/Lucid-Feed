@@ -37,7 +37,7 @@ export async function fetchRedditFeeds(): Promise<InsertItem[]> {
           authorOrChannel: subreddit.name,
           publishedAt,
           ingestedAt: new Date().toISOString(),
-          rawExcerpt: rawExcerpt.substring(0, 500),
+          rawExcerpt: rawExcerpt, // Full post content from RSS
           engagement: {
             comments: Math.floor(Math.random() * 50),
             upvotes,

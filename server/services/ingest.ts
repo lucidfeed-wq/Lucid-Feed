@@ -3,6 +3,7 @@ import { fetchJournalFeeds } from "../sources/journals";
 import { fetchRedditFeeds } from "../sources/reddit";
 import { fetchSubstackFeeds } from "../sources/substack";
 import { fetchYouTubeFeeds } from "../sources/youtube";
+import { fetchPodcastFeeds } from "../sources/podcasts";
 import { enrichContentBatch } from "./content-enrichment";
 import type { InsertItem, Topic } from "@shared/schema";
 
@@ -31,14 +32,15 @@ export async function runIngestJob(options: IngestOptions = {}): Promise<{ inser
 
   try {
     // Fetch from all sources in parallel
-    const [journals, reddit, substack, youtube] = await Promise.all([
+    const [journals, reddit, substack, youtube, podcasts] = await Promise.all([
       fetchJournalFeeds(),
       fetchRedditFeeds(),
       fetchSubstackFeeds(),
       fetchYouTubeFeeds(),
+      fetchPodcastFeeds(),
     ]);
 
-    let allItems: InsertItem[] = [...journals, ...reddit, ...substack, ...youtube];
+    let allItems: InsertItem[] = [...journals, ...reddit, ...substack, ...youtube, ...podcasts];
     console.log(`Fetched ${allItems.length} items from all sources`);
 
     // Filter by topics if specified
