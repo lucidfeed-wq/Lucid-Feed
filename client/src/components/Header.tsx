@@ -3,7 +3,7 @@ import { useState } from "react";
 import { FileJson, FileText, Rss, LogIn, LogOut, Settings, Bookmark, MessageSquare, Library, Shield, Menu, Home, Archive, Search, Folder } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FolderManager } from "@/components/FolderManager";
-import logoImage from "@assets/lucidfeed-primary-2025-11-03_1762262224861.png";
+import logoImage from "@assets/brandkit-template-663-2025-11-04_1762296047785.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -169,10 +169,11 @@ export function Header() {
             <Link href="/" className="flex items-center gap-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2" data-testid="link-home">
               <img 
                 src={logoImage} 
-                alt="LucidFeed - Clarity in a noisy world" 
-                className="h-8 w-auto"
+                alt="Lucid Feed - Transform information overload into clarity" 
+                className="h-10 w-10"
                 data-testid="img-logo"
               />
+              <span className="text-lg font-semibold hidden sm:block" data-testid="text-brand-name">Lucid Feed</span>
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               <Link href="/" className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-latest">

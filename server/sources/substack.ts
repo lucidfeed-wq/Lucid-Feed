@@ -17,7 +17,7 @@ export async function fetchSubstackFeeds(): Promise<InsertItem[]> {
         const title = entry.title || "Untitled";
         const url = entry.link || "";
         const publishedAt = entry.pubDate ? new Date(entry.pubDate).toISOString() : new Date().toISOString();
-        const rawExcerpt = entry.contentSnippet || entry.content || "";
+        const rawExcerpt = entry.content || entry.contentSnippet || ""; // Prefer full content over snippet
         
         const searchText = `${title} ${rawExcerpt}`;
         const topics = tagTopics(searchText);

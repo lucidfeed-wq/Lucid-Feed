@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Crown, Check, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import logoImage from "@assets/brandkit-template-663-2025-11-04_1762296047785.png";
 
 interface SubscriptionStatus {
   tier: 'free' | 'premium' | 'pro';
@@ -128,6 +129,14 @@ export default function Pricing() {
       <div className="flex-1 overflow-auto">
         <div className="container mx-auto px-4 py-12">
           <div className="text-center mb-12">
+            <div className="flex justify-center mb-6">
+              <img 
+                src={logoImage} 
+                alt="Lucid Feed" 
+                className="h-12 w-12"
+                data-testid="img-logo-pricing"
+              />
+            </div>
             <h1 className="text-4xl font-bold mb-4" data-testid="heading-pricing">Choose Your Plan</h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Upgrade to unlock more feeds, chat messages, and faster digests

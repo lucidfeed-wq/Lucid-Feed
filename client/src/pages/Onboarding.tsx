@@ -11,6 +11,7 @@ import { Sparkles, Rss, CheckCircle, ArrowRight, BookOpen, Mail, Video, MessageC
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Topic, SourceType } from "@shared/schema";
+import logoImage from "@assets/brandkit-template-663-2025-11-04_1762296047785.png";
 
 interface CategoryGroup {
   category: string;
@@ -310,6 +311,14 @@ export default function Onboarding() {
     <div className="min-h-screen bg-background">
       <div className="container max-w-4xl mx-auto py-12 px-4">
         <div className="mb-8">
+          <div className="flex flex-col items-center mb-6">
+            <img 
+              src={logoImage} 
+              alt="Lucid Feed" 
+              className="h-16 w-16 mb-4"
+              data-testid="img-logo-onboarding"
+            />
+          </div>
           <div className="flex flex-wrap items-start gap-4 mb-4">
             <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary/50 rounded-full mt-3"></div>
             <div className="flex-1">

@@ -24,7 +24,7 @@ export async function fetchPodcastFeeds(): Promise<InsertItem[]> {
         const title = entry.title || "Untitled";
         const url = entry.link || entry.guid || "";
         const publishedAt = entry.pubDate ? new Date(entry.pubDate).toISOString() : new Date().toISOString();
-        const rawExcerpt = entry.contentSnippet || entry.content || entry.summary || "";
+        const rawExcerpt = entry.content || entry.summary || entry.contentSnippet || ""; // Prefer full content first
         
         const searchText = `${title} ${rawExcerpt}`;
         const topics = tagTopics(searchText);
