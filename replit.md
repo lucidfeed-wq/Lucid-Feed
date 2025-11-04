@@ -50,7 +50,8 @@ The application is a full-stack TypeScript project using React for the frontend 
 ### Feature Specifications
 - **RSS Feed Ingestion**: From journals, Reddit, Substack, YouTube, and podcasts (14 curated shows).
 - **Deduplication**: SHA-256 hashing, URL canonicalization.
-- **Three-Step Onboarding**: Users onboard by (1) selecting major categories, (2) choosing specific subtopics within each category, (3) selecting preferred source types (Journals, Substacks, YouTube, Reddit, Podcasts). All preferences validated against enums before persisting.
+- **Enhanced Onboarding**: Users onboard by (1) selecting major categories, (2) choosing specific subtopics within each category, (3) selecting preferred source types, (4) browsing and subscribing to suggested feeds. Features **50 feed suggestions** (increased from 12) with **balanced distribution across source types** and **live/dynamic filtering** that updates in real-time as users change their topic/source selections. All preferences validated against enums before persisting.
+- **On-Demand Digest Generation**: After onboarding, users get their first personalized digest **immediately** via `generatePersonalizedDigest()` function. This performs fresh RSS ingestion from subscribed feeds, **immediate content enrichment** (full content extraction + quality scoring), ranking, AI summarization, and digest creation - no waiting for midnight cron job. Generated digests use unique slug format: `personal-{userId}-{timestamp}`.
 - **Ranking Algorithm**: Quality, recency, engagement-based.
 - **Digest Generation**: Weekly/daily, with 3 sections.
 - **AI Summary Generation**: Individual and category-level.
