@@ -55,15 +55,36 @@ export default function Discover() {
 
   const handleSubscribe = async (feed: FeedResult) => {
     try {
-      // TODO: Implement subscribe endpoint
-      toast({
-        title: "Coming soon",
-        description: `Subscribe to ${feed.title} - feature in progress`,
+      const response = await fetch(`/api/subscriptions/feeds/${feed.id}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
       });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        if (data.error === 'FEED_LIMIT_EXCEEDED') {
+          toast({
+            title: "Feed limit reached",
+            description: `You've reached the limit of ${data.limit} feeds for your ${data.tier} tier. Upgrade to subscribe to more feeds.`,
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(data.message || 'Failed to subscribe');
+      }
+      
+      toast({
+        title: "Subscribed successfully",
+        description: `You are now subscribed to ${feed.title}`,
+      });
+      
+      // Optionally refresh the list or update UI
+      refetch();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to subscribe to feed",
+        description: error instanceof Error ? error.message : "Failed to subscribe to feed",
         variant: "destructive",
       });
     }
