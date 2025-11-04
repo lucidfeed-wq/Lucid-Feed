@@ -11,15 +11,15 @@ export interface TierLimits {
 export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
   free: {
     digestFrequency: 'weekly',
-    maxFeeds: 10,
+    maxFeeds: 5,
     dailyChatMessages: 10,
     analytics: false,
     exportFormats: ['json'],
   },
   premium: {
     digestFrequency: 'daily',
-    maxFeeds: 50,
-    dailyChatMessages: 100,
+    maxFeeds: 20,
+    dailyChatMessages: 50,
     analytics: false,
     exportFormats: ['json', 'markdown'],
   },

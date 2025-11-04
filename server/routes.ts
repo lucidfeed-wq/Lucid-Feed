@@ -12,6 +12,7 @@ import { isAdmin } from "./middleware/isAdmin";
 import { chatWithDigest } from "./services/chat";
 import { generateMissingEmbeddings } from "./services/embeddings";
 import { discoverFeeds, verifyRssFeed } from "./services/feed-discovery/discovery-service";
+import { canSubscribeToFeed, canSendChatMessage } from "./tierChecks";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -278,6 +279,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { feedId } = req.params;
       
+      // Check tier limits
+      const tierCheck = await canSubscribeToFeed(storage, userId);
+      if (!tierCheck.allowed) {
+        return res.status(403).json({ 
+          message: "Feed subscription limit reached",
+          error: "FEED_LIMIT_EXCEEDED",
+          limit: tierCheck.limit,
+          currentUsage: tierCheck.currentUsage,
+          tier: tierCheck.tier
+        });
+      }
+      
       const subscription = await storage.subscribeFeed(userId, feedId);
       res.json(subscription);
     } catch (error) {
@@ -517,15 +530,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chat endpoints (protected)
-  app.post("/api/chat", isAuthenticated, async (req, res) => {
+  app.post("/api/chat", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const { query, conversationHistory, digestId } = req.body;
       
       if (!query || typeof query !== 'string') {
         return res.status(400).json({ error: "Query is required" });
       }
       
+      // Check tier limits for daily chat messages
+      const tierCheck = await canSendChatMessage(storage, userId);
+      if (!tierCheck.allowed) {
+        return res.status(403).json({ 
+          error: "CHAT_LIMIT_EXCEEDED",
+          message: "Daily chat message limit reached",
+          limit: tierCheck.limit,
+          currentUsage: tierCheck.currentUsage,
+          tier: tierCheck.tier
+        });
+      }
+      
       const response = await chatWithDigest(query, conversationHistory || [], digestId);
+      
+      // Increment daily usage counter after successful chat
+      const today = new Date().toISOString().split('T')[0];
+      await storage.incrementDailyChatMessageCount(userId, today);
+      
       res.json(response);
     } catch (error) {
       console.error("Error processing chat:", error);

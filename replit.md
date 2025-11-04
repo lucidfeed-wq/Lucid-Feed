@@ -24,6 +24,7 @@ The application is a full-stack TypeScript project using React for the frontend 
 - **Quality Scoring**: Transparent, multi-signal quality assessment combining citation metrics (30%), author credibility (25%), methodology quality (25%), community verification (10%), and recency (10%). Includes content quality filtering to exclude insufficient items.
 - **Multi-Tenant SaaS**: Supports user-level feed subscriptions and personalized digests.
 - **Subscription Tiers**: Free (weekly), Premium (daily), Pro (real-time + analytics).
+- **Tier-Based Usage Limits**: Enforced limits for feed subscriptions (Free: 5, Premium: 20, Pro: unlimited), daily chat messages (Free: 10, Premium: 50, Pro: unlimited), and digest frequency (Free: weekly, Premium: daily, Pro: real-time). Usage tracked in `dailyUsage` table with automatic enforcement via middleware in routes. Frontend displays UpgradePrompt component when limits are exceeded.
 - **Automated Scheduling**: Daily ingestion and digest generation managed by `node-cron`.
 - **Feed Discovery**: Browsable directory with filters and user submission for admin approval.
 - **Job Management**: Lightweight PostgreSQL job queue with retry logic and dead-letter queue.
