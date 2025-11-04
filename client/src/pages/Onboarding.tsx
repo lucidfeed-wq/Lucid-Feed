@@ -344,7 +344,6 @@ export default function Onboarding() {
                         ? "bg-primary/10 border-primary"
                         : "hover-elevate"
                     }`}
-                    onClick={() => handleCategoryToggle(category.category)}
                     data-testid={`category-${category.category.toLowerCase().replace(/\s+/g, "-")}`}
                   >
                     <div className="flex items-start gap-3">
