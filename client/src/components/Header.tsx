@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { useState } from "react";
 import { FileJson, FileText, Rss, LogIn, LogOut, Settings, Bookmark, MessageSquare, Library, Shield, Menu, Home, Archive, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logoImage from "@assets/lucidfeed-primary-2025-11-03_1762262224861.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -165,7 +166,12 @@ export function Header() {
             </Sheet>
 
             <Link href="/" className="flex items-center gap-2 hover-elevate active-elevate-2 px-2 py-1 rounded-md -ml-2" data-testid="link-home">
-              <span className="text-2xl font-heading font-bold tracking-tight text-primary">LucidFeed</span>
+              <img 
+                src={logoImage} 
+                alt="LucidFeed - Clarity in a noisy world" 
+                className="h-8 w-auto"
+                data-testid="img-logo"
+              />
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               <Link href="/" className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-latest">
