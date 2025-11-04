@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions, dailyUsage, folders, itemFolders } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription, DailyUsage, InsertDailyUsage, Folder, InsertFolder, ItemFolder, InsertItemFolder } from "@shared/schema";
+import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions, dailyUsage, folders, itemFolders, chatConversations, chatSettings } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription, DailyUsage, InsertDailyUsage, Folder, InsertFolder, ItemFolder, InsertItemFolder, ChatConversation, InsertChatConversation, ChatSettings, InsertChatSettings } from "@shared/schema";
 import { eq, and, gte, lte, desc, inArray, or, like, sql, avg, count } from "drizzle-orm";
 
 export interface IStorage {
@@ -93,6 +93,17 @@ export interface IStorage {
   getUserFeedCount(userId: string): Promise<number>;
   getDailyChatMessageCount(userId: string, date: string): Promise<number>;
   incrementDailyChatMessageCount(userId: string, date: string): Promise<void>;
+  
+  // Chat Conversations
+  createChatConversation(userId: string, conversation: Omit<InsertChatConversation, 'userId'>): Promise<ChatConversation>;
+  getUserChatConversations(userId: string): Promise<ChatConversation[]>;
+  getChatConversation(conversationId: string, userId: string): Promise<ChatConversation | undefined>;
+  updateChatConversation(conversationId: string, userId: string, updates: Partial<InsertChatConversation>): Promise<ChatConversation>;
+  deleteChatConversation(conversationId: string, userId: string): Promise<void>;
+  
+  // Chat Settings
+  getChatSettings(userId: string): Promise<ChatSettings | undefined>;
+  upsertChatSettings(userId: string, settings: Partial<InsertChatSettings>): Promise<ChatSettings>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -999,6 +1010,123 @@ export class PostgresStorage implements IStorage {
           createdAt: now,
           updatedAt: now,
         });
+    }
+  }
+  
+  // Chat Conversations
+  async createChatConversation(userId: string, conversation: Omit<InsertChatConversation, 'userId'>): Promise<ChatConversation> {
+    const id = nanoid();
+    const now = new Date();
+    
+    const [created] = await db
+      .insert(chatConversations)
+      .values({
+        ...conversation,
+        id,
+        userId,
+        createdAt: now,
+        updatedAt: now,
+      } as any)
+      .returning();
+    
+    return created;
+  }
+  
+  async getUserChatConversations(userId: string): Promise<ChatConversation[]> {
+    return await db
+      .select()
+      .from(chatConversations)
+      .where(eq(chatConversations.userId, userId))
+      .orderBy(desc(chatConversations.updatedAt));
+  }
+  
+  async getChatConversation(conversationId: string, userId: string): Promise<ChatConversation | undefined> {
+    const [conversation] = await db
+      .select()
+      .from(chatConversations)
+      .where(
+        and(
+          eq(chatConversations.id, conversationId),
+          eq(chatConversations.userId, userId)
+        )
+      )
+      .limit(1);
+    
+    return conversation;
+  }
+  
+  async updateChatConversation(conversationId: string, userId: string, updates: Partial<InsertChatConversation>): Promise<ChatConversation> {
+    const now = new Date();
+    
+    const [updated] = await db
+      .update(chatConversations)
+      .set({
+        ...updates,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(chatConversations.id, conversationId),
+          eq(chatConversations.userId, userId)
+        )
+      )
+      .returning();
+    
+    return updated;
+  }
+  
+  async deleteChatConversation(conversationId: string, userId: string): Promise<void> {
+    await db
+      .delete(chatConversations)
+      .where(
+        and(
+          eq(chatConversations.id, conversationId),
+          eq(chatConversations.userId, userId)
+        )
+      );
+  }
+  
+  // Chat Settings
+  async getChatSettings(userId: string): Promise<ChatSettings | undefined> {
+    const [settings] = await db
+      .select()
+      .from(chatSettings)
+      .where(eq(chatSettings.userId, userId))
+      .limit(1);
+    
+    return settings;
+  }
+  
+  async upsertChatSettings(userId: string, settings: Partial<InsertChatSettings>): Promise<ChatSettings> {
+    const id = nanoid();
+    const now = new Date();
+    
+    const existing = await this.getChatSettings(userId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(chatSettings)
+        .set({
+          ...settings,
+          updatedAt: now,
+        })
+        .where(eq(chatSettings.userId, userId))
+        .returning();
+      
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(chatSettings)
+        .values({
+          ...settings,
+          id,
+          userId,
+          createdAt: now,
+          updatedAt: now,
+        } as any)
+        .returning();
+      
+      return created;
     }
   }
 }
