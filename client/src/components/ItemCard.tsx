@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { SourceBadge } from "./SourceBadge";
 import { TopicTag } from "./TopicTag";
 import { SaveButton } from "./SaveButton";
+import { FolderSelector } from "./FolderSelector";
 import type { DigestSectionItem, Topic } from "@shared/schema";
 import { format } from "date-fns";
 import { useMutation } from "@tanstack/react-query";
@@ -95,7 +96,7 @@ export function ItemCard({ item, onTopicClick, isSaved = false, isRead = false }
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="ghost"
               size="sm"
@@ -111,6 +112,7 @@ export function ItemCard({ item, onTopicClick, isSaved = false, isRead = false }
               )}
             </Button>
             <SaveButton itemId={item.itemId} isSaved={isSaved} />
+            <FolderSelector itemId={item.itemId} />
             <span className="text-xs text-muted-foreground whitespace-nowrap" data-testid="text-date">
               {publishedDate}
             </span>
