@@ -9,11 +9,16 @@ I prefer clear, concise, and direct communication. When making changes, prioriti
 ## System Architecture
 
 ### UI/UX Decisions
-The application features a modern React frontend with a Material Design aesthetic and Linear-inspired elements, including clean typography (Inter font), subtle elevation, and a three-level text hierarchy. The design targets a professional, clinical appearance.
+The application features a modern React frontend with a Material Design aesthetic and Linear-inspired elements, including clean typography (Inter font), subtle elevation, and a three-level text hierarchy. The design targets a professional, clinical appearance. Brand logo (golden swirl design from brandkit-template-663) is consistently displayed in Header, Onboarding, and Pricing pages for brand recognition.
 
 ### Technical Implementations
 The application is a full-stack TypeScript project using React for the frontend and Express for the backend.
-- **Content Ingestion**: RSS feeds from curated sources (journals, Reddit, Substack, YouTube) are ingested, with full content extraction for journal articles (Unpaywall), YouTube transcripts, and full posts for Reddit/Substack.
+- **Content Ingestion**: RSS feeds from curated sources (journals, Reddit, Substack, YouTube, Podcasts) are ingested, with full content extraction for all sources:
+  - **Journals**: Full-text PDFs via Unpaywall API (when open access available)
+  - **YouTube**: Full video transcripts via youtube-transcript package
+  - **Reddit**: Full post content from RSS (prioritizes `entry.content` over `entry.contentSnippet`)
+  - **Substack**: Full article content from RSS (prioritizes `entry.content` over `entry.contentSnippet`)
+  - **Podcasts**: Full episode descriptions/show notes from RSS (14 curated feeds including FoundMyFitness, Huberman Lab, Peter Attia)
 - **Deduplication**: Cross-source deduplication using SHA-256 hashing and URL canonicalization.
 - **Topic Taxonomy**: Two-layer topic system with 10 major categories (Health & Wellness, Science & Nature, Technology & AI, Productivity & Self-Improvement, Finance & Business, Society & Culture, Environment & Sustainability, Creativity & Media, Education & Learning, Lifestyle & Travel) containing ~110 subtopics total with unique semantic values for flexible user personalization.
 - **Ranking Algorithm**: Items are ranked based on quality (40%), recency (30%), and engagement (30%).
@@ -43,7 +48,7 @@ The application is a full-stack TypeScript project using React for the frontend 
 - **Admin Features**: Job observability, token cost tracking, and bulk enrichment.
 
 ### Feature Specifications
-- **RSS Feed Ingestion**: From journals, Reddit, Substack, YouTube.
+- **RSS Feed Ingestion**: From journals, Reddit, Substack, YouTube, and podcasts (14 curated shows).
 - **Deduplication**: SHA-256 hashing, URL canonicalization.
 - **Three-Step Onboarding**: Users onboard by (1) selecting major categories, (2) choosing specific subtopics within each category, (3) selecting preferred source types (Journals, Substacks, YouTube, Reddit, Podcasts). All preferences validated against enums before persisting.
 - **Ranking Algorithm**: Quality, recency, engagement-based.
