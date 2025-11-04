@@ -290,6 +290,206 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Chat endpoints (protected)
+  app.post('/api/chat', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { query, conversationHistory, scope } = req.body;
+      
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({ message: "Query is required" });
+      }
+      
+      // Check tier limits for chat messages
+      const today = new Date().toISOString().split('T')[0];
+      const messageCount = await storage.getDailyChatMessageCount(userId, today);
+      const subscription = await storage.getUserSubscription(userId);
+      const tier = subscription?.tier || 'free';
+      
+      const limits = {
+        free: 10,
+        premium: 50,
+        pro: Infinity,
+      };
+      
+      if (messageCount >= limits[tier as keyof typeof limits]) {
+        return res.status(403).json({ 
+          message: `Daily chat message limit reached (${limits[tier as keyof typeof limits]} messages for ${tier} tier)`,
+          limitReached: true,
+          tier
+        });
+      }
+      
+      // Validate scope access based on tier
+      if (scope) {
+        if (scope.type === 'saved_items' && tier === 'free') {
+          return res.status(403).json({ 
+            message: "Saved items scope requires Premium or Pro tier",
+            upgradeRequired: true,
+            requiredTier: 'premium'
+          });
+        }
+        if (scope.type === 'folder' && !['premium', 'pro'].includes(tier)) {
+          return res.status(403).json({ 
+            message: "Folder scope requires Premium or Pro tier",
+            upgradeRequired: true,
+            requiredTier: 'premium'
+          });
+        }
+        
+        // Add userId to scope for filtering
+        if (scope.type === 'saved_items' || scope.type === 'folder') {
+          scope.userId = userId;
+        }
+      }
+      
+      // Import chat service
+      const { chatWithDigest } = await import('./services/chat');
+      
+      // Process chat query
+      const response = await chatWithDigest(query, conversationHistory || [], scope);
+      
+      // Increment message count
+      await storage.incrementDailyChatMessageCount(userId, today);
+      
+      res.json(response);
+    } catch (error) {
+      console.error("Error processing chat query:", error);
+      res.status(500).json({ message: "Failed to process chat query" });
+    }
+  });
+  
+  // Chat conversation management
+  app.get('/api/chat/conversations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const conversations = await storage.getUserChatConversations(userId);
+      res.json(conversations);
+    } catch (error) {
+      console.error("Error fetching chat conversations:", error);
+      res.status(500).json({ message: "Failed to fetch conversations" });
+    }
+  });
+  
+  app.post('/api/chat/conversations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { title, messages, scope } = req.body;
+      
+      const conversation = await storage.createChatConversation(userId, {
+        title: title || 'New Conversation',
+        messages: messages || [],
+        scope: scope || null,
+      });
+      
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error creating chat conversation:", error);
+      res.status(500).json({ message: "Failed to create conversation" });
+    }
+  });
+  
+  app.get('/api/chat/conversations/:conversationId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { conversationId } = req.params;
+      
+      const conversation = await storage.getChatConversation(conversationId, userId);
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error fetching chat conversation:", error);
+      res.status(500).json({ message: "Failed to fetch conversation" });
+    }
+  });
+  
+  app.put('/api/chat/conversations/:conversationId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { conversationId } = req.params;
+      const updates = req.body;
+      
+      const conversation = await storage.updateChatConversation(conversationId, userId, updates);
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error updating chat conversation:", error);
+      res.status(500).json({ message: "Failed to update conversation" });
+    }
+  });
+  
+  app.delete('/api/chat/conversations/:conversationId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { conversationId } = req.params;
+      
+      await storage.deleteChatConversation(conversationId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting chat conversation:", error);
+      res.status(500).json({ message: "Failed to delete conversation" });
+    }
+  });
+  
+  // Chat settings
+  app.get('/api/chat/settings', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getChatSettings(userId);
+      
+      // Return defaults if no settings exist
+      if (!settings) {
+        return res.json({
+          userId,
+          enableHistoryTracking: false,
+          enableHistoryLearning: false,
+          defaultScope: 'current_digest',
+          defaultFolderId: null,
+        });
+      }
+      
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching chat settings:", error);
+      res.status(500).json({ message: "Failed to fetch chat settings" });
+    }
+  });
+  
+  app.put('/api/chat/settings', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const updates = req.body;
+      
+      // Check tier restrictions for history features
+      const subscription = await storage.getUserSubscription(userId);
+      const tier = subscription?.tier || 'free';
+      
+      if (updates.enableHistoryTracking && tier !== 'pro') {
+        return res.status(403).json({ 
+          message: "History tracking requires Pro tier",
+          upgradeRequired: true,
+          requiredTier: 'pro'
+        });
+      }
+      
+      if (updates.enableHistoryLearning && tier !== 'pro') {
+        return res.status(403).json({ 
+          message: "History learning requires Pro tier",
+          upgradeRequired: true,
+          requiredTier: 'pro'
+        });
+      }
+      
+      const settings = await storage.upsertChatSettings(userId, updates);
+      res.json(settings);
+    } catch (error) {
+      console.error("Error updating chat settings:", error);
+      res.status(500).json({ message: "Failed to update chat settings" });
+    }
+  });
+
   // Community rating endpoints (protected)
   app.post('/api/ratings/:itemId', isAuthenticated, async (req: any, res) => {
     try {
