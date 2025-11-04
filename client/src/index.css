@@ -64,9 +64,10 @@
 
   --muted-foreground: 195 11% 40%;
 
-  --accent: 200 15% 88%;
+  /* Brand: #B59A46 refined gold accent */
+  --accent: 43 43% 50%;
 
-  --accent-foreground: 195 11% 21%;
+  --accent-foreground: 0 0% 100%;
 
   --destructive: 0 62% 50%;
 
@@ -186,9 +187,10 @@
 
   --muted-foreground: 200 10% 65%;
 
-  --accent: 200 20% 25%;
+  /* Brand: Gold accent (lighter for dark mode visibility) */
+  --accent: 43 40% 58%;
 
-  --accent-foreground: 200 14% 90%;
+  --accent-foreground: 200 60% 13%;
 
   --destructive: 0 62% 50%;
 
