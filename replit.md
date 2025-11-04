@@ -14,11 +14,12 @@ The application features a modern React frontend with a Material Design aestheti
 ### Technical Implementations
 The application is a full-stack TypeScript project using React for the frontend and Express for the backend.
 - **Content Ingestion**: RSS feeds from curated sources (journals, Reddit, Substack, YouTube, Podcasts) are ingested, with full content extraction for all sources:
-  - **Journals**: Full-text PDFs via Unpaywall API (when open access available)
+  - **Journals**: Full-text PDFs via Unpaywall API (when open access available) - stored in `pdfUrl` field and exposed through digest API
   - **YouTube**: Full video transcripts via youtube-transcript package
   - **Reddit**: Full post content from RSS (prioritizes `entry.content` over `entry.contentSnippet`)
   - **Substack**: Full article content from RSS (prioritizes `entry.content` over `entry.contentSnippet`)
   - **Podcasts**: Full episode descriptions/show notes from RSS (14 curated feeds including FoundMyFitness, Huberman Lab, Peter Attia)
+- **Open Access PDF Access**: Journal articles with open access PDFs display a prominent "Read Full Text (PDF)" link in the ItemCard UI, providing users with direct access to full-text research papers (fetched from Unpaywall during enrichment, stored in items.pdfUrl, and passed through digestSectionItemSchema to frontend)
 - **Deduplication**: Cross-source deduplication using SHA-256 hashing and URL canonicalization.
 - **Topic Taxonomy**: Two-layer topic system with 10 major categories (Health & Wellness, Science & Nature, Technology & AI, Productivity & Self-Improvement, Finance & Business, Society & Culture, Environment & Sustainability, Creativity & Media, Education & Learning, Lifestyle & Travel) containing ~110 subtopics total with unique semantic values for flexible user personalization.
 - **Ranking Algorithm**: Items are ranked based on quality (40%), recency (30%), and engagement (30%).
