@@ -179,18 +179,44 @@ export default function Onboarding() {
 
   const subscribeFeedMutation = useMutation({
     mutationFn: async (feedId: string) => {
-      return apiRequest("POST", `/api/subscriptions/feeds/${feedId}`);
+      // Use fetch directly to handle tier limit errors
+      const response = await fetch(`/api/subscriptions/feeds/${feedId}`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      
+      // Check for tier limit errors
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.error === 'FEED_LIMIT_EXCEEDED') {
+          throw { 
+            isTierLimit: true, 
+            ...errorData 
+          };
+        }
+        throw new Error(errorData.message || 'Failed to subscribe to feed');
+      }
+      
+      return response;
     },
     onSuccess: (_, feedId) => {
       setSubscribedFeeds((prev) => [...prev, feedId]);
       queryClient.invalidateQueries({ queryKey: ["/api/subscriptions/feeds"] });
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to subscribe to feed.",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      if (error.isTierLimit) {
+        toast({
+          title: "Feed Subscription Limit Reached",
+          description: `You've reached your ${error.tier || 'free'} tier limit of ${error.limit} feeds. Upgrade to subscribe to more feeds.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to subscribe to feed.",
+          variant: "destructive",
+        });
+      }
     },
   });
 

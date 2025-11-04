@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Send, MessageSquare, ExternalLink, Loader2 } from 'lucide-react';
 import { Header } from '@/components/Header';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 import type { Digest } from '@shared/schema';
 
 interface ChatMessage {
@@ -32,6 +33,11 @@ export default function Chat() {
   const [query, setQuery] = useState('');
   const [conversationHistory, setConversationHistory] = useState<ChatMessage[]>([]);
   const [sources, setSources] = useState<ChatSource[]>([]);
+  const [limitError, setLimitError] = useState<{ 
+    tier?: string; 
+    limit?: number | 'unlimited'; 
+    currentUsage?: number 
+  } | null>(null);
 
   // Fetch latest digest to get its ID for filtered search
   const { data: rawDigest } = useQuery({
@@ -41,11 +47,30 @@ export default function Chat() {
 
   const chatMutation = useMutation({
     mutationFn: async ({ message, history }: { message: string; history: ChatMessage[] }): Promise<ChatResponse> => {
-      const response = await apiRequest('POST', '/api/chat', {
-        query: message,
-        conversationHistory: history,
-        digestId: digest?.id, // Filter search to current digest
+      // Use fetch directly to handle tier limit errors
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          query: message,
+          conversationHistory: history,
+          digestId: digest?.id,
+        }),
       });
+      
+      // Check for tier limit errors
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.error === 'CHAT_LIMIT_EXCEEDED') {
+          throw { 
+            isTierLimit: true, 
+            ...errorData 
+          };
+        }
+        throw new Error(errorData.message || 'Failed to send message');
+      }
+      
       const data = await response.json();
       console.log('Chat API response:', data);
       return data as ChatResponse;
@@ -59,6 +84,16 @@ export default function Chat() {
         { role: 'assistant', content: data.response },
       ]);
       setSources(data.sources || []);
+      setLimitError(null); // Clear any previous limit errors
+    },
+    onError: (error: any) => {
+      if (error.isTierLimit) {
+        setLimitError({
+          tier: error.tier,
+          limit: error.limit,
+          currentUsage: error.currentUsage,
+        });
+      }
     },
   });
 
@@ -207,6 +242,23 @@ export default function Chat() {
             </div>
           )}
 
+          {/* Upgrade Prompt */}
+          {limitError && (
+            <div className="mb-4">
+              <UpgradePrompt
+                title="Daily Chat Limit Reached"
+                message="You've reached your daily chat message limit. Upgrade to Premium or Pro for more messages."
+                currentTier={limitError.tier}
+                currentUsage={limitError.currentUsage}
+                limit={limitError.limit}
+                onUpgrade={() => {
+                  // TODO: Navigate to pricing/upgrade page
+                  console.log('Navigate to upgrade page');
+                }}
+              />
+            </div>
+          )}
+
           {/* Input Area */}
           <div className="border-t pt-4">
             <div className="flex gap-2">
@@ -216,12 +268,12 @@ export default function Chat() {
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about research, protocols, or clinical insights..."
                 className="resize-none min-h-[60px]"
-                disabled={chatMutation.isPending}
+                disabled={chatMutation.isPending || !!limitError}
                 data-testid="input-chat-message"
               />
               <Button
                 onClick={handleSend}
-                disabled={!query.trim() || chatMutation.isPending || !digest}
+                disabled={!query.trim() || chatMutation.isPending || !digest || !!limitError}
                 size="icon"
                 className="shrink-0"
                 data-testid="button-send-message"
@@ -233,7 +285,7 @@ export default function Chat() {
                 )}
               </Button>
             </div>
-            {chatMutation.isError && (
+            {chatMutation.isError && !limitError && (
               <p className="text-sm text-destructive mt-2">
                 Failed to send message. Please try again.
               </p>
