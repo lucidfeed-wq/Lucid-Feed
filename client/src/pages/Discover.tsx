@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Youtube, Podcast, MessageSquare, FileText, Loader2 } from "lucide-react";
+import { Search, Plus, Youtube, Podcast, MessageSquare, FileText, Loader2, Bell } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface FeedResult {
   id: string;
@@ -92,6 +93,35 @@ export default function Discover() {
         description: error instanceof Error ? error.message : "Failed to subscribe to feed",
         variant: "destructive",
       });
+    }
+  };
+
+  const requestFeedMutation = useMutation({
+    mutationFn: async (data: { searchQuery: string; topics?: string[] }) => {
+      return await apiRequest('/api/feed-requests', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Request submitted",
+        description: "We'll notify you by email when we find feeds matching your search.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit feed request",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleRequestFeeds = () => {
+    if (searchQuery.trim()) {
+      requestFeedMutation.mutate({ searchQuery: searchQuery.trim() });
     }
   };
 
@@ -199,10 +229,29 @@ export default function Discover() {
         ) : searchQuery ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">No feeds found for "{searchQuery}"</p>
-              <p className="text-sm text-muted-foreground">
-                Try different keywords or source types
+              <p className="text-muted-foreground mb-4" data-testid="text-no-results">
+                No feeds found for "{searchQuery}"
               </p>
+              <p className="text-sm text-muted-foreground mb-6">
+                Try different keywords or source types, or request us to find feeds on this topic
+              </p>
+              <Button
+                onClick={handleRequestFeeds}
+                disabled={requestFeedMutation.isPending}
+                data-testid="button-request-feeds"
+              >
+                {requestFeedMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Bell className="w-4 h-4 mr-2" />
+                    Request Feeds on This Topic
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
         ) : (
