@@ -108,6 +108,15 @@ export function Header() {
                     <MessageSquare className="w-5 h-5" />
                     <span className="font-medium">Chat</span>
                   </Link>
+                  <Link 
+                    href="/folders" 
+                    className="flex items-center gap-3 px-3 py-2 rounded-md hover-elevate active-elevate-2" 
+                    data-testid="mobile-link-folders"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Folder className="w-5 h-5" />
+                    <span className="font-medium">Folders</span>
+                  </Link>
                   
                   {isAuthenticated && user && (
                     <>
@@ -194,6 +203,10 @@ export function Header() {
               <Link href="/chat" className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md flex items-center gap-2" data-testid="link-chat">
                 <MessageSquare className="w-4 h-4" />
                 Chat
+              </Link>
+              <Link href="/folders" className="text-sm font-medium hover-elevate active-elevate-2 px-3 py-2 rounded-md flex items-center gap-2" data-testid="link-folders">
+                <Folder className="w-4 h-4" />
+                Folders
               </Link>
             </nav>
           </div>

@@ -1,5 +1,6 @@
 import Parser from "rss-parser";
 import type { InsertItem, FeedCatalog, Topic } from "@shared/schema";
+import { topics } from "@shared/schema";
 import { tagTopics } from "../core/topics";
 import { generateHashDedupe, extractDOI } from "../core/dedupe";
 
@@ -10,6 +11,9 @@ const parser = new Parser({
 });
 
 const BATCH_SIZE = 10; // Process feeds in batches to avoid overload
+
+// Create a Set of valid topics for fast lookup and validation
+const validTopicsSet = new Set<string>(topics);
 
 /**
  * Generic feed fetcher that processes feeds from the catalog.
@@ -105,10 +109,22 @@ function normalizeFeedEntry(entry: any, feed: FeedCatalog): InsertItem {
   // Tag topics: combine feed's predefined topics with auto-detected topics
   const searchText = `${title} ${rawExcerpt}`;
   const autoDetectedTopics = tagTopics(searchText);
-  const feedTopics = (feed.topics || []) as Topic[];
   
-  // Merge topics, preferring feed's topics, then auto-detected
-  const combinedTopics = Array.from(new Set([...feedTopics, ...autoDetectedTopics])).slice(0, 5) as Topic[];
+  // Validate feed topics - only include valid Topic enum values
+  const validatedFeedTopics = (feed.topics || [])
+    .filter((topic): topic is Topic => {
+      if (typeof topic === 'string' && validTopicsSet.has(topic)) {
+        return true;
+      }
+      // Log invalid topics from feed catalog for debugging
+      if (topic) {
+        console.warn(`Feed "${feed.name}" has invalid topic "${topic}" - filtering out`);
+      }
+      return false;
+    });
+  
+  // Merge topics, preferring feed's validated topics, then auto-detected
+  const combinedTopics = Array.from(new Set([...validatedFeedTopics, ...autoDetectedTopics])).slice(0, 5) as Topic[];
   
   const hashDedupe = generateHashDedupe(url, title);
 

@@ -9,7 +9,8 @@ import { fetchRedditFeeds } from "../sources/reddit";
 import { fetchSubstackFeeds } from "../sources/substack";
 import { fetchYouTubeFeeds } from "../sources/youtube";
 import { fetchPodcastFeeds } from "../sources/podcasts";
-import type { InsertDigest, DigestSectionItem, Item, Summary, CategorySummary, InsertItem } from "@shared/schema";
+import type { InsertDigest, DigestSectionItem, Item, Summary, CategorySummary, InsertItem, Topic } from "@shared/schema";
+import { topics } from "@shared/schema";
 
 interface DigestGenerationOptions {
   itemCounts?: {
@@ -432,14 +433,31 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
   }
 }
 
+// Create a Set of valid topics for fast lookup and normalization
+const validTopicsSet = new Set<string>(topics);
+
 function buildDigestItem(item: Item, summary?: Summary): DigestSectionItem {
+  // Normalize topics: filter out any invalid values that don't match the Topic enum
+  // This ensures frontend filtering works correctly with exact string matching
+  const normalizedTopics: Topic[] = (Array.isArray(item.topics) ? item.topics : [])
+    .filter((topic): topic is Topic => {
+      if (typeof topic === 'string' && validTopicsSet.has(topic)) {
+        return true;
+      }
+      // Log invalid topics for debugging
+      if (topic) {
+        console.warn(`Filtering out invalid topic "${topic}" from item ${item.id}`);
+      }
+      return false;
+    });
+
   const base = {
     itemId: item.id,
     title: item.title,
     url: item.url,
     sourceType: item.sourceType as any,
     publishedAt: item.publishedAt,
-    topics: item.topics as any,
+    topics: normalizedTopics,
     authorOrChannel: item.authorOrChannel,
     pdfUrl: item.pdfUrl, // Include Unpaywall PDF URL for open access papers
     engagement: item.engagement,
