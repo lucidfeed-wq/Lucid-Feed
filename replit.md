@@ -63,8 +63,9 @@ The application is a full-stack TypeScript project using React for the frontend 
 - **Saved Items**: User bookmarking.
 - **Community Feed Submissions**: Users submit feeds for review.
 - **Feed Approval Workflow**: Admin review via `/admin` panel.
+- **User-Driven Feed Requests**: When feed search returns no results, users can request feeds on specific topics. System processes requests daily via background job, searches catalog for matching feeds, and sends email notifications when matches are found. Implements retry logic for failed notifications (requests remain "pending" until successful email delivery). Email templates handle missing feed metadata gracefully.
 - **Export Options**: JSON, Markdown, RSS.
-- **Automated Scheduling**: Daily ingestion, digest generation.
+- **Automated Scheduling**: Daily ingestion, digest generation, feed request processing (2 AM UTC).
 - **Complete Frontend UI**: Material Design + Linear-inspired.
 - **Client-side Filtering**: Topic and source type filtering.
 - **Digest Archive**: View historical digests.
