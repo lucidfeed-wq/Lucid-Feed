@@ -7,15 +7,28 @@ import { Resend } from 'resend';
 import { env } from '../../config/env';
 
 // Initialize Resend client (will be undefined if API key not set)
+// Prefer personal account (RESEND_USER_API_KEY) over Replit internal (RESEND_API_KEY)
 let resend: Resend | null = null;
+const apiKey = env.resendUserApiKey || env.resendApiKey;
+const fromAddress = env.resendUserFrom || env.resendFrom;
 
-if (env.resendApiKey) {
-  resend = new Resend(env.resendApiKey);
+if (apiKey) {
+  resend = new Resend(apiKey);
   console.log('✉️  Resend email client initialized');
-  console.log(`[EMAIL] using From: ${env.resendFrom || '(not configured - will fail on send)'}`);
+  
+  if (env.resendUserApiKey) {
+    console.log('[EMAIL] using personal Resend account (RESEND_USER_API_KEY)');
+  } else {
+    console.log('[EMAIL] using Replit Resend account (RESEND_API_KEY)');
+  }
+  
+  console.log(`[EMAIL] using From: ${fromAddress || '(not configured - will fail on send)'}`);
 } else {
   console.log('⚠️  Resend API key not configured - email alerts disabled');
 }
+
+// Export the configured from address for other modules to use
+export const resendFromAddress = fromAddress;
 
 export interface EmailAlert {
   subject: string;
@@ -35,13 +48,13 @@ export async function sendAlert(alert: EmailAlert): Promise<void> {
     return;
   }
 
-  if (!env.resendFrom) {
-    throw new Error('RESEND_FROM missing (use a verified domain like alerts@getlucidfeed.com)');
+  if (!resendFromAddress) {
+    throw new Error('RESEND_FROM or RESEND_USER_FROM missing (use a verified domain like alerts@getlucidfeed.com)');
   }
 
   try {
     const { data, error } = await resend.emails.send({
-      from: env.resendFrom,
+      from: resendFromAddress,
       to: env.alertEmails,
       subject: alert.subject,
       text: alert.text,
@@ -176,8 +189,8 @@ export async function sendFeedRequestNotification(
     return;
   }
 
-  if (!env.resendFrom) {
-    throw new Error('RESEND_FROM missing (use a verified domain like alerts@getlucidfeed.com)');
+  if (!resendFromAddress) {
+    throw new Error('RESEND_FROM or RESEND_USER_FROM missing (use a verified domain like alerts@getlucidfeed.com)');
   }
 
   try {
@@ -227,7 +240,7 @@ export async function sendFeedRequestNotification(
     `;
 
     const { data, error } = await resend.emails.send({
-      from: env.resendFrom,
+      from: resendFromAddress,
       to: userEmail,
       subject: `✅ Feeds found for "${searchQuery}"`,
       text,

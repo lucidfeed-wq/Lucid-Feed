@@ -2,11 +2,12 @@ type DigestItem = { title: string; url: string; source?: string };
 type Digest = { week: string; intro?: string; items: DigestItem[] };
 
 export async function sendWeeklyDigest(digest: Digest) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("RESEND_API_KEY missing");
+  // Prefer personal account over Replit internal
+  const apiKey = process.env.RESEND_USER_API_KEY || process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_USER_API_KEY or RESEND_API_KEY missing");
   
-  const from = process.env.RESEND_FROM;
-  if (!from) throw new Error("RESEND_FROM missing (use a verified domain like alerts@getlucidfeed.com)");
+  const from = process.env.RESEND_USER_FROM || process.env.RESEND_FROM;
+  if (!from) throw new Error("RESEND_USER_FROM or RESEND_FROM missing (use a verified domain like alerts@getlucidfeed.com)");
   
   if (!digest?.items?.length) throw new Error("digest.items empty");
 

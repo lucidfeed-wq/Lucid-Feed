@@ -29,15 +29,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Health endpoint for email configuration (admin-only)
   app.get('/health/email', isAuthenticated, isAdmin, (_req, res) => {
-    const resendFrom = process.env.RESEND_FROM || null;
-    const apiKeySet = !!process.env.RESEND_API_KEY;
-    const domainHint = resendFrom ? resendFrom.split('@')[1] : null;
+    const userApiKey = process.env.RESEND_USER_API_KEY;
+    const internalApiKey = process.env.RESEND_API_KEY;
+    const apiKey = userApiKey || internalApiKey;
+    
+    const from = process.env.RESEND_USER_FROM || process.env.RESEND_FROM || null;
+    const apiKeySource = userApiKey ? 'RESEND_USER_API_KEY' : (internalApiKey ? 'RESEND_API_KEY' : null);
     
     res.json({
       ok: true,
-      from: resendFrom,
-      apiKeySet,
-      domainHint,
+      from,
+      apiKeySource,
     });
   });
 

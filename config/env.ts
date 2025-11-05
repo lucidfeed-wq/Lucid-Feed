@@ -37,10 +37,14 @@ export interface EnvConfig {
   // Email alerts
   alertEmails: string[];
 
-  // Resend
+  // Resend (Replit internal)
   resendApiKey: string | undefined;
   resendFrom: string | undefined;
   resendTo: string[];
+
+  // Resend (Personal account - preferred if set)
+  resendUserApiKey: string | undefined;
+  resendUserFrom: string | undefined;
 
   // Turnstile (preferred) or reCAPTCHA fallback
   turnstileSiteKey: string | undefined;
@@ -98,10 +102,14 @@ export const env: EnvConfig = {
   // Email alerts
   alertEmails: parseEmails(process.env.ALERT_EMAILS),
 
-  // Resend
+  // Resend (Replit internal)
   resendApiKey: process.env.RESEND_API_KEY,
   resendFrom: process.env.RESEND_FROM,
   resendTo: parseEmails(process.env.RESEND_TO),
+
+  // Resend (Personal account - preferred if set)
+  resendUserApiKey: process.env.RESEND_USER_API_KEY,
+  resendUserFrom: process.env.RESEND_USER_FROM,
 
   // Turnstile
   turnstileSiteKey: process.env.TURNSTILE_SITE_KEY,
@@ -127,7 +135,7 @@ if (env.costGuardsEnabled) {
     console.log('  - Signup protection: ⚠️  NOT CONFIGURED');
   }
   
-  if (env.resendApiKey) {
+  if (env.resendUserApiKey || env.resendApiKey) {
     console.log('  - Email alerts: Resend ✓');
   } else {
     console.log('  - Email alerts: ⚠️  NOT CONFIGURED');

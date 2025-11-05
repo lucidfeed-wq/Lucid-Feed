@@ -2,23 +2,47 @@
 
 This document describes how to configure email sending using Resend with your custom domain.
 
-## Required Environment Variables
+## Environment Variable Priority
 
-### RESEND_API_KEY (Required)
-Your Resend API key. Get this from the [Resend Dashboard](https://resend.com/api-keys).
+The system supports both **personal Resend accounts** and **Replit internal Resend** configuration. Personal account settings take priority when both are configured.
+
+**Priority Order:**
+1. `RESEND_USER_API_KEY` and `RESEND_USER_FROM` (Personal account - **preferred**)
+2. `RESEND_API_KEY` and `RESEND_FROM` (Replit internal - fallback)
+
+## Personal Resend Account (Recommended)
+
+### RESEND_USER_API_KEY
+Your personal Resend API key. Get this from the [Resend Dashboard](https://resend.com/api-keys).
+
+```bash
+RESEND_USER_API_KEY=re_xxxxxxxxxxxxx
+```
+
+### RESEND_USER_FROM
+The email address to use as the "From" field for all outgoing emails from your personal account. **This domain must be verified in Resend** by setting up DNS records.
+
+```bash
+RESEND_USER_FROM=alerts@getlucidfeed.com
+```
+
+⚠️ **Important**: The domain (e.g., `getlucidfeed.com`) must be verified in your Resend account. See [Resend Domain Verification](https://resend.com/docs/dashboard/domains/introduction) for setup instructions.
+
+## Replit Internal Resend (Fallback)
+
+### RESEND_API_KEY
+Replit's internal Resend API key.
 
 ```bash
 RESEND_API_KEY=re_xxxxxxxxxxxxx
 ```
 
-### RESEND_FROM (Required)
-The email address to use as the "From" field for all outgoing emails. **This domain must be verified in Resend** by setting up DNS records.
+### RESEND_FROM
+The email address to use as the "From" field when using Replit's internal Resend account.
 
 ```bash
-RESEND_FROM=alerts@getlucidfeed.com
+RESEND_FROM=alerts@lucidfeed.app
 ```
-
-⚠️ **Important**: The domain (e.g., `getlucidfeed.com`) must be verified in your Resend account. See [Resend Domain Verification](https://resend.com/docs/dashboard/domains/introduction) for setup instructions.
 
 ## Optional Environment Variables
 
@@ -76,10 +100,14 @@ Response:
 {
   "ok": true,
   "from": "alerts@getlucidfeed.com",
-  "apiKeySet": true,
-  "domainHint": "getlucidfeed.com"
+  "apiKeySource": "RESEND_USER_API_KEY"
 }
 ```
+
+**Response Fields:**
+- `ok`: Always true if endpoint is accessible
+- `from`: The configured "From" email address (personal or internal)
+- `apiKeySource`: Either `"RESEND_USER_API_KEY"` (personal), `"RESEND_API_KEY"` (internal), or `null` (not configured)
 
 **Note**: This endpoint requires admin authentication to prevent configuration information leaks.
 
@@ -153,10 +181,20 @@ curl -X POST "https://your-app.com/admin/run/email-digest?token=YOUR_MARKETING_J
 
 Before going to production:
 
-- [ ] Domain verified in Resend dashboard
+**Personal Account (Recommended):**
+- [ ] Domain verified in your personal Resend dashboard
+- [ ] `RESEND_USER_API_KEY` set in production environment
+- [ ] `RESEND_USER_FROM` set to verified email address (e.g., `alerts@getlucidfeed.com`)
+- [ ] `ALERT_EMAILS` set to admin email addresses
+- [ ] Test email sending with `/admin/test-email` endpoint
+- [ ] Monitor your personal Resend dashboard for delivery issues
+- [ ] Set up DMARC policy for better deliverability (optional but recommended)
+
+**OR Replit Internal (Fallback):**
 - [ ] `RESEND_API_KEY` set in production environment
-- [ ] `RESEND_FROM` set to verified email address (e.g., `alerts@getlucidfeed.com`)
+- [ ] `RESEND_FROM` set to verified email address (e.g., `alerts@lucidfeed.app`)
 - [ ] `ALERT_EMAILS` set to admin email addresses
 - [ ] Test email sending with `/admin/test-email` endpoint
 - [ ] Monitor Resend dashboard for delivery issues
-- [ ] Set up DMARC policy for better deliverability (optional but recommended)
+
+**Note**: When both personal and internal accounts are configured, the system will automatically use your personal account.
