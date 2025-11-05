@@ -240,12 +240,15 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
 
   try {
     // Get user's subscribed feeds
-    const userFeeds = await storage.getUserSubscribedFeeds(userId);
-    console.log(`User has ${userFeeds.length} subscribed feeds`);
+    const userFeedSubscriptions = await storage.getUserFeedSubscriptions(userId);
+    console.log(`User has ${userFeedSubscriptions.length} subscribed feeds`);
 
-    if (userFeeds.length === 0) {
+    if (userFeedSubscriptions.length === 0) {
       throw new Error('User has no subscribed feeds. Cannot generate personalized digest.');
     }
+
+    // Extract feed info from subscriptions
+    const userFeeds = userFeedSubscriptions.map(sub => sub.feed);
 
     // Fetch fresh items from RSS for user's feeds (last 7 days)
     const windowDays = options.windowDays ?? 7;
@@ -417,9 +420,6 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
 
     const created = await storage.createDigest(digest);
     console.log(`Personalized digest created: ${created.id} (${slug})`);
-
-    // Link digest to user
-    await storage.linkDigestToUser(userId, created.id);
 
     // Estimate token spend
     totalTokenSpend = (itemsNeedingSummaries.length * 500) + 

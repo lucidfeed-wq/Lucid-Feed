@@ -41,9 +41,14 @@ export default function Discover() {
   const [activeTab, setActiveTab] = useState("all");
   const { toast } = useToast();
 
+  // Build query URL with proper parameters
+  const queryUrl = searchQuery.length > 0 
+    ? `/api/discover/feeds?query=${encodeURIComponent(searchQuery)}${activeTab !== 'all' ? `&sourceTypes=${activeTab}` : ''}`
+    : null;
+
   const { data: results = [], isLoading, refetch } = useQuery<FeedResult[]>({
-    queryKey: ['/api/discover/feeds', searchQuery, activeTab],
-    enabled: searchQuery.length > 0,
+    queryKey: [queryUrl || '/api/discover/feeds', searchQuery, activeTab],
+    enabled: queryUrl !== null,
   });
 
   const handleSearch = (e: React.FormEvent) => {
