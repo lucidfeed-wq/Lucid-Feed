@@ -1,7 +1,8 @@
 import { Link } from "wouter";
 import { useState } from "react";
-import { FileJson, FileText, Rss, LogIn, LogOut, Settings, Bookmark, MessageSquare, Library, Shield, Menu, Home, Archive, Search, Folder } from "lucide-react";
+import { FileJson, FileText, Rss, LogIn, LogOut, Settings, Bookmark, MessageSquare, Library, Shield, Menu, Home, Archive, Search, Folder, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { FolderManager } from "@/components/FolderManager";
 import logoImage from "@assets/brandkit-template-663-2025-11-04_1762296047785.png";
 import {
@@ -239,16 +240,22 @@ export function Header() {
                         <AvatarImage src={user.profileImageUrl || undefined} alt={user.firstName || 'User'} />
                         <AvatarFallback>{getUserInitials()}</AvatarFallback>
                       </Avatar>
-                      <div className="flex flex-col space-y-1">
+                      <div className="flex flex-col space-y-1 flex-1 min-w-0">
                         {(user.firstName || user.lastName) && (
                           <p className="text-sm font-medium" data-testid="text-user-name">
                             {user.firstName} {user.lastName}
                           </p>
                         )}
                         {user.email && (
-                          <p className="text-xs text-muted-foreground" data-testid="text-user-email">
+                          <p className="text-xs text-muted-foreground truncate" data-testid="text-user-email">
                             {user.email}
                           </p>
+                        )}
+                        {user.isTestAccount && (
+                          <Badge variant="secondary" className="gap-1 w-fit" data-testid="badge-test-account">
+                            <FlaskConical className="h-3 w-3" />
+                            Test Account (Pro Access)
+                          </Badge>
                         )}
                       </div>
                     </div>
