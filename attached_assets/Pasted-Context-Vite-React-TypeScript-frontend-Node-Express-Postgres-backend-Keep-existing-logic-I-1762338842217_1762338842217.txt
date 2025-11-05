@@ -1,0 +1,177 @@
+Context: Vite + React + TypeScript frontend, Node/Express + Postgres backend. Keep existing logic. Implement cost guardrails, signup protection (Cloudflare Turnstile, with reCAPTCHA fallback), and email alerts via Resend. Do not break the app. All changes must be idempotent and feature-flagged. Provide a README with rollback steps.
+
+--------------------------------
+1) ENV + Config (do not print secret values)
+--------------------------------
+Add (or document) these env vars in .env / Replit Secrets. Create /config/env.ts to read them safely with defaults:
+
+# Cost guards
+COST_GUARDS_ENABLED=true
+MAX_DAILY_OPENAI_SPEND_USD=20
+
+# Tier limits
+FREE_MAX_FEEDS=10
+FREE_DAILY_CHAT=10
+FREE_RPM=3
+FREE_ITEMS_PER_DIGEST=15
+FREE_DIGEST_FREQ=weekly
+
+PREMIUM_MAX_FEEDS=30
+PREMIUM_DAILY_CHAT=50
+PREMIUM_RPM=6
+PREMIUM_ITEMS_PER_DIGEST=30
+PREMIUM_DIGEST_FREQ=daily
+
+PRO_MAX_FEEDS=60
+PRO_DAILY_CHAT=200
+PRO_RPM=10
+PRO_ITEMS_PER_DIGEST=50
+PRO_DIGEST_FREQ=daily
+PRO_REALTIME_OPT_IN=true
+
+# Token caps
+MSG_INPUT_TOKENS_MAX=2000
+MSG_OUTPUT_TOKENS_MAX=500
+
+# Email alerts (comma-separated)
+ALERT_EMAILS=owner@lucidfeed.com
+
+# Resend
+RESEND_API_KEY=***secret***
+
+# Turnstile (preferred) OR reCAPTCHA fallback
+TURNSTILE_SITE_KEY=***public***
+TURNSTILE_SECRET_KEY=***secret***
+# Optional fallback if Turnstile not used:
+RECAPTCHA_SITE_KEY=***public***
+RECAPTCHA_SECRET_KEY=***secret***
+
+Create /config/tier-limits.ts exporting a typed object built from env vars:
+  export const tierLimits = {
+    free:{ maxFeeds, dailyChat, rpm, itemsPerDigest, digest: 'weekly' },
+    premium:{ ... },
+    pro:{ ... , realtimeOptIn: true }
+  };
+export const TOKENS_PER_MSG = { inputMax, outputMax };
+
+--------------------------------
+2) Canonical caching for summaries (reuse across users)
+--------------------------------
+Create /lib/canonical.ts with:
+  - canonicalIdFrom({ doi, url }): string (normalize URL: lower host, strip utm, drop fragment, remove trailing slash; if doi exists prefer doi)
+  - summaryCacheKey({ canonicalId, promptVersion, model }): "summary:${canonicalId}:${promptVersion}:${model}"
+
+Where summaries are generated, wrap with:
+  - checkCache -> if hit, reuse
+  - else call LLM, store by cache key
+Use Redis if available; else DB-based cache table. Ensure digest rendering always reuses canonical summaries.
+
+--------------------------------
+3) Global rate limits (IP + per-user)
+--------------------------------
+Install express-rate-limit if not present.
+In /server/app.ts (or main Express bootstrap), add:
+  import rateLimit from 'express-rate-limit';
+
+  app.use('/api/chat', rateLimit({ windowMs: 60_000, max: 10 }));       // per IP
+  app.use('/api/ingest', rateLimit({ windowMs: 60_000, max: 30 }));     // per IP
+
+Implement per-user rpm throttle middleware /middleware/userThrottle.ts:
+  - uses Redis or in-memory map (fallback)
+  - key: "u:{userId}:rpm" with 60s TTL, compare against tierLimits[plan].rpm
+Mount it on chat/summarize endpoints after auth.
+
+--------------------------------
+4) Cost caps + breaker
+--------------------------------
+Create tables and usage logging:
+
+Migration SQL (idempotent):
+- usage_events(id serial pk, user_id text, type text, tokens_in int, tokens_out int, cost_usd numeric(12,6), model text, prompt_version text, canonical_id text, created_at timestamptz default now());
+- daily_usage(day date primary key, openai_cost_usd numeric(12,6) default 0, email_cost_usd numeric(12,6) default 0, transcript_cost_usd numeric(12,6) default 0, total_cost_usd numeric(12,6) default 0, tokens_in bigint default 0, tokens_out bigint default 0);
+
+Create /lib/cost.ts:
+- function calcLLMCost(tokensIn, tokensOut): number  // pricing: in * 0.15e-6 + out * 0.60e-6
+- recordUsage({ userId, type, tokensIn, tokensOut, costUsd, model, promptVersion, canonicalId })
+- getDailySpendUSD(): number  // sum(daily total for today)
+
+Wrap all OpenAI calls (chat & summarize) with:
+- bound tokens to TOKENS_PER_MSG (reject if exceeded)
+- on success: recordUsage
+
+Cost breaker middleware /middleware/costBreaker.ts:
+- if !COST_GUARDS_ENABLED → next()
+- if getDailySpendUSD() > MAX_DAILY_OPENAI_SPEND_USD → return 503 for non-essential endpoints (chat/summarize). Admins bypass by role.
+
+Per-user caps:
+- Track per-user month-to-date usage: query sum(cost_usd) from usage_events for current month
+- soft cap $5 → respond with 402 + “soft cap reached, click to continue” flag (front-end can show modal)
+- hard cap $10 → 402 and block until next cycle (or admin reset)
+
+--------------------------------
+5) Signup protection: Turnstile (preferred) or reCAPTCHA fallback
+--------------------------------
+Create /security/turnstile.ts:
+- export async function verifyTurnstile(token, ip): boolean
+  POST https://challenges.cloudflare.com/turnstile/v0/siteverify with secret & response & remoteip
+
+Create /security/recaptcha.ts:
+- export async function verifyRecaptcha(token, ip): boolean
+  POST https://www.google.com/recaptcha/api/siteverify with secret & response & remoteip
+
+In /routes/auth.ts (signup endpoint):
+- Expect body.turnstileToken or body.recaptchaToken
+- If TURNSTILE_SECRET_KEY exists -> call verifyTurnstile
+- else if RECAPTCHA_SECRET_KEY exists -> call verifyRecaptcha
+- If verification fails → return 400
+- Only then create the user
+
+Frontend snippet (document in README): add Turnstile widget:
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <div class="cf-challenge" data-sitekey="TURNSTILE_SITE_KEY" data-callback="onVerify"></div>
+  window.onVerify = (token) => { signup({ turnstileToken: token }) }
+
+--------------------------------
+6) Resend alerts (anomaly detection)
+--------------------------------
+Install @resend/node if not present. Create /lib/resend.ts:
+  import { Resend } from 'resend';
+  const resend = new Resend(process.env.RESEND_API_KEY!);
+  export async function sendAlert(subject:string, text:string) {
+    const to = (process.env.ALERT_EMAILS||'').split(',').map(s=>s.trim()).filter(Boolean);
+    if (!to.length) return;
+    await resend.emails.send({ from: 'alerts@lucidfeed.app', to, subject, text });
+  }
+
+Create /jobs/rollup-daily-usage.ts:
+  - nightly job: upsert into daily_usage (today) aggregates from usage_events
+
+Create /jobs/check-anomaly.ts:
+  - compare today.total_cost_usd vs 7-day average
+  - if > 2x OR any single user cost_today > 2 → sendAlert with top offenders & totals
+
+Add minimal scheduler (node-cron or setInterval inside server start with jitter) to run rollup each night and anomaly every 30m.
+Make both jobs no-op if COST_GUARDS_ENABLED=false.
+
+--------------------------------
+7) Tier counters for front-end
+--------------------------------
+Add GET /api/tier-limits → returns tierLimits + tokens caps.
+Add GET /api/usage/me → returns user’s remaining daily chat quota, itemsPerDigest, and month-to-date cost.
+
+--------------------------------
+8) Feature flags + README + Commit
+--------------------------------
+- All new logic behind COST_GUARDS_ENABLED=true
+- Create /COST_GUARDS_README.md:
+  - env vars list (names only)
+  - how to enable/disable guards
+  - rollback: git revert commit OR set COST_GUARDS_ENABLED=false
+  - how to set Turnstile or reCAPTCHA site/secret keys
+  - how to set RESEND_API_KEY and ALERT_EMAILS
+- Commit: feat(cost-guards): tier caps, cost caps, rate limit, canonical cache, alerts (Resend), signup protection (Turnstile/recaptcha)
+- Run the app and print a summary to console:
+  - Guards enabled: true/false
+  - Daily spend so far
+  - Turnstile or reCAPTCHA status
+  - Alert emails detected
