@@ -1,0 +1,145 @@
+Got you. Let’s map out project API costs in plain English with realistic ranges and a quick “plug-your-numbers” calculator. I’ll assume your stack and workflow from above (GPT-5 or 4o-mini–class model for summaries/chat, embeddings for search, RSS-first ingestion, optional transcription, Postmark/Resend for email, Stripe for billing). Adjust any line items you don’t use.
+
+⸻
+
+🎯 What drives cost
+	1.	LLM usage
+	•	a) content summaries (digest items)
+	•	b) chat questions
+	2.	Embeddings (for semantic search / RAG)
+	3.	Transcripts (YouTube/podcasts) — free if you scrape captions; paid only if you transcribe audio
+	4.	Email delivery (digest sends)
+	5.	Payments (Stripe fees)
+	6.	Hosting (Replit Always-On or similar) — not API but part of project cost
+
+I’ll give you conservative defaults + a “typical” setting. Swap your actual numbers later.
+
+⸻
+
+1) LLM — Summaries (digest items)
+
+Assumptions (safe):
+	•	Model: “4o-mini class” pricing ballpark you cited earlier (≈ $0.15 / 1M input tokens, $0.60 / 1M output tokens)
+	•	Per item: ~2,000 input tokens (article text) + 300 output tokens (TL;DR)
+
+Cost per item
+	•	Input: 2,000 × 0.15 / 1,000,000 = $0.00030
+	•	Output: 300 × 0.60 / 1,000,000 = $0.00018
+	•	Total ≈ $0.00048 per item (about 0.05 cents)
+
+Monthly (examples)
+	•	1,000 items summarized → $0.48
+	•	10,000 items → $4.80
+	•	50,000 items → $24.00
+
+Tip: summarize on-demand (only items that make it into digests) and cache; your cost stays tiny.
+
+⸻
+
+2) LLM — Chat
+
+Assumptions (safe):
+	•	Per chat: ~2,000 input + 800 output tokens
+	•	Cost per chat ≈ (2000×0.15/1M) + (800×0.60/1M) = $0.0003 + $0.00048 = $0.00078
+
+Monthly (examples)
+	•	1,000 chats → $0.78
+	•	10,000 chats → $7.80
+	•	50,000 chats → $39.00
+
+Tip: cap daily chats per free tier; Pro plans get more. You’ll barely notice this line item until usage explodes.
+
+⸻
+
+3) Embeddings
+
+Assumptions: text-embedding-3-small-class pricing (≈ $0.02 / 1M tokens).
+	•	If you embed 1,000 items at ~750 tokens each → 750,000 tokens → ≈ $0.015
+	•	Even 100k items embedded once is only a few dollars.
+
+Tip: embed once, reuse; this is near-free.
+
+⸻
+
+4) Transcripts
+	•	Caption scrape (youtube-transcript): $0 (polite rate-limit + cache)
+	•	If no captions → paid ASR fallback (optional): assume $0.006 / minute (typical cloud ASR ballpark)
+	•	100 hours / month → $36
+	•	10 hours / month → $3.60
+
+Tip: only transcribe top-ranked videos (score-based), and only when they’re actually read/added to digests.
+
+⸻
+
+5) Email delivery (digest)
+	•	Resend / Postmark ballparks: free tiers exist; typical is $10–$15 / 10k emails
+	•	1,000 daily users with a weekly digest → ~4,000 emails / month → usually $0–$10
+	•	If you send daily digests to all 1,000 → ~30k emails / month → $30–$45 region
+
+Tip: batch + send a weekly digest by default; offer daily for paid tiers.
+
+⸻
+
+6) Stripe fees (payments)
+	•	~2.9% + $0.30 + ~0.5–0.8% platform fee per transaction
+	•	On a $15 subscription → roughly $0.64 / user / month goes to Stripe
+
+Tip: encourage annual plans (2 months free) to cut per-txn fixed fees and churn.
+
+⸻
+
+7) Hosting (non-API, but include it)
+	•	Replit Always-On web server: ~$7–$20 / month at your scale now
+
+⸻
+
+📦 Roll-up estimates @ 1,000 daily users
+
+(That’s ~30,000 monthly visits. Only a fraction trigger LLM work.)
+
+Scenario A — Conservative MVP
+	•	Summaries: 5,000 items/mo → $2.40
+	•	Chat: 5,000 chats/mo → $3.90
+	•	Embeddings (new items): $1.00
+	•	Transcripts ASR fallback: $0 (captions only)
+	•	Email weekly: 4,000 emails → $0–$10
+	•	Hosting (Replit): $7–$20
+Total ≈ $15–$37 / month (+ Stripe fees on revenue)
+
+Scenario B — Typical
+	•	Summaries: 15,000 items → $7.20
+	•	Chat: 10,000 chats → $7.80
+	•	Embeddings: $2.00
+	•	Transcripts ASR fallback: 20 hours → $7–$12
+	•	Email weekly: $10–$15
+	•	Hosting: $7–$20
+Total ≈ $41–$64 / month (+ Stripe fees)
+
+Scenario C — Heavy (lots of chat + ASR)
+	•	Summaries: 50,000 items → $24
+	•	Chat: 50,000 chats → $39
+	•	Embeddings: $5
+	•	Transcripts: 100 hours → $36
+	•	Email daily: 30k emails → $30–$45
+	•	Hosting: $20
+Total ≈ $154–$169 / month (+ Stripe fees)
+
+Note: These numbers use your earlier LLM price ballpark. If you switch models or token sizes, multiply accordingly; the math scales linearly.
+
+⸻
+
+🧠 Cost controls to lock in low spend
+	•	Score → fetch → summarize (only top X% and only if added to a digest)
+	•	Cache summaries/transcripts and share across users
+	•	Chat guardrails: soft daily chat caps by tier
+	•	Batch email as weekly default, daily for paid tiers
+	•	Retry/backoff for transcript scraping; skip ASR when not needed
+	•	Shared embeddings per canonical item; dedupe by DOI/URL
+
+⸻
+
+TL;DR
+
+At 1,000 daily users, your API costs are typically under $100/month (often far less), and hosting on Replit adds ~$7–$20/month. The biggest variable is email volume and optional ASR. Stripe fees scale with revenue, not usage.
+
+If you want, tell me how many items you expect to summarize per day and whether you want weekly or daily digests, and I’ll pop your numbers into the formulas and give you a precise monthly line-item forecast.
