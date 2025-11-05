@@ -156,3 +156,75 @@ export async function sendTestEmail(): Promise<void> {
     text: 'This is a test email from Lucid Feed to verify Resend configuration is working correctly.',
   });
 }
+
+/**
+ * Send feed request notification to user when feeds are found
+ */
+export async function sendFeedRequestNotification(
+  userEmail: string,
+  searchQuery: string,
+  feeds: Array<{ id: string; title: string; description: string; url: string }>
+): Promise<void> {
+  // Skip if Resend not configured
+  if (!resend) {
+    console.log('[Feed Request Notification] Skipped (Resend not configured) for:', userEmail);
+    return;
+  }
+
+  try {
+    const feedList = feeds
+      .slice(0, 5) // Limit to top 5 feeds
+      .map(feed => `• ${feed.title}\n  ${feed.description.substring(0, 100)}...\n  ${feed.url}`)
+      .join('\n\n');
+
+    const text = `Good news! We found feeds matching your search: "${searchQuery}"\n\n` +
+      `Here are ${feeds.length > 5 ? 'the top 5 of ' : ''}${feeds.length} feeds we found:\n\n${feedList}\n\n` +
+      `Log in to Lucid Feed to subscribe to these feeds and start getting personalized digests:\n` +
+      `https://lucidfeed.app/discover\n\n` +
+      `Happy reading!\n` +
+      `- The Lucid Feed Team`;
+
+    const html = `
+      <h2>Good news! We found feeds matching your search</h2>
+      <p>You requested feeds for: <strong>"${searchQuery}"</strong></p>
+      <p>We found ${feeds.length} ${feeds.length === 1 ? 'feed' : 'feeds'} that ${feeds.length === 1 ? 'matches' : 'match'} your search:</p>
+      <ul>
+        ${feeds.slice(0, 5).map(feed => `
+          <li style="margin-bottom: 1em;">
+            <strong>${feed.title}</strong><br>
+            <small style="color: #666;">${feed.description.substring(0, 100)}...</small><br>
+            <a href="${feed.url}" style="color: #0066cc;">${feed.url}</a>
+          </li>
+        `).join('')}
+      </ul>
+      ${feeds.length > 5 ? `<p><em>...and ${feeds.length - 5} more!</em></p>` : ''}
+      <p>
+        <a href="https://lucidfeed.app/discover" style="display: inline-block; padding: 10px 20px; background-color: #0066cc; color: white; text-decoration: none; border-radius: 5px; margin-top: 1em;">
+          Subscribe to These Feeds
+        </a>
+      </p>
+      <p style="color: #666; font-size: 0.9em; margin-top: 2em;">
+        Happy reading!<br>
+        - The Lucid Feed Team
+      </p>
+    `;
+
+    const { data, error } = await resend.emails.send({
+      from: 'Lucid Feed <notifications@lucidfeed.app>',
+      to: userEmail,
+      subject: `✅ Feeds found for "${searchQuery}"`,
+      text,
+      html,
+    });
+
+    if (error) {
+      console.error('[Feed Request Notification] Failed to send email:', error);
+      throw new Error(`Failed to send notification: ${error.message}`);
+    }
+
+    console.log('[Feed Request Notification] Sent successfully to:', userEmail, '(ID:', data?.id, ')');
+  } catch (error) {
+    console.error('[Feed Request Notification] Error sending email:', error);
+    throw error;
+  }
+}

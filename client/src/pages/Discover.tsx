@@ -98,11 +98,7 @@ export default function Discover() {
 
   const requestFeedMutation = useMutation({
     mutationFn: async (data: { searchQuery: string; topics?: string[] }) => {
-      return await apiRequest('/api/feed-requests', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return await apiRequest('POST', '/api/feed-requests', data);
     },
     onSuccess: () => {
       toast({
