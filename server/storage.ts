@@ -96,6 +96,8 @@ export interface IStorage {
   getUserFeedCount(userId: string): Promise<number>;
   getDailyChatMessageCount(userId: string, date: string): Promise<number>;
   incrementDailyChatMessageCount(userId: string, date: string): Promise<void>;
+  getDailyUsage(userId: string, date: string): Promise<DailyUsage | null>;
+  incrementDigestRefresh(userId: string, date: string): Promise<void>;
   
   // Chat Conversations
   createChatConversation(userId: string, conversation: Omit<InsertChatConversation, 'userId'>): Promise<ChatConversation>;
@@ -1105,6 +1107,58 @@ export class PostgresStorage implements IStorage {
           userId,
           date,
           chatMessages: 1,
+          createdAt: now,
+          updatedAt: now,
+        });
+    }
+  }
+
+  async getDailyUsage(userId: string, date: string): Promise<DailyUsage | null> {
+    const [usage] = await db
+      .select()
+      .from(dailyUsage)
+      .where(
+        and(
+          eq(dailyUsage.userId, userId),
+          eq(dailyUsage.date, date)
+        )
+      )
+      .limit(1);
+    return usage || null;
+  }
+
+  async incrementDigestRefresh(userId: string, date: string): Promise<void> {
+    const id = nanoid();
+    const now = new Date();
+    
+    const [existing] = await db
+      .select()
+      .from(dailyUsage)
+      .where(
+        and(
+          eq(dailyUsage.userId, userId),
+          eq(dailyUsage.date, date)
+        )
+      )
+      .limit(1);
+    
+    if (existing) {
+      await db
+        .update(dailyUsage)
+        .set({
+          digestRefreshes: existing.digestRefreshes + 1,
+          updatedAt: now,
+        })
+        .where(eq(dailyUsage.id, existing.id));
+    } else {
+      await db
+        .insert(dailyUsage)
+        .values({
+          id,
+          userId,
+          date,
+          chatMessages: 0,
+          digestRefreshes: 1,
           createdAt: now,
           updatedAt: now,
         });

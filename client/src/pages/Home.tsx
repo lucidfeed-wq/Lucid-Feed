@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { Filter } from "lucide-react";
+import { Filter, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
   Sheet,
   SheetContent,
@@ -30,6 +32,7 @@ export default function Home() {
   const [sortOption, setSortOption] = useState<SortOption>('quality-desc');
 
   const { user, isLoading: isLoadingUser, isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   const { data: preferences } = useQuery<UserPreferences>({
     queryKey: ["/api/preferences"],
@@ -67,6 +70,50 @@ export default function Home() {
   });
 
   const readItemIds = new Set((readStatusData as { readIds?: string[] })?.readIds || []);
+
+  // Refresh digest mutation
+  const refreshMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/digest/refresh', {
+        method: 'POST',
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/digest/latest'] });
+      toast({
+        title: "Digest Refreshed",
+        description: "Your digest has been updated with the latest content.",
+      });
+    },
+    onError: (error: any) => {
+      const errorData = error?.response?.data;
+      
+      if (errorData?.upgradeRequired) {
+        toast({
+          title: "Upgrade Required",
+          description: errorData.error,
+          variant: "destructive",
+          action: {
+            altText: "View Plans",
+            label: "View Plans",
+            onClick: () => navigate("/pricing"),
+          },
+        });
+      } else if (errorData?.limit !== undefined) {
+        toast({
+          title: "Daily Limit Reached",
+          description: errorData.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Refresh Failed",
+          description: error?.message || "Failed to refresh digest. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+  });
 
   // Redirect to onboarding if user has no topics selected
   useEffect(() => {
@@ -294,6 +341,19 @@ export default function Home() {
                 expert: filteredSections.expertCommentary.length,
               }}
             />
+
+            {/* Refresh Button */}
+            <div className="mb-6">
+              <Button
+                onClick={() => refreshMutation.mutate()}
+                disabled={refreshMutation.isPending}
+                data-testid="button-refresh-digest"
+                className="w-full"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
+                {refreshMutation.isPending ? "Fetching Fresh Content..." : "Refresh My Digest"}
+              </Button>
+            </div>
 
             {/* Sort Controls */}
             <div className="flex items-center justify-between mb-6">

@@ -1032,6 +1032,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Refresh digest - run ingestion and digest generation
+  app.post("/api/digest/refresh", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      console.log(`[POST /api/digest/refresh] Starting digest refresh for user ${userId}`);
+
+      // 1. Get user subscription
+      const subscription = await storage.getUserSubscription(userId);
+      const tier = subscription?.tier || 'free';
+
+      // 2. Check tier limits
+      const limits = {
+        free: 0,
+        premium: 1,
+        pro: Infinity,
+      };
+
+      if (limits[tier] === 0) {
+        return res.status(403).json({ 
+          error: "Upgrade to Premium for manual refresh",
+          tier: 'free',
+          upgradeRequired: true
+        });
+      }
+
+      // 3. Get today's usage
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const usage = await storage.getDailyUsage(userId, today);
+      const refreshCount = usage?.digestRefreshes || 0;
+
+      // 4. Check if user exceeded limit
+      if (refreshCount >= limits[tier]) {
+        return res.status(429).json({ 
+          error: `Daily refresh limit reached (${limits[tier]} per day)`,
+          limit: limits[tier],
+          used: refreshCount,
+          tier
+        });
+      }
+
+      // 5. Run ingestion
+      console.log(`[POST /api/digest/refresh] Running ingestion job...`);
+      await runIngestJob({ useSubscribedFeeds: true });
+
+      // 6. Run digest generation
+      console.log(`[POST /api/digest/refresh] Generating weekly digest...`);
+      const { id, slug } = await generateWeeklyDigest();
+
+      // 7. Increment refresh counter
+      await storage.incrementDigestRefresh(userId, today);
+
+      // 8. Return new digest
+      const digest = await storage.getDigestBySlug(slug);
+      
+      res.json({ 
+        success: true,
+        digestId: id,
+        slug,
+        digest,
+        message: 'Digest refreshed successfully',
+        usage: {
+          used: refreshCount + 1,
+          limit: limits[tier],
+          tier
+        }
+      });
+    } catch (error) {
+      console.error("Error refreshing digest:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to refresh digest';
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
   // reCAPTCHA verification endpoint
   app.post("/api/verify-recaptcha", async (req, res) => {
     try {

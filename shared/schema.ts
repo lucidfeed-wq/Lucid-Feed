@@ -764,6 +764,7 @@ export const dailyUsage = pgTable("daily_usage", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD format
   chatMessages: integer("chat_messages").notNull().default(0),
+  digestRefreshes: integer("digest_refreshes").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
@@ -776,6 +777,7 @@ export const dailyUsageSchema = z.object({
   userId: z.string(),
   date: z.string(),
   chatMessages: z.number(),
+  digestRefreshes: z.number(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
