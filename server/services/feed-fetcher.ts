@@ -21,6 +21,7 @@ const BATCH_SIZE = 10; // Process feeds in batches to avoid overload
 export async function fetchFeedItems(feeds: FeedCatalog[]): Promise<InsertItem[]> {
   const allItems: InsertItem[] = [];
   const totalFeeds = feeds.length;
+  const failedFeeds: Array<{ name: string; url: string; error: string }> = [];
 
   // Process feeds in batches to avoid overwhelming the system
   for (let i = 0; i < feeds.length; i += BATCH_SIZE) {
@@ -34,8 +35,9 @@ export async function fetchFeedItems(feeds: FeedCatalog[]): Promise<InsertItem[]
         
         try {
           return await fetchSingleFeed(feed);
-        } catch (error) {
-          console.error(`Error fetching feed ${feed.name} (${feed.url}):`, error);
+        } catch (error: any) {
+          const errorMsg = error?.message || String(error);
+          failedFeeds.push({ name: feed.name, url: feed.url, error: errorMsg });
           return []; // Continue on error
         }
       })
@@ -48,6 +50,15 @@ export async function fetchFeedItems(feeds: FeedCatalog[]): Promise<InsertItem[]
   }
 
   console.log(`Total items fetched from ${totalFeeds} feeds: ${allItems.length}`);
+  
+  // Summary of failed feeds
+  if (failedFeeds.length > 0) {
+    console.log(`\n⚠️  ${failedFeeds.length} feed(s) failed:`);
+    failedFeeds.forEach(f => {
+      console.log(`  - ${f.name}: ${f.error}`);
+    });
+  }
+  
   return allItems;
 }
 
@@ -65,14 +76,15 @@ async function fetchSingleFeed(feed: FeedCatalog): Promise<InsertItem[]> {
       try {
         const item = normalizeFeedEntry(entry, feed);
         items.push(item);
-      } catch (error) {
-        console.error(`Error normalizing entry from ${feed.name}:`, error);
-        // Continue processing other entries
+      } catch (error: any) {
+        // Skip malformed entries silently to avoid log spam
+        continue;
       }
     }
-  } catch (error) {
-    console.error(`Failed to parse RSS feed ${feed.url}:`, error);
-    throw error; // Let caller handle feed-level errors
+  } catch (error: any) {
+    // Re-throw with clean error message (stack trace handled by caller)
+    const errorMsg = error?.message || String(error);
+    throw new Error(errorMsg);
   }
 
   return items;
@@ -96,7 +108,7 @@ function normalizeFeedEntry(entry: any, feed: FeedCatalog): InsertItem {
   const feedTopics = (feed.topics || []) as Topic[];
   
   // Merge topics, preferring feed's topics, then auto-detected
-  const combinedTopics = [...new Set([...feedTopics, ...autoDetectedTopics])].slice(0, 5) as Topic[];
+  const combinedTopics = Array.from(new Set([...feedTopics, ...autoDetectedTopics])).slice(0, 5) as Topic[];
   
   const hashDedupe = generateHashDedupe(url, title);
 
