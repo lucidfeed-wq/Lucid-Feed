@@ -46,7 +46,8 @@ The application is a full-stack TypeScript project using React for the frontend 
 - **Automated Scheduling**: Daily ingestion and digest generation managed by `node-cron`.
 - **Feed Discovery**: Browsable directory with filters and user submission for admin approval.
 - **Job Management**: Lightweight PostgreSQL job queue with retry logic and dead-letter queue.
-- **Admin Features**: Job observability, token cost tracking, and bulk enrichment.
+- **Admin Features**: Job observability, token cost tracking, bulk enrichment, and test account management.
+- **Test Account Management**: Admin-controlled system for granting Pro-level access without Stripe subscriptions. Test accounts automatically receive unlimited feed subscriptions, chat messages, and all Pro features. Used for internal testing, demos, QA, beta testers, and reviewers. Admin UI displays all users with toggleable test account status, and Header shows "Test Account (Pro Access)" badge for transparency.
 
 ### Feature Specifications
 - **RSS Feed Ingestion**: From journals, Reddit, Substack, YouTube, and podcasts (14 curated shows).
