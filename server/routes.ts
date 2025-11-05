@@ -1307,6 +1307,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Feed request when search returns no results
+  app.post("/api/feed-requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const userEmail = req.user.claims.email;
+      
+      const { searchQuery, topics } = req.body;
+      
+      if (!searchQuery || typeof searchQuery !== 'string') {
+        return res.status(400).json({ error: "searchQuery is required" });
+      }
+      
+      // Create feed request
+      const requestData = {
+        userId,
+        email: userEmail,
+        searchQuery,
+        topics: topics || [],
+        status: 'pending' as const,
+      };
+      
+      const feedRequest = await storage.createFeedRequest(requestData);
+      
+      console.log(`[Feed Request] Created request ${feedRequest.id} for user ${userId}: "${searchQuery}"`);
+      
+      res.json(feedRequest);
+    } catch (error) {
+      console.error("Error creating feed request:", error);
+      res.status(500).json({ error: "Failed to create feed request" });
+    }
+  });
+
+  // Get user's feed requests
+  app.get("/api/feed-requests", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const requests = await storage.getFeedRequestsByUser(userId);
+      res.json(requests);
+    } catch (error) {
+      console.error("Error fetching feed requests:", error);
+      res.status(500).json({ error: "Failed to fetch feed requests" });
+    }
+  });
+
   // Admin metrics endpoint - job observability
   app.get("/api/admin/metrics/jobs", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
