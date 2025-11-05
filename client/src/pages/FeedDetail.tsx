@@ -27,7 +27,7 @@ export default function FeedDetail() {
   // Check if user is subscribed
   const { data: user } = useQuery<any>({ queryKey: ['/api/auth/user'] });
   const { data: subscriptions = [] } = useQuery<any[]>({
-    queryKey: ['/api/user/feed-subscriptions'],
+    queryKey: ['/api/subscriptions/feeds'],
     enabled: !!user,
   });
 
@@ -36,10 +36,10 @@ export default function FeedDetail() {
   // Subscribe mutation
   const subscribeMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest('POST', '/api/user/feed-subscriptions', { feedId: id });
+      await apiRequest('POST', `/api/subscriptions/feeds/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user/feed-subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/subscriptions/feeds'] });
       toast({
         title: "Subscribed!",
         description: `You're now following ${feed?.name}`,
@@ -57,13 +57,10 @@ export default function FeedDetail() {
   // Unsubscribe mutation  
   const unsubscribeMutation = useMutation({
     mutationFn: async () => {
-      const subscription = subscriptions.find((sub: any) => sub.feedId === id);
-      if (!subscription) throw new Error('Not subscribed');
-      
-      await apiRequest('DELETE', `/api/user/feed-subscriptions/${subscription.id}`);
+      await apiRequest('DELETE', `/api/subscriptions/feeds/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/user/feed-subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/subscriptions/feeds'] });
       toast({
         title: "Unsubscribed",
         description: `You've unfollowed ${feed?.name}`,

@@ -54,7 +54,7 @@ export default function Discover() {
 
   // Fetch user's subscriptions to show which feeds are already subscribed
   const { data: subscriptions = [] } = useQuery<any[]>({
-    queryKey: ['/api/user/feed-subscriptions'],
+    queryKey: ['/api/subscriptions/feeds'],
   });
 
   // Create a Set of subscribed feed IDs for quick lookup
@@ -94,7 +94,7 @@ export default function Discover() {
       });
       
       // Refresh subscriptions to update button states
-      queryClient.invalidateQueries({ queryKey: ['/api/user/feed-subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/subscriptions/feeds'] });
     } catch (error) {
       toast({
         title: "Error",
