@@ -47,7 +47,7 @@ export default function Discover() {
     : null;
 
   const { data: results = [], isLoading, refetch } = useQuery<FeedResult[]>({
-    queryKey: [queryUrl || '/api/discover/feeds', searchQuery, activeTab],
+    queryKey: queryUrl ? [queryUrl] : ['/api/discover/feeds'],
     enabled: queryUrl !== null,
   });
 
