@@ -181,7 +181,7 @@ export const itemSchema = z.object({
   score: z.number().optional(),
 });
 
-export const insertItemSchema = createInsertSchema(items).omit({ id: true, ingestedAt: true });
+export const insertItemSchema = createInsertSchema(items).omit({ id: true });
 
 export type Item = typeof items.$inferSelect;
 export type InsertItem = z.infer<typeof insertItemSchema>;
