@@ -913,6 +913,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User tier info endpoint (includes test account handling)
+  app.get('/api/user/tier-info', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { getUserTier } = await import('./tierChecks');
+      const tier = await getUserTier(storage, userId);
+      
+      res.json({ tier });
+    } catch (error) {
+      console.error("Error fetching user tier info:", error);
+      res.status(500).json({ message: "Failed to fetch tier info" });
+    }
+  });
+
   // User Subscription Management (Stripe tier)
   app.get('/api/subscription', isAuthenticated, async (req: any, res) => {
     try {
