@@ -13,6 +13,7 @@ The application features a modern React frontend with a Material Design aestheti
 
 ### Technical Implementations
 Lucid Feed is a full-stack TypeScript project with React for the frontend and Express for the backend.
+- **Email Configuration**: Supports personal Resend accounts (RESEND_USER_API_KEY, RESEND_USER_FROM) with priority over internal credentials. Public health endpoint at `/health/email` displays email configuration status (from address, API key source, domain hint) without authentication.
 - **Content Ingestion**: Extracts full content from RSS feeds across journals (PDFs via Unpaywall), YouTube (transcripts), Reddit, Substack, and Podcasts.
 - **Deduplication**: Uses SHA-256 hashing and URL canonicalization for cross-source deduplication.
 - **Topic Taxonomy**: A two-layer system with 10 major categories and ~110 subtopics for flexible user personalization.

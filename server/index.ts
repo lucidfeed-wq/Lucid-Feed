@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeScheduler } from "./scheduler";
 import { autoSeedFeedCatalog } from "./core/auto-seed";
+import publicHealth from "./routes/publicHealth";
 
 const app = express();
 
@@ -17,6 +18,9 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
+
+// Mount public health routes before auth
+app.use(publicHealth);
 
 app.use((req, res, next) => {
   const start = Date.now();
