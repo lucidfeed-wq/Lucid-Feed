@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Check, X, ExternalLink, Activity, TrendingUp, Hash, DollarSign, AlertCircle, CheckCircle, FlaskConical } from 'lucide-react';
+import { Check, X, ExternalLink, Activity, TrendingUp, Hash, DollarSign, AlertCircle, CheckCircle, FlaskConical, Info } from 'lucide-react';
 import { Header } from '@/components/Header';
 import type { UserFeedSubmission, JobRun, Topic, User } from '@shared/schema';
 import { topics } from '@shared/schema';
@@ -290,18 +290,18 @@ export default function AdminPage() {
       {/* Manual Job Triggers */}
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Manual Job Triggers</CardTitle>
+          <CardTitle>Content Pipeline</CardTitle>
           <CardDescription>
-            Force run ingestion or digest generation jobs manually with custom settings
+            Ingest fetches fresh content from subscribed feeds → Digest assembles personalized newsletters from ingested items
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Ingestion Trigger */}
           <div className="space-y-3">
             <div>
-              <Label className="text-sm font-medium">1. Run Ingestion (Optional: Filter by Topics)</Label>
+              <Label className="text-sm font-medium">1. Fetch Fresh Content (Ingestion)</Label>
               <p className="text-xs text-muted-foreground mt-1">
-                Fetch new content from RSS feeds. Select topics to limit ingestion, or leave empty for all topics.
+                Pulls latest articles, videos, and posts from feeds users are subscribed to. Content is stored in the database for digest generation. Topics are optional filters.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -333,8 +333,14 @@ export default function AdminPage() {
               disabled={runIngestMutation.isPending}
               data-testid="button-trigger-ingest"
             >
-              {runIngestMutation.isPending ? 'Running...' : selectedTopics.length > 0 ? `Run Filtered Ingestion (${selectedTopics.length} topics)` : 'Run Full Ingestion'}
+              {runIngestMutation.isPending ? 'Fetching...' : selectedTopics.length > 0 ? `Fetch Content (${selectedTopics.length} topics)` : 'Fetch from Subscribed Feeds'}
             </Button>
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
+              <Info className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-muted-foreground">
+                Only processes feeds users are subscribed to. Subscribe to feeds via Discover to ingest their content.
+              </p>
+            </div>
           </div>
 
           <div className="border-t pt-6" />
@@ -342,9 +348,9 @@ export default function AdminPage() {
           {/* Digest Trigger */}
           <div className="space-y-3">
             <div>
-              <Label className="text-sm font-medium">2. Generate Digest (Configure Item Counts)</Label>
+              <Label className="text-sm font-medium">2. Assemble Digest (Newsletter Generation)</Label>
               <p className="text-xs text-muted-foreground mt-1">
-                Create a new weekly digest. Customize how many items to include in each section.
+                Creates personalized weekly digest from previously ingested content. Customize how many items per section. Requires content in database first (Step 1).
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

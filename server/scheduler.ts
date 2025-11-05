@@ -8,7 +8,7 @@ export function initializeScheduler() {
   cron.schedule("0 0 * * *", async () => {
     console.log("Running scheduled daily ingestion...");
     try {
-      await runIngestJob();
+      await runIngestJob({ useSubscribedFeeds: true });
     } catch (error) {
       console.error("Scheduled ingestion failed:", error);
     }

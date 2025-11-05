@@ -1088,6 +1088,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate request body with Zod
       const ingestRequestSchema = z.object({
         topics: z.array(z.enum(topics)).optional(),
+        useSubscribedFeeds: z.boolean().optional(),
+        feedIds: z.array(z.string()).optional(),
       });
       
       const validationResult = ingestRequestSchema.safeParse(req.body || {});
@@ -1100,10 +1102,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const { topics: requestTopics } = validationResult.data;
-      const options = requestTopics && requestTopics.length > 0 
-        ? { topics: requestTopics } 
-        : {};
+      const { topics: requestTopics, useSubscribedFeeds = true, feedIds } = validationResult.data;
+      const options: any = { useSubscribedFeeds };
+      
+      if (requestTopics && requestTopics.length > 0) {
+        options.topics = requestTopics;
+      }
+      if (feedIds && feedIds.length > 0) {
+        options.feedIds = feedIds;
+      }
       
       const result = await runIngestJob(options);
       res.json({

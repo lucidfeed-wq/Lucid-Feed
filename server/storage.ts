@@ -86,6 +86,7 @@ export interface IStorage {
   unsubscribeFeed(userId: string, feedId: string): Promise<void>;
   getUserFeedSubscriptions(userId: string): Promise<(UserFeedSubscription & { feed: FeedCatalog })[]>;
   isSubscribedToFeed(userId: string, feedId: string): Promise<boolean>;
+  getAllFeedSubscriptions(): Promise<UserFeedSubscription[]>;
   
   // User Subscription Management (Stripe tiers)
   getUserSubscription(userId: string): Promise<UserSubscription | undefined>;
@@ -990,6 +991,15 @@ export class PostgresStorage implements IStorage {
       )
       .limit(1);
     return !!result;
+  }
+
+  async getAllFeedSubscriptions(): Promise<UserFeedSubscription[]> {
+    const results = await db
+      .select()
+      .from(userFeedSubscriptions)
+      .where(eq(userFeedSubscriptions.isActive, true));
+    
+    return results;
   }
 
   // User Subscription Management (Stripe tiers)
