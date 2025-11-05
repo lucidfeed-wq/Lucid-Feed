@@ -156,11 +156,13 @@ export default function FeedCatalogPage() {
                     {feed.description}
                   </p>
                 )}
-                <Link href={`/feeds/${feed.id}`}>
-                  <a className="inline-flex items-center text-sm font-medium hover:underline" data-testid={`link-feed-preview-${feed.id}`}>
-                    View Feed
-                    <Eye className="h-3 w-3 ml-1" />
-                  </a>
+                <Link 
+                  href={`/feeds/${feed.id}`}
+                  className="inline-flex items-center text-sm font-medium hover:underline"
+                  data-testid={`link-feed-preview-${feed.id}`}
+                >
+                  View Feed
+                  <Eye className="h-3 w-3 ml-1" />
                 </Link>
               </CardContent>
             </Card>

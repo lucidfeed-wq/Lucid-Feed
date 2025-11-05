@@ -18,11 +18,11 @@ export default function FeedDetail() {
     enabled: !!id,
   });
 
-  // Fetch sample items
-  const { data: items = [], isLoading: itemsLoading } = useQuery<any[]>({
-    queryKey: ['/api/feeds', id, 'items'],
-    enabled: !!id,
-  });
+  // TODO: Items preview disabled until feedId is added to items table
+  // Currently items don't have feedId reference, causing incorrect matching
+  // for feeds that share domains (Reddit, YouTube, etc.)
+  const items: any[] = [];
+  const itemsLoading = false;
 
   // Check if user is subscribed
   const { data: user } = useQuery<any>({ queryKey: ['/api/auth/user'] });
@@ -227,59 +227,21 @@ export default function FeedDetail() {
         </CardContent>
       </Card>
 
-      {/* Sample items */}
+      {/* Sample items - Coming Soon */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Items from this Feed</CardTitle>
+          <CardTitle>Recent Items Preview</CardTitle>
           <CardDescription>
-            Preview of the latest content we've ingested
+            Coming soon - we're working on adding item previews
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {itemsLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-24 w-full" />
-              ))}
-            </div>
-          ) : items.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No items found from this feed yet.</p>
-              <p className="text-sm mt-2">
-                Items will appear here once we've ingested content from this source.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {items.map((item: any) => (
-                <Card key={item.id} className="hover-elevate" data-testid={`card-item-${item.id}`}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base leading-snug">
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:underline"
-                        data-testid={`link-item-${item.id}`}
-                      >
-                        {item.title}
-                      </a>
-                    </CardTitle>
-                    <CardDescription className="text-sm">
-                      {item.authorOrChannel} • {new Date(item.publishedAt).toLocaleDateString()}
-                    </CardDescription>
-                  </CardHeader>
-                  {item.rawExcerpt && (
-                    <CardContent className="pt-0">
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {item.rawExcerpt}
-                      </p>
-                    </CardContent>
-                  )}
-                </Card>
-              ))}
-            </div>
-          )}
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="mb-2">Item previews will be available in a future update.</p>
+            <p className="text-sm">
+              Subscribe to this feed to see content in your personalized digests.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
