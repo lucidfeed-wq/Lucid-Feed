@@ -1,0 +1,139 @@
+Context: Vite + React frontend, Node/Express backend. Do everything safely and idempotently. 
+Goal: Send our weekly digest email via Resend using a published template alias "weeklyDigest" — no Zapier.
+
+Requirements:
+- Do NOT break existing routes or bundler config.
+- Use environment variables; if missing, return helpful 503s instead of crashing.
+- Write clear console logs and a tiny README with test + rollback steps.
+
+--------------------------------
+1) Job: /jobs/sendWeeklyDigest.ts
+--------------------------------
+Create file /jobs/sendWeeklyDigest.ts with:
+
+import fetch from "node-fetch";
+
+type DigestItem = { title: string; url: string; source?: string };
+type Digest = { week: string; intro?: string; items: DigestItem[] };
+
+export async function sendWeeklyDigest(digest: Digest) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY missing");
+  if (!digest?.items?.length) throw new Error("digest.items empty");
+
+  // Choose recipient strategy:
+  // 1) TEST_EMAIL (single address for testing) – default if present,
+  // 2) RESEND_TO (comma-separated list of emails),
+  // 3) otherwise fail with a friendly message so we don't blast anyone by accident.
+  let to: string[] | undefined = undefined;
+  if (process.env.TEST_EMAIL) {
+    to = [process.env.TEST_EMAIL];
+  } else if (process.env.RESEND_TO) {
+    to = process.env.RESEND_TO.split(",").map(s => s.trim()).filter(Boolean);
+  }
+  if (!to || !to.length) {
+    throw new Error("No recipients: set TEST_EMAIL (for testing) or RESEND_TO (comma-separated emails).");
+  }
+
+  const payload = {
+    from: "alerts@getlucidfeed.com",
+    to,
+    subject: `LucidFeed — ${digest.week}`,
+    // Use the published Resend template alias (prebuilt in the UI).
+    template: "weeklyDigest",
+    // Data object the template expects.
+    data: {
+      week: digest.week,
+      intro: digest.intro || "This week on LucidFeed:",
+      items: digest.items.slice(0, 10)
+    }
+  };
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const text = await res.text();
+  console.log("[RESEND] status", res.status, text);
+  if (!res.ok) throw new Error(text);
+}
+
+--------------------------------
+2) Route: /routes/adminDigest.ts
+--------------------------------
+Create /routes/adminDigest.ts with:
+
+import express from "express";
+import fetch from "node-fetch";
+import { sendWeeklyDigest } from "../jobs/sendWeeklyDigest";
+
+const router = express.Router();
+
+// POST /admin/run/email-digest?token=XYZ
+router.post("/admin/run/email-digest", async (req, res) => {
+  try {
+    const token = req.query.token;
+    if (token !== process.env.MARKETING_JOBS_TOKEN) {
+      return res.status(401).json({ ok:false, error:"invalid token" });
+    }
+    const r = await fetch("https://www.getlucidfeed.com/export/weekly.json");
+    if (!r.ok) return res.status(503).json({ ok:false, error:"cannot fetch /export/weekly.json" });
+    const digest = await r.json();
+    digest.intro = digest.intro || "Hand-picked, source-linked stories you can trust.";
+    await sendWeeklyDigest(digest);
+    return res.json({ ok:true, sent:true, week:digest.week, items:digest.items?.length || 0 });
+  } catch (e:any) {
+    console.error("[ADMIN DIGEST] error", e?.message || e);
+    return res.status(500).json({ ok:false, error:e?.message || "send failed" });
+  }
+});
+
+// GET convenience probe returns 405
+router.get("/admin/run/email-digest", (req, res) => {
+  res.status(405).json({ ok:false, error:"use POST with ?token=" });
+});
+
+export default router;
+
+--------------------------------
+3) Mount the router
+--------------------------------
+In the main Express bootstrap (e.g., server/app.ts or similar where other routers are mounted):
+- Ensure express.json() is enabled.
+- Import and mount the new router:
+
+import adminDigest from "./routes/adminDigest";
+app.use(express.json());
+app.use(adminDigest);
+
+Also on startup, print a line:
+console.log("Admin digest route: POST /admin/run/email-digest");
+
+--------------------------------
+4) README + env checks
+--------------------------------
+Create /MARKETING_AUTOMATION.md with:
+- Required secrets:
+  RESEND_API_KEY
+  MARKETING_JOBS_TOKEN
+  TEST_EMAIL (for testing) OR RESEND_TO (comma-separated emails)
+- Test command:
+  curl -X POST "https://www.getlucidfeed.com/admin/run/email-digest?token=YOUR_MARKETING_JOBS_TOKEN"
+- Expected: { ok:true, sent:true, week:"YYYY-MM-DD", items:N }
+- Rollback: revert the commit or remove adminDigest router mount.
+
+If RESEND_API_KEY is missing at runtime, log a friendly 503 hint once.
+
+--------------------------------
+5) Commit + summary
+--------------------------------
+Commit message:
+feat(email): add Resend template sender and /admin/run/email-digest job
+
+Then print to console:
+"[READY] Resend weekly digest emailer wired. Test with: POST /admin/run/email-digest?token=…"

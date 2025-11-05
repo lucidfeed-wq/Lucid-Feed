@@ -65,6 +65,7 @@ export interface IStorage {
   getUserFeedSubmissions(userId: string): Promise<UserFeedSubmission[]>;
   getPendingFeedSubmissions(): Promise<UserFeedSubmission[]>;
   reviewFeedSubmission(id: string, reviewerId: string, status: 'approved' | 'rejected', reviewNotes?: string): Promise<UserFeedSubmission>;
+  updateFeedHealth(feedId: string, health: { lastFetchStatus: 'success' | 'permanent_error' | 'transient_error'; consecutiveFailures?: number; lastErrorMessage?: string | null }): Promise<void>;
   
   // Job Runs (observability)
   createJobRun(jobRun: Omit<InsertJobRun, 'startedAt'>): Promise<JobRun>;
@@ -740,6 +741,22 @@ export class PostgresStorage implements IStorage {
     }
     
     return result;
+  }
+
+  async updateFeedHealth(
+    feedId: string,
+    health: { lastFetchStatus: 'success' | 'permanent_error' | 'transient_error'; consecutiveFailures?: number; lastErrorMessage?: string | null }
+  ): Promise<void> {
+    const now = new Date();
+    await db
+      .update(feedCatalog)
+      .set({
+        lastFetchedAt: now,
+        lastFetchStatus: health.lastFetchStatus,
+        consecutiveFailures: health.consecutiveFailures ?? 0,
+        lastErrorMessage: health.lastErrorMessage ?? null,
+      })
+      .where(eq(feedCatalog.id, feedId));
   }
 
   // Job Runs (observability)

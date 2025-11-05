@@ -3,17 +3,171 @@ import type { InsertItem, FeedCatalog, Topic } from "@shared/schema";
 import { topics } from "@shared/schema";
 import { tagTopics } from "../core/topics";
 import { generateHashDedupe, extractDOI } from "../core/dedupe";
+import { storage } from "../storage";
 
 const parser = new Parser({
   customFields: {
     item: [['dc:identifier', 'doi']],
   },
+  timeout: 30000, // 30 second timeout
 });
 
 const BATCH_SIZE = 10; // Process feeds in batches to avoid overload
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [2000, 4000, 8000]; // 2s, 4s, 8s in milliseconds
 
 // Create a Set of valid topics for fast lookup and validation
 const validTopicsSet = new Set<string>(topics);
+
+// Error types for categorization
+enum ErrorType {
+  PERMANENT = 'permanent_error',
+  TRANSIENT = 'transient_error'
+}
+
+// Detailed error info for tracking
+interface FeedError {
+  name: string;
+  url: string;
+  error: string;
+  type: ErrorType;
+}
+
+/**
+ * Validate feed URL before attempting fetch
+ * @param url - The URL to validate
+ * @returns true if valid, false otherwise
+ */
+function validateFeedURL(url: string): { valid: boolean; error?: string } {
+  try {
+    const parsedUrl = new URL(url);
+    
+    // Only allow http and https protocols
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      return {
+        valid: false,
+        error: `Invalid protocol: ${parsedUrl.protocol}. Only http and https are allowed.`
+      };
+    }
+    
+    // Basic hostname validation
+    if (!parsedUrl.hostname || parsedUrl.hostname.length < 3) {
+      return {
+        valid: false,
+        error: 'Invalid hostname'
+      };
+    }
+    
+    return { valid: true };
+  } catch (error) {
+    return {
+      valid: false,
+      error: `Invalid URL format: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}
+
+/**
+ * Determine if an error is transient (can be retried) or permanent
+ * @param error - The error to categorize
+ * @returns ErrorType.TRANSIENT or ErrorType.PERMANENT
+ */
+function categorizeError(error: any): ErrorType {
+  const errorMsg = error?.message || String(error);
+  const errorCode = error?.code;
+  const statusCode = error?.response?.status || error?.statusCode;
+  
+  // Transient errors that should be retried
+  const transientConditions = [
+    // Network errors
+    errorCode === 'ECONNRESET',
+    errorCode === 'ETIMEDOUT',
+    errorCode === 'ENOTFOUND',
+    errorCode === 'ECONNREFUSED',
+    errorCode === 'ENETUNREACH',
+    
+    // HTTP status codes that are transient
+    statusCode === 429, // Rate limit
+    statusCode === 503, // Service unavailable
+    statusCode === 502, // Bad gateway
+    statusCode === 504, // Gateway timeout
+    statusCode === 408, // Request timeout
+    
+    // Timeout messages
+    errorMsg.toLowerCase().includes('timeout'),
+    errorMsg.toLowerCase().includes('timed out'),
+    
+    // Connection issues
+    errorMsg.toLowerCase().includes('socket hang up'),
+    errorMsg.toLowerCase().includes('network'),
+  ];
+  
+  // Permanent errors that should NOT be retried
+  const permanentConditions = [
+    statusCode === 404, // Not found
+    statusCode === 401, // Unauthorized
+    statusCode === 403, // Forbidden
+    statusCode === 410, // Gone
+    errorMsg.toLowerCase().includes('invalid url'),
+    errorMsg.toLowerCase().includes('parse error'),
+    errorMsg.toLowerCase().includes('invalid xml'),
+    errorMsg.toLowerCase().includes('invalid feed'),
+  ];
+  
+  if (permanentConditions.some(c => c)) {
+    return ErrorType.PERMANENT;
+  }
+  
+  if (transientConditions.some(c => c)) {
+    return ErrorType.TRANSIENT;
+  }
+  
+  // Default to transient for unknown errors (conservative approach)
+  return ErrorType.TRANSIENT;
+}
+
+/**
+ * Retry a function with exponential backoff
+ * @param fn - The async function to retry
+ * @param retries - Number of retries remaining
+ * @param delays - Array of delay durations in ms
+ * @param attemptNum - Current attempt number (for logging)
+ * @returns The result of the function
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  retries: number,
+  delays: number[],
+  attemptNum: number = 1
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    const errorType = categorizeError(error);
+    
+    // Don't retry permanent errors
+    if (errorType === ErrorType.PERMANENT) {
+      throw error;
+    }
+    
+    // Don't retry if no retries left
+    if (retries === 0) {
+      throw error;
+    }
+    
+    // Calculate delay for this retry
+    const delayIndex = attemptNum - 1;
+    const delay = delays[Math.min(delayIndex, delays.length - 1)];
+    
+    console.log(`  Retrying in ${delay/1000}s (attempt ${attemptNum + 1}/${MAX_RETRIES + 1})...`);
+    
+    // Wait before retrying
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    // Retry with one less retry
+    return retryWithBackoff(fn, retries - 1, delays, attemptNum + 1);
+  }
+}
 
 /**
  * Generic feed fetcher that processes feeds from the catalog.
@@ -25,7 +179,8 @@ const validTopicsSet = new Set<string>(topics);
 export async function fetchFeedItems(feeds: FeedCatalog[]): Promise<InsertItem[]> {
   const allItems: InsertItem[] = [];
   const totalFeeds = feeds.length;
-  const failedFeeds: Array<{ name: string; url: string; error: string }> = [];
+  const failedFeeds: FeedError[] = [];
+  const healthySummary: { feedId: string; name: string; status: string }[] = [];
 
   // Process feeds in batches to avoid overwhelming the system
   for (let i = 0; i < feeds.length; i += BATCH_SIZE) {
@@ -38,10 +193,54 @@ export async function fetchFeedItems(feeds: FeedCatalog[]): Promise<InsertItem[]
         console.log(`Processing feed ${feedIndex} of ${totalFeeds}: ${feed.name}`);
         
         try {
-          return await fetchSingleFeed(feed);
+          const items = await fetchSingleFeed(feed);
+          
+          // Success: update feed health
+          await storage.updateFeedHealth(feed.id, {
+            lastFetchStatus: 'success',
+            consecutiveFailures: 0,
+            lastErrorMessage: null,
+          });
+          
+          healthySummary.push({
+            feedId: feed.id,
+            name: feed.name,
+            status: 'healthy',
+          });
+          
+          console.log(`✓ Successfully fetched ${items.length} items from ${feed.name}`);
+          return items;
         } catch (error: any) {
           const errorMsg = error?.message || String(error);
-          failedFeeds.push({ name: feed.name, url: feed.url, error: errorMsg });
+          const errorType = categorizeError(error);
+          
+          // Get current feed health to calculate consecutive failures
+          const currentFeed = await storage.getFeedById(feed.id);
+          const currentFailures = currentFeed?.consecutiveFailures || 0;
+          const newFailures = currentFailures + 1;
+          
+          // Update feed health with error
+          await storage.updateFeedHealth(feed.id, {
+            lastFetchStatus: errorType,
+            consecutiveFailures: newFailures,
+            lastErrorMessage: errorMsg.substring(0, 500), // Limit error message length
+          });
+          
+          failedFeeds.push({ 
+            name: feed.name, 
+            url: feed.url, 
+            error: errorMsg,
+            type: errorType,
+          });
+          
+          // Mark as unhealthy if too many consecutive failures
+          const healthStatus = newFailures >= 5 ? 'unhealthy' : 'degraded';
+          healthySummary.push({
+            feedId: feed.id,
+            name: feed.name,
+            status: `${healthStatus} (${newFailures} failures)`,
+          });
+          
           return []; // Continue on error
         }
       })
@@ -53,27 +252,82 @@ export async function fetchFeedItems(feeds: FeedCatalog[]): Promise<InsertItem[]
     }
   }
 
-  console.log(`Total items fetched from ${totalFeeds} feeds: ${allItems.length}`);
+  console.log(`\nTotal items fetched from ${totalFeeds} feeds: ${allItems.length}`);
+  
+  // Feed health summary
+  console.log('\n📊 Feed Health Summary:');
+  const healthy = healthySummary.filter(f => f.status === 'healthy').length;
+  const degraded = healthySummary.filter(f => f.status.includes('degraded')).length;
+  const unhealthy = healthySummary.filter(f => f.status.includes('unhealthy')).length;
+  
+  console.log(`  ✓ Healthy: ${healthy}`);
+  if (degraded > 0) console.log(`  ⚠ Degraded: ${degraded}`);
+  if (unhealthy > 0) console.log(`  ✗ Unhealthy: ${unhealthy}`);
   
   // Summary of failed feeds
   if (failedFeeds.length > 0) {
     console.log(`\n⚠️  ${failedFeeds.length} feed(s) failed:`);
-    failedFeeds.forEach(f => {
-      console.log(`  - ${f.name}: ${f.error}`);
-    });
+    
+    // Group by error type
+    const permanentErrors = failedFeeds.filter(f => f.type === ErrorType.PERMANENT);
+    const transientErrors = failedFeeds.filter(f => f.type === ErrorType.TRANSIENT);
+    
+    if (permanentErrors.length > 0) {
+      console.log('\n  Permanent errors (not retried):');
+      permanentErrors.forEach(f => {
+        console.log(`    - ${f.name}: ${f.error}`);
+      });
+    }
+    
+    if (transientErrors.length > 0) {
+      console.log('\n  Transient errors (retried but failed):');
+      transientErrors.forEach(f => {
+        console.log(`    - ${f.name}: ${f.error}`);
+      });
+    }
   }
   
   return allItems;
 }
 
 /**
- * Fetch and normalize items from a single feed.
+ * Fetch and normalize items from a single feed with retry logic and timeout handling.
  */
 async function fetchSingleFeed(feed: FeedCatalog): Promise<InsertItem[]> {
   const items: InsertItem[] = [];
 
+  // Validate URL before attempting fetch
+  const validation = validateFeedURL(feed.url);
+  if (!validation.valid) {
+    throw new Error(`URL validation failed: ${validation.error}`);
+  }
+
   try {
-    const rssFeed = await parser.parseURL(feed.url);
+    // Wrap the RSS parser call with retry logic and timeout
+    const rssFeed = await retryWithBackoff(
+      async () => {
+        try {
+          return await parser.parseURL(feed.url);
+        } catch (error: any) {
+          // Enhance error message for better debugging
+          const enhancedError = new Error(
+            `Failed to fetch RSS feed: ${error?.message || String(error)}`
+          );
+          
+          // Preserve status code and error code if available
+          if (error?.response?.status) {
+            (enhancedError as any).statusCode = error.response.status;
+          }
+          if (error?.code) {
+            (enhancedError as any).code = error.code;
+          }
+          
+          throw enhancedError;
+        }
+      },
+      MAX_RETRIES,
+      RETRY_DELAYS
+    );
 
     // Limit items per feed to avoid overload (take most recent 10)
     for (const entry of rssFeed.items.slice(0, 10)) {
@@ -86,9 +340,8 @@ async function fetchSingleFeed(feed: FeedCatalog): Promise<InsertItem[]> {
       }
     }
   } catch (error: any) {
-    // Re-throw with clean error message (stack trace handled by caller)
-    const errorMsg = error?.message || String(error);
-    throw new Error(errorMsg);
+    // Re-throw with clean error message (categorization happens in caller)
+    throw error;
   }
 
   return items;

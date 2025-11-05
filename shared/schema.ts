@@ -406,6 +406,10 @@ export const feedCatalog = pgTable("feed_catalog", {
   approvedBy: varchar("approved_by").references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow(),
   approvedAt: timestamp("approved_at"),
+  lastFetchedAt: timestamp("last_fetched_at"),
+  lastFetchStatus: varchar("last_fetch_status", { length: 20 }), // 'success', 'permanent_error', 'transient_error'
+  consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+  lastErrorMessage: text("last_error_message"),
 }, (table) => ({
   domainIdx: index("feed_catalog_domain_idx").on(table.domain),
   isApprovedIdx: index("feed_catalog_is_approved_idx").on(table.isApproved),
@@ -431,6 +435,10 @@ export const feedCatalogSchema = z.object({
   approvedBy: z.string().nullable().optional(),
   createdAt: z.date().optional(),
   approvedAt: z.date().nullable().optional(),
+  lastFetchedAt: z.date().nullable().optional(),
+  lastFetchStatus: z.enum(['success', 'permanent_error', 'transient_error']).nullable().optional(),
+  consecutiveFailures: z.number().default(0),
+  lastErrorMessage: z.string().nullable().optional(),
 });
 
 export const insertFeedCatalogSchema = createInsertSchema(feedCatalog).omit({ id: true, createdAt: true });
