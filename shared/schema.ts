@@ -877,3 +877,39 @@ export const insertMetricsDailySchema = createInsertSchema(metricsDaily).omit({ 
 
 export type MetricsDaily = typeof metricsDaily.$inferSelect;
 export type InsertMetricsDaily = z.infer<typeof insertMetricsDailySchema>;
+
+// Feed requests table - track user requests for feeds on topics with no results
+export const feedRequests = pgTable("feed_requests", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id, { onDelete: 'cascade' }),
+  email: varchar("email", { length: 255 }).notNull(), // User's email for notification
+  searchQuery: text("search_query").notNull(), // Original search query that had no results
+  topics: json("topics").$type<Topic[]>(), // Topics the user is interested in
+  status: varchar("status", { length: 20 }).notNull().default('pending'), // pending, processing, found, not_found
+  foundFeeds: json("found_feeds").$type<string[]>(), // Array of feed IDs that were found
+  processedAt: timestamp("processed_at"),
+  notifiedAt: timestamp("notified_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdIdx: index("feed_requests_user_id_idx").on(table.userId),
+  statusIdx: index("feed_requests_status_idx").on(table.status),
+  createdAtIdx: index("feed_requests_created_at_idx").on(table.createdAt),
+}));
+
+export const feedRequestSchema = z.object({
+  id: z.string(),
+  userId: z.string().nullable().optional(),
+  email: z.string().email(),
+  searchQuery: z.string(),
+  topics: z.array(z.string()).optional(),
+  status: z.enum(['pending', 'processing', 'found', 'not_found']),
+  foundFeeds: z.array(z.string()).optional(),
+  processedAt: z.date().nullable().optional(),
+  notifiedAt: z.date().nullable().optional(),
+  createdAt: z.date().optional(),
+});
+
+export const insertFeedRequestSchema = createInsertSchema(feedRequests).omit({ id: true, createdAt: true });
+
+export type FeedRequest = typeof feedRequests.$inferSelect;
+export type InsertFeedRequest = z.infer<typeof insertFeedRequestSchema>;

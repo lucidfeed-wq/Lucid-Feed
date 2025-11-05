@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions, dailyUsage, folders, itemFolders, chatConversations, chatSettings } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription, DailyUsage, InsertDailyUsage, Folder, InsertFolder, ItemFolder, InsertItemFolder, ChatConversation, InsertChatConversation, ChatSettings, InsertChatSettings } from "@shared/schema";
+import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions, dailyUsage, folders, itemFolders, chatConversations, chatSettings, feedRequests } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription, DailyUsage, InsertDailyUsage, Folder, InsertFolder, ItemFolder, InsertItemFolder, ChatConversation, InsertChatConversation, ChatSettings, InsertChatSettings, FeedRequest, InsertFeedRequest } from "@shared/schema";
 import { eq, and, gte, lte, desc, inArray, or, like, sql, avg, count } from "drizzle-orm";
 
 export interface IStorage {
@@ -1165,6 +1165,56 @@ export class PostgresStorage implements IStorage {
       
       return created;
     }
+  }
+
+  // Feed Requests
+  async createFeedRequest(requestData: InsertFeedRequest): Promise<FeedRequest> {
+    const id = nanoid();
+    const [request] = await db
+      .insert(feedRequests)
+      .values({
+        ...requestData,
+        id,
+      } as any)
+      .returning();
+    
+    return request;
+  }
+
+  async getPendingFeedRequests(): Promise<FeedRequest[]> {
+    return await db
+      .select()
+      .from(feedRequests)
+      .where(eq(feedRequests.status, 'pending'))
+      .orderBy(feedRequests.createdAt);
+  }
+
+  async updateFeedRequest(requestId: string, updates: Partial<FeedRequest>): Promise<FeedRequest> {
+    const [updated] = await db
+      .update(feedRequests)
+      .set(updates as any)
+      .where(eq(feedRequests.id, requestId))
+      .returning();
+    
+    return updated;
+  }
+
+  async getFeedRequestsByUser(userId: string): Promise<FeedRequest[]> {
+    return await db
+      .select()
+      .from(feedRequests)
+      .where(eq(feedRequests.userId, userId))
+      .orderBy(desc(feedRequests.createdAt));
+  }
+
+  async getFeedRequestById(requestId: string): Promise<FeedRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(feedRequests)
+      .where(eq(feedRequests.id, requestId))
+      .limit(1);
+    
+    return request;
   }
 }
 
