@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Check, X, ExternalLink, Activity, TrendingUp, Hash, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
+import { Check, X, ExternalLink, Activity, TrendingUp, Hash, DollarSign, AlertCircle, CheckCircle, FlaskConical } from 'lucide-react';
 import { Header } from '@/components/Header';
-import type { UserFeedSubmission, JobRun, Topic } from '@shared/schema';
+import type { UserFeedSubmission, JobRun, Topic, User } from '@shared/schema';
 import { topics } from '@shared/schema';
 import { formatDistanceToNow } from 'date-fns';
 import { formatTokensWithCost, formatCost, estimateCostFromTokens } from '@/utils/token-pricing';
@@ -27,6 +27,98 @@ interface MetricsData {
     totalTokenSpend: number;
     avgDedupeRate: string;
   };
+}
+
+function TestAccountManager() {
+  const { toast } = useToast();
+  
+  const { data: users = [], isLoading } = useQuery<User[]>({
+    queryKey: ['/api/admin/users'],
+  });
+  
+  const toggleTestAccountMutation = useMutation({
+    mutationFn: async ({ userId, isTestAccount }: { userId: string; isTestAccount: boolean }) => {
+      return await apiRequest('PATCH', `/api/admin/users/${userId}/test-account`, {
+        isTestAccount,
+      });
+    },
+    onSuccess: (_, variables) => {
+      toast({
+        title: variables.isTestAccount ? 'Test account enabled' : 'Test account disabled',
+        description: variables.isTestAccount 
+          ? 'User now has Pro-level access for testing'
+          : 'User returned to their subscription tier',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to update test account',
+        description: error.message || 'An error occurred',
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  if (isLoading) {
+    return <div className="text-sm text-muted-foreground">Loading users...</div>;
+  }
+  
+  if (users.length === 0) {
+    return <div className="text-sm text-muted-foreground">No users found</div>;
+  }
+  
+  return (
+    <div className="space-y-3">
+      <div className="text-sm text-muted-foreground mb-4">
+        {users.length} total user{users.length !== 1 ? 's' : ''} · {users.filter(u => u.isTestAccount).length} test account{users.filter(u => u.isTestAccount).length !== 1 ? 's' : ''}
+      </div>
+      <div className="space-y-2">
+        {users.map((user) => (
+          <div
+            key={user.id}
+            className="flex items-center justify-between p-3 rounded-lg border hover-elevate"
+            data-testid={`card-user-${user.id}`}
+          >
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-medium truncate">
+                  {user.firstName && user.lastName 
+                    ? `${user.firstName} ${user.lastName}` 
+                    : user.email || user.id}
+                </span>
+                {user.isTestAccount && (
+                  <Badge variant="secondary" className="gap-1">
+                    <FlaskConical className="h-3 w-3" />
+                    Test
+                  </Badge>
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground truncate">
+                {user.email}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 ml-4">
+              <Checkbox
+                checked={user.isTestAccount}
+                onCheckedChange={(checked) => {
+                  toggleTestAccountMutation.mutate({
+                    userId: user.id,
+                    isTestAccount: Boolean(checked),
+                  });
+                }}
+                disabled={toggleTestAccountMutation.isPending}
+                data-testid={`checkbox-test-account-${user.id}`}
+              />
+              <Label className="text-sm text-muted-foreground cursor-pointer">
+                Test Account
+              </Label>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function AdminPage() {
@@ -463,6 +555,19 @@ export default function AdminPage() {
           </Card>
         </div>
       )}
+
+      {/* Test Account Management */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Test Account Management</CardTitle>
+          <CardDescription>
+            Grant test accounts Pro-level access without Stripe subscriptions for demos, QA, and internal testing
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TestAccountManager />
+        </CardContent>
+      </Card>
 
       {/* Feed Submissions Section */}
       <div className="mb-8">
