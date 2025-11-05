@@ -174,7 +174,11 @@ export async function sendFeedRequestNotification(
   try {
     const feedList = feeds
       .slice(0, 5) // Limit to top 5 feeds
-      .map(feed => `• ${feed.title}\n  ${feed.description.substring(0, 100)}...\n  ${feed.url}`)
+      .map(feed => {
+        const description = feed.description || 'No description available';
+        const truncated = description.length > 100 ? description.substring(0, 100) + '...' : description;
+        return `• ${feed.title}\n  ${truncated}\n  ${feed.url}`;
+      })
       .join('\n\n');
 
     const text = `Good news! We found feeds matching your search: "${searchQuery}"\n\n` +
@@ -189,13 +193,17 @@ export async function sendFeedRequestNotification(
       <p>You requested feeds for: <strong>"${searchQuery}"</strong></p>
       <p>We found ${feeds.length} ${feeds.length === 1 ? 'feed' : 'feeds'} that ${feeds.length === 1 ? 'matches' : 'match'} your search:</p>
       <ul>
-        ${feeds.slice(0, 5).map(feed => `
+        ${feeds.slice(0, 5).map(feed => {
+          const description = feed.description || 'No description available';
+          const truncated = description.length > 100 ? description.substring(0, 100) + '...' : description;
+          return `
           <li style="margin-bottom: 1em;">
             <strong>${feed.title}</strong><br>
-            <small style="color: #666;">${feed.description.substring(0, 100)}...</small><br>
+            <small style="color: #666;">${truncated}</small><br>
             <a href="${feed.url}" style="color: #0066cc;">${feed.url}</a>
           </li>
-        `).join('')}
+        `;
+        }).join('')}
       </ul>
       ${feeds.length > 5 ? `<p><em>...and ${feeds.length - 5} more!</em></p>` : ''}
       <p>

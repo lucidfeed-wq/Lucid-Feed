@@ -23,13 +23,7 @@ export async function processFeedRequests() {
           // Found feeds matching the request
           console.log(`[Feed Request Processor] Found ${feeds.length} feeds for request ${request.id}`);
           
-          await storage.updateFeedRequest(request.id, {
-            status: 'found',
-            foundFeeds: feeds.map((f: any) => f.id),
-            processedAt: new Date(),
-          });
-          
-          // Send email notification
+          // Send email notification first
           try {
             await sendFeedRequestNotification(
               request.email,
@@ -37,13 +31,18 @@ export async function processFeedRequests() {
               feeds
             );
             
+            // Only mark as found and add notification timestamp after successful email
             await storage.updateFeedRequest(request.id, {
+              status: 'found',
+              foundFeeds: feeds.map((f: any) => f.id),
+              processedAt: new Date(),
               notifiedAt: new Date(),
             });
             
             console.log(`[Feed Request Processor] Sent notification to ${request.email} for request ${request.id}`);
           } catch (emailError) {
             console.error(`[Feed Request Processor] Failed to send email for request ${request.id}:`, emailError);
+            console.log(`[Feed Request Processor] Request ${request.id} will be retried on next run`);
           }
         } else {
           // No feeds found yet, keep status as pending
