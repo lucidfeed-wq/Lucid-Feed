@@ -1351,6 +1351,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Get all users for management
+  app.get("/api/admin/users", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  // Admin: Toggle test account status
+  app.patch("/api/admin/users/:userId/test-account", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { isTestAccount } = req.body;
+      
+      if (typeof isTestAccount !== 'boolean') {
+        return res.status(400).json({ error: "isTestAccount must be a boolean" });
+      }
+      
+      const updatedUser = await storage.toggleTestAccount(userId, isTestAccount);
+      
+      console.log(`[Admin] Test account status for user ${userId} set to ${isTestAccount} by ${req.user.claims.sub}`);
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error toggling test account:", error);
+      res.status(500).json({ error: "Failed to toggle test account status" });
+    }
+  });
+
   // Admin metrics endpoint - job observability
   app.get("/api/admin/metrics/jobs", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
