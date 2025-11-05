@@ -240,6 +240,11 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
   let totalTokenSpend = 0;
 
   try {
+    // Get user's topic preferences for filtering
+    const userPreferences = await storage.getUserPreferences(userId);
+    const favoriteTopics = userPreferences?.favoriteTopics || [];
+    console.log(`User has ${favoriteTopics.length} favorite topics:`, favoriteTopics);
+
     // Get user's subscribed feeds
     const userFeedSubscriptions = await storage.getUserFeedSubscriptions(userId);
     console.log(`User has ${userFeedSubscriptions.length} subscribed feeds`);
@@ -328,25 +333,82 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
       return contentQuality >= 10;
     });
 
-    // Separate by source type
-    const journalItems = qualityFilteredItems.filter(i => i.sourceType === 'journal');
-    const redditItems = qualityFilteredItems.filter(i => i.sourceType === 'reddit');
-    const substackItems = qualityFilteredItems.filter(i => i.sourceType === 'substack');
-    const youtubeItems = qualityFilteredItems.filter(i => i.sourceType === 'youtube');
-    const podcastItems = qualityFilteredItems.filter(i => i.sourceType === 'podcast');
+    console.log(`Quality filtered: ${qualityFilteredItems.length} items (from ${rankedItems.length})`);
+
+    // Separate by source type FIRST (before topic filtering)
+    const allJournalItems = qualityFilteredItems.filter(i => i.sourceType === 'journal');
+    const allRedditItems = qualityFilteredItems.filter(i => i.sourceType === 'reddit');
+    const allSubstackItems = qualityFilteredItems.filter(i => i.sourceType === 'substack');
+    const allYoutubeItems = qualityFilteredItems.filter(i => i.sourceType === 'youtube');
+    const allPodcastItems = qualityFilteredItems.filter(i => i.sourceType === 'podcast');
+
+    // TOPIC-BASED FILTERING: Apply per-section with intelligent fallbacks
+    let journalItems = allJournalItems;
+    let youtubeItems = allYoutubeItems;
+    let communityItems = [...allRedditItems, ...allSubstackItems, ...allPodcastItems];
+
+    if (favoriteTopics.length > 0) {
+      const favoriteTopicsSet = new Set(favoriteTopics);
+      
+      // Helper: filter items by topic match
+      const filterByTopics = (items: typeof qualityFilteredItems) => {
+        return items.filter(item => {
+          const itemTopics = Array.isArray(item.topics) ? item.topics : [];
+          return itemTopics.some(topic => favoriteTopicsSet.has(topic));
+        });
+      };
+
+      // Filter each category independently
+      const topicMatchedJournals = filterByTopics(allJournalItems);
+      const topicMatchedYoutube = filterByTopics(allYoutubeItems);
+      const topicMatchedCommunity = filterByTopics([...allRedditItems, ...allSubstackItems, ...allPodcastItems]);
+
+      console.log(`Topic matches - Journals: ${topicMatchedJournals.length}/${allJournalItems.length}, YouTube: ${topicMatchedYoutube.length}/${allYoutubeItems.length}, Community: ${topicMatchedCommunity.length}/${communityItems.length}`);
+
+      // Use topic-filtered results only if we have sufficient matches per category
+      // Minimum threshold: at least 3 items per category OR 50% of desired count
+      const minJournalThreshold = Math.min(3, Math.ceil(itemCounts.research * 0.5));
+      const minYoutubeThreshold = Math.min(3, Math.ceil(itemCounts.expert * 0.5));
+      const minCommunityThreshold = Math.min(3, Math.ceil(itemCounts.community * 0.5));
+
+      if (topicMatchedJournals.length >= minJournalThreshold) {
+        journalItems = topicMatchedJournals;
+        console.log(`✓ Using topic-filtered journals (${topicMatchedJournals.length} items)`);
+      } else {
+        console.log(`⚠ Too few journal matches (${topicMatchedJournals.length}), using all quality journals`);
+      }
+
+      if (topicMatchedYoutube.length >= minYoutubeThreshold) {
+        youtubeItems = topicMatchedYoutube;
+        console.log(`✓ Using topic-filtered YouTube (${topicMatchedYoutube.length} items)`);
+      } else {
+        console.log(`⚠ Too few YouTube matches (${topicMatchedYoutube.length}), using all quality videos`);
+      }
+
+      if (topicMatchedCommunity.length >= minCommunityThreshold) {
+        communityItems = topicMatchedCommunity;
+        console.log(`✓ Using topic-filtered community (${topicMatchedCommunity.length} items)`);
+      } else {
+        console.log(`⚠ Too few community matches (${topicMatchedCommunity.length}), using all quality community posts`);
+      }
+    } else {
+      console.log(`ℹ No favorite topics set, using all quality items from subscribed feeds`);
+    }
+
+    console.log(`Final source breakdown: ${journalItems.length} journals, ${youtubeItems.length} youtube, ${communityItems.length} community`);
 
     // Select top items for each section
     const topJournals = journalItems.slice(0, itemCounts.research);
-    const topCommunity = [...redditItems, ...substackItems, ...podcastItems].slice(0, itemCounts.community);
+    const topCommunity = communityItems.slice(0, itemCounts.community);
     const topExperts = youtubeItems.slice(0, itemCounts.expert);
 
     const allTopItems = [...topJournals, ...topCommunity, ...topExperts];
 
     if (allTopItems.length === 0) {
-      throw new Error('No quality items found after filtering. Try subscribing to more feeds.');
+      throw new Error('No quality items found from your subscribed feeds. Try subscribing to more active feeds or adjusting your topic preferences.');
     }
 
-    console.log(`Generating AI summaries for ${allTopItems.length} items...`);
+    console.log(`Final selection: ${allTopItems.length} items (${topJournals.length} research, ${topCommunity.length} community, ${topExperts.length} expert)`);
 
     // Generate AI summaries
     const allItemIds = allTopItems.map(i => i.id);
