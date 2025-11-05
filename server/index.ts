@@ -62,6 +62,13 @@ app.use((req, res, next) => {
   // Auto-seed feed catalog if empty (for production deployments)
   await autoSeedFeedCatalog();
 
+  // List all registered routes for diagnostics
+  const routes = (app as any)._router?.stack
+    ?.filter((r: any) => r.route)
+    .map((r: any) => `${Object.keys(r.route.methods).join(',').toUpperCase()} ${r.route.path}`)
+    .sort() || [];
+  console.log('Routes:', routes);
+
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
