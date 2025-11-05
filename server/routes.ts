@@ -741,21 +741,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { query, sourceTypes } = req.query;
       
+      console.log(`[Route] /api/discover/feeds called with query="${query}", sourceTypes=${sourceTypes}`);
+      
       if (!query || typeof query !== 'string') {
+        console.log('[Route] Missing or invalid query parameter');
         return res.status(400).json({ message: "Query parameter is required" });
       }
       
       const types = sourceTypes ? (typeof sourceTypes === 'string' ? sourceTypes.split(',') : sourceTypes) : undefined;
       
-      // Fetch approved feeds from catalog that match the search query
-      const catalogFeeds = await storage.getFeedCatalog({ search: query });
+      // Fetch ALL approved feeds from catalog (filtering happens in discoverFeeds)
+      const catalogFeeds = await storage.getFeedCatalog({});
+      console.log(`[Route] Fetched ${catalogFeeds.length} feeds from catalog`);
       
-      // Pass catalog feeds to discovery service
+      // Pass catalog feeds to discovery service for query filtering
       const results = await discoverFeeds(query, types, catalogFeeds);
+      console.log(`[Route] Discovery returned ${results.length} results`);
       
       res.json(results);
     } catch (error) {
-      console.error("Error discovering feeds:", error);
+      console.error("[Route] Error discovering feeds:", error);
       res.status(500).json({ message: "Failed to discover feeds" });
     }
   });

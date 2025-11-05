@@ -286,10 +286,43 @@ export async function discoverFeeds(query: string, sourceTypes?: string[], catal
     return results;
   }
   
+  // Filter by query (case-insensitive search across name, description, category, topics)
+  const queryLower = query.toLowerCase().trim();
+  console.log(`[Discovery] Filtering ${catalogFeeds.length} feeds for query: "${query}"`);
+  
+  // Debug first feed
+  if (catalogFeeds.length > 0) {
+    const sample = catalogFeeds[0];
+    console.log(`[Discovery] Sample feed:`, {
+      name: sample.name,
+      description: sample.description,
+      category: sample.category,
+      topics: sample.topics,
+      topicsType: typeof sample.topics,
+      isArray: Array.isArray(sample.topics)
+    });
+  }
+  
+  let filtered = catalogFeeds.filter((feed: FeedCatalog) => {
+    const nameMatch = feed.name.toLowerCase().includes(queryLower);
+    const descMatch = (feed.description ?? '').toLowerCase().includes(queryLower);
+    const categoryMatch = (feed.category ?? '').toLowerCase().includes(queryLower);
+    const topicsMatch = Array.isArray(feed.topics) && feed.topics.some((topic: string) => topic.toLowerCase().includes(queryLower));
+    
+    const matches = nameMatch || descMatch || categoryMatch || topicsMatch;
+    
+    if (matches) {
+      console.log(`[Discovery] ✓ Match: ${feed.name} (name:${nameMatch}, desc:${descMatch}, cat:${categoryMatch}, topics:${topicsMatch})`);
+    }
+    
+    return matches;
+  });
+  
+  console.log(`[Discovery] Found ${filtered.length} matches for "${query}"`);
+  
   // Filter by source types if specified (convert 'all' to undefined)
-  let filtered = catalogFeeds;
   if (sourceTypes && sourceTypes.length > 0 && !sourceTypes.includes('all')) {
-    filtered = catalogFeeds.filter((feed: FeedCatalog) => 
+    filtered = filtered.filter((feed: FeedCatalog) => 
       sourceTypes.some(type => feed.sourceType === type)
     );
   }

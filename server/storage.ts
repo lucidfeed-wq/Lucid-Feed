@@ -490,7 +490,10 @@ export class PostgresStorage implements IStorage {
   async getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string }): Promise<FeedCatalog[]> {
     let query = db.select().from(feedCatalog);
     
-    const conditions = [];
+    const conditions = [
+      eq(feedCatalog.isApproved, true), // Only return approved feeds
+      eq(feedCatalog.isActive, true)     // Only return active feeds
+    ];
     
     if (filters?.domain) {
       conditions.push(eq(feedCatalog.domain, filters.domain));
@@ -501,19 +504,19 @@ export class PostgresStorage implements IStorage {
     }
     
     if (filters?.search) {
-      conditions.push(
-        or(
-          like(feedCatalog.name, `%${filters.search}%`),
-          like(feedCatalog.description, `%${filters.search}%`)
-        )
+      const searchCondition = or(
+        like(feedCatalog.name, `%${filters.search}%`),
+        like(feedCatalog.description, `%${filters.search}%`)
       );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
     }
     
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions)) as any;
-    }
+    query = query.where(and(...conditions)) as any;
     
     const results = await query.orderBy(feedCatalog.name);
+    console.log(`[Storage] getFeedCatalog returned ${results.length} feeds`);
     return results;
   }
 
