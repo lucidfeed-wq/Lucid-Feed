@@ -1040,10 +1040,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 1. Get user subscription
       const subscription = await storage.getUserSubscription(userId);
-      const tier = subscription?.tier || 'free';
+      const tier = (subscription?.tier || 'free') as 'free' | 'premium' | 'pro';
 
       // 2. Check tier limits
-      const limits = {
+      const limits: Record<'free' | 'premium' | 'pro', number> = {
         free: 0,
         premium: 1,
         pro: Infinity,
