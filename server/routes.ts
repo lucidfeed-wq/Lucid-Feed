@@ -1000,12 +1000,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update items in database
       let updated = 0;
-      for (const item of enriched) {
-        await storage.updateItem(item.id, {
-          fullText: item.fullText,
-          pdfUrl: item.pdfUrl,
-          qualityMetrics: item.qualityMetrics,
-          scoreBreakdown: item.scoreBreakdown,
+      for (let i = 0; i < enriched.length; i++) {
+        const originalItem = items[i];
+        const enrichedItem = enriched[i];
+        await storage.updateItem(originalItem.id, {
+          fullText: enrichedItem.fullText,
+          pdfUrl: enrichedItem.pdfUrl,
+          qualityMetrics: enrichedItem.qualityMetrics as any,
+          scoreBreakdown: enrichedItem.scoreBreakdown as any,
         });
         updated++;
       }
@@ -1292,12 +1294,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const enriched = await enrichContentBatch(batchItems as any);
             
             // Update database
-            for (const item of enriched) {
-              await storage.updateItem(item.id, {
-                fullText: item.fullText,
-                pdfUrl: item.pdfUrl,
-                qualityMetrics: item.qualityMetrics,
-                scoreBreakdown: item.scoreBreakdown,
+            for (let i = 0; i < enriched.length; i++) {
+              const originalItem = batchItems[i];
+              const enrichedItem = enriched[i];
+              await storage.updateItem(originalItem.id, {
+                fullText: enrichedItem.fullText,
+                pdfUrl: enrichedItem.pdfUrl,
+                qualityMetrics: enrichedItem.qualityMetrics as any,
+                scoreBreakdown: enrichedItem.scoreBreakdown as any,
               });
               totalEnriched++;
             }
