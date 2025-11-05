@@ -1,33 +1,19 @@
 # Production Deployment Guide
 
-## Database Seeding for Production
+## Automatic Database Seeding ✨
 
-When you publish your Replit app, the **database schema** (tables, columns) automatically migrates to production, but **data does NOT**. This means your production database will be empty even though development has 500 feeds.
+**Good news!** Feed catalog seeding is now **fully automated**. When you publish your app:
 
-### Quick Fix: Seed Production Database
+1. The database schema automatically migrates (as always)
+2. On first startup, the app **automatically detects** if the feed catalog is empty
+3. If empty, it **auto-seeds** all 500 curated feeds from `server/seeds/feed-catalog.json`
+4. On subsequent restarts, it skips seeding (already populated)
 
-After publishing, run this command **once** to populate your production feed catalog:
+**You don't need to do anything!** Just publish and the app handles everything.
 
-```bash
-tsx server/scripts/seed-feeds.ts
-```
+### What Gets Auto-Seeded
 
-This will:
-- ✅ Import all 500 curated feeds
-- ✅ Work safely (can run multiple times)
-- ✅ Preserve any existing data
-- ✅ Take ~30 seconds
-
-### Alternative: Admin UI Method
-
-1. Publish your app
-2. Log in as admin
-3. Visit `/admin`
-4. Click "Seed Feed Catalog" button
-5. Wait for confirmation
-
-### What Gets Seeded
-
+When the production database is empty, the app automatically loads:
 - **500 approved feeds** across all source types:
   - 163 Reddit communities
   - 152 YouTube channels  
@@ -36,6 +22,20 @@ This will:
   - 31 Substack publications
 - **159 featured feeds** for onboarding
 - All feed metadata (topics, quality scores, etc.)
+
+### Manual Seeding (Optional)
+
+If you ever need to manually seed (e.g., after clearing the database):
+
+**Option 1 - Command Line:**
+```bash
+tsx server/scripts/seed-feeds.ts
+```
+
+**Option 2 - Admin UI:**
+1. Visit `/admin`
+2. Click "Seed Feed Catalog" button
+3. Wait for confirmation
 
 ### Verification
 
@@ -71,18 +71,22 @@ The seed script is **idempotent** - safe to run multiple times:
 
 ### Before Publishing
 
-- [ ] Export latest feed catalog: `tsx server/scripts/export-feeds.ts`
-- [ ] Commit the `server/seeds/feed-catalog.json` file
-- [ ] Test locally: `tsx server/scripts/seed-feeds.ts`
+- [ ] Verify `server/seeds/feed-catalog.json` exists (should have 500 feeds)
 - [ ] Verify environment variables are set in Replit Secrets
 
-### After Publishing
+### After Publishing (Automatic)
 
-- [ ] Run seed script: `tsx server/scripts/seed-feeds.ts`
+The app handles everything automatically on first startup:
+- ✅ Database schema migrates
+- ✅ Feed catalog auto-seeds (500 feeds)
+- ✅ Scheduled jobs initialize
+
+### Verification Steps
+
 - [ ] Test onboarding flow (should show 50 feed suggestions)
 - [ ] Test discover page (should show 159 featured feeds)
 - [ ] Verify admin panel access
-- [ ] Check scheduled jobs are running
+- [ ] Check scheduled jobs are running (view in server logs)
 
 ### Environment Variables Required
 
