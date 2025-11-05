@@ -31,20 +31,44 @@ export async function searchYouTubeFeeds(query: string): Promise<FeedSearchResul
     {
       id: 'UC_aEa8qLOmpfF3iWQFBzmXg',
       title: 'Dr. Mark Hyman',
-      description: 'Functional medicine physician and author',
+      description: 'Functional medicine, metabolic health, and nutrition physician',
       category: 'Functional Medicine',
     },
     {
       id: 'UCh7B1G75V9J8gfQRLsaB0Tw',
       title: 'Dr. Rhonda Patrick',
-      description: 'Science communication and longevity research',
+      description: 'Science communication, longevity, metabolic health research',
       category: 'Longevity',
     },
     {
       id: 'UCFk__lBKkAh-tBhl7YRo0Sg',
       title: 'Dr. Peter Attia',
-      description: 'Longevity and performance medicine',
+      description: 'Longevity, metabolic health, and performance medicine',
       category: 'Longevity',
+    },
+    {
+      id: 'UC6mZF3XOGYCfYRiJM8oCbOQ',
+      title: 'Huberman Lab',
+      description: 'Neuroscience, health optimization, sleep, metabolism',
+      category: 'Neuroscience',
+    },
+    {
+      id: 'UCPTXOKlIWlU_VOoA-fFqZyg',
+      title: 'Dr. Eric Berg',
+      description: 'Keto diet, metabolic health, and nutrition education',
+      category: 'Nutrition',
+    },
+    {
+      id: 'UCYHMmUMpqV0YeN_GDCHNXtQ',
+      title: 'Thomas DeLauer',
+      description: 'Intermittent fasting, metabolic flexibility, and health science',
+      category: 'Nutrition',
+    },
+    {
+      id: 'UCXZCJLdBC09xxGZ6gcdrc6A',
+      title: 'What I\'ve Learned',
+      description: 'Health research, metabolic science, and evidence-based wellness',
+      category: 'Health Science',
     },
   ];
   
