@@ -85,5 +85,8 @@ app.use((req, res, next) => {
     
     // Initialize cron scheduler
     initializeScheduler();
+    
+    // Marketing jobs route info
+    console.log("Marketing jobs route active: /jobs/build-weekly-digest");
   });
 })();

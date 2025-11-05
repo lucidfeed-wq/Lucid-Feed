@@ -103,82 +103,62 @@ router.post("/webhooks/lead", async (req, res) => {
   }
 });
 
+// GET /jobs/build-weekly-digest - Return 405 for non-POST requests
+router.get("/jobs/build-weekly-digest", (_req, res) => {
+  res.status(405).json({ 
+    ok: false, 
+    error: "use POST with ?token=" 
+  });
+});
+
 // POST /jobs/build-weekly-digest - Protected job to build and send digest
 router.post("/jobs/build-weekly-digest", async (req, res) => {
   try {
     const token = req.query.token;
     const expectedToken = process.env.MARKETING_JOBS_TOKEN;
 
-    if (!expectedToken) {
-      return res.status(503).json({ 
-        error: "MARKETING_JOBS_TOKEN not configured" 
+    if (!token || !expectedToken || token !== expectedToken) {
+      return res.status(401).json({ 
+        ok: false, 
+        error: "invalid token" 
       });
     }
 
-    if (token !== expectedToken) {
-      return res.status(401).json({ error: "Invalid token" });
+    const zapierHook = process.env.ZAPIER_DIGEST_HOOK;
+    if (!zapierHook) {
+      return res.status(503).json({ 
+        ok: false,
+        error: "ZAPIER_DIGEST_HOOK not configured" 
+      });
     }
 
-    // Get week from body or compute current week
-    const week = req.body?.week || new Date().toISOString().split('T')[0];
-
-    // Build example digest with placeholder items
-    const exampleDigest = {
-      week,
+    // Build minimal sample payload
+    const payload = {
+      week: new Date().toISOString().slice(0, 10),
       items: [
-        {
-          title: "AI Breakthrough: New Language Models Show Reasoning Capabilities",
-          url: "https://example.com/ai-breakthrough",
-          source: "TechCrunch"
-        },
-        {
-          title: "Climate Tech Raises $500M in Series C Funding",
-          url: "https://example.com/climate-funding",
-          source: "The Verge"
-        },
-        {
-          title: "Study: Remote Work Increases Productivity by 20%",
-          url: "https://example.com/remote-work-study",
-          source: "Harvard Business Review"
-        },
-        {
-          title: "Quantum Computing Milestone Reached at Stanford",
-          url: "https://example.com/quantum-milestone",
-          source: "Nature"
-        },
-        {
-          title: "New Framework Makes Web Development 10x Faster",
-          url: "https://example.com/web-framework",
-          source: "Dev.to"
-        }
+        { title: 'Sample Story A', url: 'https://example.com/a', source: 'JAMA' },
+        { title: 'Sample Story B', url: 'https://example.com/b', source: 'YouTube' },
+        { title: 'Sample Story C', url: 'https://example.com/c', source: 'Substack' }
       ]
     };
 
-    // POST to /webhooks/digest internally
-    const baseUrl = req.headers.host?.startsWith('localhost') 
-      ? 'http://localhost:5000'
-      : `https://${req.headers.host}`;
-    
-    const digestResponse = await fetch(`${baseUrl}/webhooks/digest`, {
+    // POST directly to Zapier
+    const response = await fetch(zapierHook, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(exampleDigest),
+      body: JSON.stringify(payload),
     });
 
-    if (!digestResponse.ok) {
-      throw new Error(`Digest webhook failed: ${digestResponse.status}`);
+    if (!response.ok) {
+      throw new Error(`Zapier responded with ${response.status}`);
     }
 
-    console.log(`[Marketing] Weekly digest built and sent: week=${week}`);
-    res.status(200).json({ 
-      success: true, 
-      week,
-      itemCount: exampleDigest.items.length 
-    });
+    console.log('[DIGEST-JOB] forwarded sample to Zapier', { week: payload.week, count: payload.items.length });
+    res.status(200).json({ ok: true, forwarded: true });
     
   } catch (error: any) {
-    console.error("[Marketing] Build digest job error:", error.message);
-    res.status(500).json({ error: "Failed to build weekly digest" });
+    console.error("[DIGEST-JOB] Error:", error.message);
+    res.status(500).json({ ok: false, error: "Failed to forward to Zapier" });
   }
 });
 
