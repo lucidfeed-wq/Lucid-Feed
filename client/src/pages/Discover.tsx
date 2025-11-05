@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Youtube, Podcast, MessageSquare, FileText, Loader2, Bell } from "lucide-react";
+import { Search, Plus, Check, Youtube, Podcast, MessageSquare, FileText, Loader2, Bell } from "lucide-react";
 import { Header } from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -51,6 +52,14 @@ export default function Discover() {
     queryKey: [queryUrl],
   });
 
+  // Fetch user's subscriptions to show which feeds are already subscribed
+  const { data: subscriptions = [] } = useQuery<any[]>({
+    queryKey: ['/api/user/feed-subscriptions'],
+  });
+
+  // Create a Set of subscribed feed IDs for quick lookup
+  const subscribedFeedIds = new Set(subscriptions.map((sub: any) => sub.feedId));
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -84,8 +93,8 @@ export default function Discover() {
         description: `You are now subscribed to ${feed.title}`,
       });
       
-      // Optionally refresh the list or update UI
-      refetch();
+      // Refresh subscriptions to update button states
+      queryClient.invalidateQueries({ queryKey: ['/api/user/feed-subscriptions'] });
     } catch (error) {
       toast({
         title: "Error",
@@ -180,6 +189,7 @@ export default function Discover() {
           <div className="grid gap-4 md:grid-cols-2">
             {filteredResults.map((feed) => {
               const Icon = sourceTypeIcons[feed.sourceType];
+              const isSubscribed = subscribedFeedIds.has(feed.id);
               return (
                 <Card key={feed.id} className="hover-elevate" data-testid={`card-feed-${feed.id}`}>
                   <CardHeader>
@@ -195,14 +205,26 @@ export default function Discover() {
                           {feed.description}
                         </CardDescription>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={() => handleSubscribe(feed)}
-                        data-testid={`button-subscribe-${feed.id}`}
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Subscribe
-                      </Button>
+                      {isSubscribed ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled
+                          data-testid={`button-subscribed-${feed.id}`}
+                        >
+                          <Check className="w-4 h-4 mr-1" />
+                          Subscribed
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => handleSubscribe(feed)}
+                          data-testid={`button-subscribe-${feed.id}`}
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Subscribe
+                        </Button>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent>
