@@ -936,6 +936,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin endpoints
+  app.post("/admin/test-email", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { sendTestEmail } = await import('./lib/resend');
+      await sendTestEmail();
+      res.json({ message: "Test email sent successfully" });
+    } catch (error) {
+      console.error("Error sending test email:", error);
+      res.status(500).json({ message: "Failed to send test email", error: String(error) });
+    }
+  });
+
   app.post("/admin/run/ingest", isAuthenticated, isAdmin, async (req, res) => {
     try {
       // Validate request body with Zod

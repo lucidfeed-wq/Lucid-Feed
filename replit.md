@@ -105,3 +105,13 @@ The application is a full-stack TypeScript project using React for the frontend 
 - **Passport.js**: Authentication middleware.
 - **Zod**: Schema validation.
 - **Stripe**: Payment processing for subscriptions.
+- **Resend**: Email API for cost alerts and notifications (requires RESEND_API_KEY).
+
+### Email Alerts Setup
+The application uses Resend for sending email alerts about cost spikes, daily summaries, and user cost caps. To enable email alerts:
+1. Sign up for a Resend account at https://resend.com
+2. Get your API key from the Resend dashboard
+3. Add `RESEND_API_KEY` to your Replit Secrets
+4. Add `ALERT_EMAILS` (comma-separated list of recipient emails) to your Replit Secrets
+
+If Resend is not configured, the application will continue to work normally but email alerts will be skipped silently.
