@@ -221,6 +221,29 @@ export class PostgresStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    // First check if user exists by email (if email is provided)
+    if (userData.email) {
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, userData.email as string))
+        .limit(1);
+
+      if (existingUser) {
+        // Update existing user with new data (in case id changed)
+        const [updated] = await db
+          .update(users)
+          .set({
+            ...userData,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.email, userData.email as string))
+          .returning();
+        return updated;
+      }
+    }
+
+    // Insert new user or update if id exists
     const [user] = await db
       .insert(users)
       .values(userData)
