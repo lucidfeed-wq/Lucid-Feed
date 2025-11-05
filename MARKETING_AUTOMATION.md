@@ -190,6 +190,65 @@ The component:
 
 ---
 
+### 5. POST /admin/run/email-digest
+
+**NEW: Resend Email Sender** - Send weekly digest via Resend template (no Zapier required).
+
+**Query Parameters:**
+- `token` (required) - Must match `MARKETING_JOBS_TOKEN`
+
+**How It Works:**
+1. Fetches digest data from `/export/weekly.json`
+2. Sends email via Resend API using "weeklyDigest" template alias
+3. Returns success with item count
+
+**Required Environment Variables:**
+- `RESEND_API_KEY` - Your Resend API key
+- `MARKETING_JOBS_TOKEN` - Authentication token
+- `TEST_EMAIL` (for testing) OR `RESEND_TO` (comma-separated emails for production)
+
+**Response (Success):**
+```json
+{
+  "ok": true,
+  "sent": true,
+  "week": "2024-11-05",
+  "items": 10
+}
+```
+
+**Response (Missing Recipients):**
+```json
+{
+  "ok": false,
+  "error": "No recipients: set TEST_EMAIL (for testing) or RESEND_TO (comma-separated emails)."
+}
+```
+
+**Test with curl:**
+```bash
+# Replace YOUR_TOKEN with your MARKETING_JOBS_TOKEN value
+curl -X POST "https://www.getlucidfeed.com/admin/run/email-digest?token=YOUR_TOKEN"
+```
+
+**Resend Template Setup:**
+- Template alias: `weeklyDigest` (must be created in Resend UI)
+- Template data structure:
+  ```typescript
+  {
+    week: string;
+    intro: string;
+    items: Array<{ title: string; url: string; source?: string }>
+  }
+  ```
+
+**Recipient Strategy:**
+- If `TEST_EMAIL` is set → sends only to that address (recommended for testing)
+- Else if `RESEND_TO` is set → sends to comma-separated list of emails
+- Else → returns error (safety measure to prevent accidental sends)
+
+---
+
 ## Scheduling the Digest Job
 
 Use a cron service (Cron-job.org, EasyCron, etc.) to trigger weekly:

@@ -95,5 +95,6 @@ app.use((req, res, next) => {
     
     // Marketing jobs route info
     console.log("Marketing jobs route active: /jobs/build-weekly-digest");
+    console.log("[READY] Resend weekly digest emailer wired. Test with: POST /admin/run/email-digest?token=...");
   });
 })();

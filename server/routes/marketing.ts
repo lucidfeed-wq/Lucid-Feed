@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { sendWeeklyDigest } from "../jobs/sendWeeklyDigest";
 
 const router = Router();
 
@@ -159,6 +160,32 @@ router.post("/jobs/build-weekly-digest", async (req, res) => {
   } catch (error: any) {
     console.error("[DIGEST-JOB] Error:", error.message);
     res.status(500).json({ ok: false, error: "Failed to forward to Zapier" });
+  }
+});
+
+// GET /admin/run/email-digest - Return 405 for non-POST requests
+router.get("/admin/run/email-digest", (_req, res) => {
+  res.status(405).json({ ok: false, error: "use POST with ?token=" });
+});
+
+// POST /admin/run/email-digest - Send weekly digest via Resend template
+router.post("/admin/run/email-digest", async (req, res) => {
+  try {
+    const token = req.query.token;
+    const expectedToken = process.env.MARKETING_JOBS_TOKEN;
+
+    if (!token || !expectedToken || token !== expectedToken) {
+      return res.status(401).json({ ok: false, error: "invalid token" });
+    }
+    const r = await fetch("https://www.getlucidfeed.com/export/weekly.json");
+    if (!r.ok) return res.status(503).json({ ok: false, error: "cannot fetch /export/weekly.json" });
+    const digest = await r.json();
+    digest.intro = digest.intro || "Hand-picked, source-linked stories you can trust.";
+    await sendWeeklyDigest(digest);
+    return res.json({ ok: true, sent: true, week: digest.week, items: digest.items?.length || 0 });
+  } catch (e: any) {
+    console.error("[ADMIN DIGEST] error", e?.message || e);
+    return res.status(500).json({ ok: false, error: e?.message || "send failed" });
   }
 });
 
