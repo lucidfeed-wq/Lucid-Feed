@@ -57,7 +57,7 @@ export interface IStorage {
   getFolderItems(userId: string, folderId: string): Promise<Item[]>;
   
   // Feed Catalog
-  getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string }): Promise<FeedCatalog[]>;
+  getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string; featured?: boolean }): Promise<FeedCatalog[]>;
   getSuggestedFeeds(topics: string[], sourceTypes: string[], limit?: number): Promise<FeedCatalog[]>;
   submitFeed(submission: InsertUserFeedSubmission): Promise<UserFeedSubmission>;
   getUserFeedSubmissions(userId: string): Promise<UserFeedSubmission[]>;
@@ -526,7 +526,7 @@ export class PostgresStorage implements IStorage {
   }
 
   // Feed Catalog
-  async getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string }): Promise<FeedCatalog[]> {
+  async getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string; featured?: boolean }): Promise<FeedCatalog[]> {
     let query = db.select().from(feedCatalog);
     
     const conditions = [
@@ -542,6 +542,10 @@ export class PostgresStorage implements IStorage {
       conditions.push(eq(feedCatalog.sourceType, filters.sourceType));
     }
     
+    if (filters?.featured === true) {
+      conditions.push(eq(feedCatalog.featured, true));
+    }
+    
     if (filters?.search) {
       const searchCondition = or(
         like(feedCatalog.name, `%${filters.search}%`),
@@ -554,7 +558,11 @@ export class PostgresStorage implements IStorage {
     
     query = query.where(and(...conditions)) as any;
     
-    const results = await query.orderBy(feedCatalog.name);
+    // Order by starter rank if featured, otherwise by name
+    const results = filters?.featured 
+      ? await query.orderBy(feedCatalog.starterRank, feedCatalog.name)
+      : await query.orderBy(feedCatalog.name);
+    
     console.log(`[Storage] getFeedCatalog returned ${results.length} feeds`);
     return results;
   }

@@ -739,18 +739,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Feed Discovery endpoints (protected)
   app.get('/api/discover/feeds', isAuthenticated, async (req: any, res) => {
     try {
-      const { query, sourceTypes } = req.query;
+      const { query, sourceTypes, featured } = req.query;
       
       console.log(`\n========== DISCOVERY ROUTE CALLED ==========`);
-      console.log(`[Route] Query: "${query}", SourceTypes: ${sourceTypes}`);
+      console.log(`[Route] Query: "${query}", SourceTypes: ${sourceTypes}, Featured: ${featured}`);
       console.log(`[Route] Full query params:`, req.query);
       
+      const types = sourceTypes ? (typeof sourceTypes === 'string' ? sourceTypes.split(',') : sourceTypes) : undefined;
+      
+      // If featured=true, return featured feeds
+      if (featured === 'true') {
+        console.log('[Route] Fetching featured feeds...');
+        const catalogFeeds = await storage.getFeedCatalog({ featured: true });
+        console.log(`[Route] ✓ Fetched ${catalogFeeds.length} featured feeds from catalog`);
+        
+        // Map to FeedResult format
+        const results = catalogFeeds.map(feed => ({
+          id: feed.id,
+          title: feed.name,
+          url: feed.url,
+          description: feed.description || '',
+          sourceType: feed.sourceType as 'youtube' | 'podcast' | 'reddit' | 'substack' | 'journal',
+          category: feed.category || undefined,
+        }));
+        
+        console.log(`[Route] ✓ Returning ${results.length} featured feeds`);
+        console.log(`========================================\n`);
+        return res.json(results);
+      }
+      
+      // Otherwise, search is required
       if (!query || typeof query !== 'string') {
         console.log('[Route] ❌ Missing or invalid query parameter');
         return res.status(400).json({ message: "Query parameter is required" });
       }
-      
-      const types = sourceTypes ? (typeof sourceTypes === 'string' ? sourceTypes.split(',') : sourceTypes) : undefined;
       
       // Fetch ALL approved feeds from catalog (filtering happens in discoverFeeds)
       const catalogFeeds = await storage.getFeedCatalog({});
