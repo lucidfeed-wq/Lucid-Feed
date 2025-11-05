@@ -258,6 +258,22 @@ export class PostgresStorage implements IStorage {
     return user;
   }
 
+  async toggleTestAccount(userId: string, isTestAccount: boolean): Promise<User> {
+    const [updated] = await db
+      .update(users)
+      .set({
+        isTestAccount,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return updated;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(users.createdAt);
+  }
+
   // User Preferences
   async getUserPreferences(userId: string): Promise<UserPreferences | undefined> {
     const [prefs] = await db.select().from(userPreferences).where(eq(userPreferences.userId, userId)).limit(1);
