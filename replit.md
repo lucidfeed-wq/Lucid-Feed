@@ -20,7 +20,7 @@ Lucid Feed is a full-stack TypeScript project with React for the frontend and Ex
 - **Ranking Algorithm**: Items are ranked based on quality (40%), recency (30%), and engagement (30%).
 - **AI-Powered Summaries**: OpenAI (GPT-4o-mini) generates detailed individual item summaries and category-level meta-summaries for digests.
 - **Hybrid RAG Chat System**: An intelligent chat architecture with digest-aware context, supporting RAG (similarity > 0.7), Hybrid (0.4-0.7), and General (< 0.4) modes with explicit citations and disclaimers. Features multi-scope search (current digest, all digests, saved items, folders) and tier-based access.
-- **Personalization**: Users receive personalized digests based on selected topics, bookmarked items, and subscribed feeds.
+- **Personalization**: Users receive personalized digests based on selected topics, bookmarked items, and subscribed feeds. Two-dimensional filtering architecture: (1) Feed subscriptions define trusted sources, (2) Topic preferences (favoriteTopics) filter ingested content. Per-category topic filtering with intelligent fallbacks ensures all digest sections remain populated even when topic matches are sparse in specific categories (journals/YouTube/community).
 - **Digest Generation**: Weekly or daily personalized digests, with historical archives.
 - **Quality Scoring**: Transparent, multi-signal assessment based on citation metrics, author credibility, methodology quality, community verification, and recency, including content quality filtering.
 - **Multi-Tenant SaaS**: Supports user-level feed subscriptions and personalized digests.
