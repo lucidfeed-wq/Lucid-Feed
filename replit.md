@@ -73,6 +73,19 @@ The application is a full-stack TypeScript project using React for the frontend 
 
 ### Future Enhancements
 - **Recommendation System**: Track user topic/feed preferences and cross-correlate to provide personalized recommendations ("based on what you like, here are some recommendations"). Requires backend tracking of user interactions and preference patterns.
+- **Feed Discovery Option 2 - Full ETL Pipeline** (Future Implementation):
+  - **Current State (Option 1)**: 33+ curated feeds in catalog, manual seeding, basic search
+  - **Option 2 Goals**: 50k+ feeds, automatic enrichment, semantic search
+  - **Implementation Plan**:
+    1. **Database Schema**: Add `feed_topics`, `feed_source_metadata`, `search_misses` tables
+    2. **Bulk Data Ingestion**: Import from PodcastIndex bulk export (2M+ feeds), YouTube directory scrapes (10k+ channels), Reddit subreddit lists (5k+), Substack directory (10k+), academic journal RSS manifests (5k+)
+    3. **ETL Pipeline**: Background job queue for processing bulk imports, deduplication by canonical URL, metadata extraction and normalization
+    4. **Semantic Search**: Vector embeddings for feed descriptions using OpenAI, hybrid search combining lexical (Postgres full-text) + semantic (vector similarity)
+    5. **Self-Improving Catalog**: Background jobs triggered by search misses, API calls to YouTube/Reddit/PodcastIndex for missing feeds, automatic quality scoring and approval workflow
+    6. **Scheduled Refresh**: Daily jobs for active feeds, weekly for dormant feeds, automatic removal of dead feeds
+    7. **Admin Tooling**: Feed quality review dashboard, coverage metrics by topic, bulk import/export tools
+  - **Estimated Effort**: 4-6 hours development time
+  - **Benefits**: Scales to 1000s of users, zero empty searches, continuously growing catalog
 
 ### System Design Choices
 - **Backend Architecture**: Modules for business logic (`core/`), specific operations (`services/`), content fetching (`sources/`), and infrastructure (`infrastructure/`).

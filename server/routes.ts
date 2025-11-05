@@ -746,7 +746,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const types = sourceTypes ? (typeof sourceTypes === 'string' ? sourceTypes.split(',') : sourceTypes) : undefined;
-      const results = await discoverFeeds(query, types);
+      
+      // Fetch approved feeds from catalog that match the search query
+      const catalogFeeds = await storage.getFeedCatalog({ search: query });
+      
+      // Pass catalog feeds to discovery service
+      const results = await discoverFeeds(query, types, catalogFeeds);
       
       res.json(results);
     } catch (error) {

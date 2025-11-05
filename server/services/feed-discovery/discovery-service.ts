@@ -1,5 +1,6 @@
 import Parser from 'rss-parser';
 import { nanoid } from 'nanoid';
+import type { FeedCatalog } from '@shared/schema';
 
 export interface FeedSearchResult {
   id: string;
@@ -253,30 +254,62 @@ export async function verifyRssFeed(url: string): Promise<{ valid: boolean; titl
 }
 
 /**
- * Universal feed discovery - searches across all source types
+ * Universal feed discovery - searches feed catalog database
+ * Now searches from database instead of hardcoded lists
  */
-export async function discoverFeeds(query: string, sourceTypes?: string[]): Promise<FeedSearchResult[]> {
-  const types = sourceTypes || ['youtube', 'podcast', 'reddit', 'substack'];
-  const results: FeedSearchResult[] = [];
-  
-  if (types.includes('youtube')) {
-    const youtubeResults = await searchYouTubeFeeds(query);
-    results.push(...youtubeResults);
+export async function discoverFeeds(query: string, sourceTypes?: string[], catalogFeeds?: FeedCatalog[]): Promise<FeedSearchResult[]> {
+  // If catalogFeeds not provided, use old hardcoded search (fallback)
+  if (!catalogFeeds) {
+    const types = sourceTypes || ['youtube', 'podcast', 'reddit', 'substack'];
+    const results: FeedSearchResult[] = [];
+    
+    if (types.includes('youtube')) {
+      const youtubeResults = await searchYouTubeFeeds(query);
+      results.push(...youtubeResults);
+    }
+    
+    if (types.includes('podcast')) {
+      const podcastResults = await searchPodcastFeeds(query);
+      results.push(...podcastResults);
+    }
+    
+    if (types.includes('reddit')) {
+      const redditResults = await searchRedditFeeds(query);
+      results.push(...redditResults);
+    }
+    
+    if (types.includes('substack')) {
+      const substackResults = await searchSubstackFeeds(query);
+      results.push(...substackResults);
+    }
+    
+    return results;
   }
   
-  if (types.includes('podcast')) {
-    const podcastResults = await searchPodcastFeeds(query);
-    results.push(...podcastResults);
+  // Filter by source types if specified (convert 'all' to undefined)
+  let filtered = catalogFeeds;
+  if (sourceTypes && sourceTypes.length > 0 && !sourceTypes.includes('all')) {
+    filtered = catalogFeeds.filter((feed: FeedCatalog) => 
+      sourceTypes.some(type => feed.sourceType === type)
+    );
   }
   
-  if (types.includes('reddit')) {
-    const redditResults = await searchRedditFeeds(query);
-    results.push(...redditResults);
-  }
+  // Convert to FeedSearchResult format
+  const results: FeedSearchResult[] = filtered.map((feed: FeedCatalog) => ({
+    id: feed.id,
+    title: feed.name,
+    url: feed.url,
+    description: feed.description || '',
+    sourceType: feed.sourceType as any,
+    category: feed.category,
+    subscriberCount: undefined,
+    itemCount: undefined,
+  }));
   
-  if (types.includes('substack')) {
-    const substackResults = await searchSubstackFeeds(query);
-    results.push(...substackResults);
+  // Track search miss if no results found (for self-improving catalog)
+  if (results.length === 0) {
+    console.log(`🔍 Search miss: "${query}" - Consider adding relevant feeds to catalog`);
+    // TODO: Implement background job queue to fetch feeds based on this query
   }
   
   return results;
