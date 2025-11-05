@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ExternalLink, Search } from 'lucide-react';
+import { Eye, Search } from 'lucide-react';
 import { FeedSubmissionDialog } from '@/components/FeedSubmissionDialog';
 import type { FeedCatalog } from '@shared/schema';
 
@@ -155,16 +156,12 @@ export default function FeedCatalogPage() {
                     {feed.description}
                   </p>
                 )}
-                <a
-                  href={feed.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-sm font-medium hover:underline"
-                  data-testid={`link-feed-url-${feed.id}`}
-                >
-                  View Feed
-                  <ExternalLink className="h-3 w-3 ml-1" />
-                </a>
+                <Link href={`/feeds/${feed.id}`}>
+                  <a className="inline-flex items-center text-sm font-medium hover:underline" data-testid={`link-feed-preview-${feed.id}`}>
+                    View Feed
+                    <Eye className="h-3 w-3 ml-1" />
+                  </a>
+                </Link>
               </CardContent>
             </Card>
           ))}

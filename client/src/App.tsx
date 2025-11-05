@@ -13,6 +13,7 @@ import ChatSettings from "@/pages/ChatSettings";
 import Folders from "@/pages/Folders";
 import FolderView from "@/pages/FolderView";
 import FeedCatalog from "@/pages/FeedCatalog";
+import FeedDetail from "@/pages/FeedDetail";
 import Discover from "@/pages/Discover";
 import Onboarding from "@/pages/Onboarding";
 import Admin from "@/pages/Admin";
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/folders" component={Folders} />
       <Route path="/folders/:folderId" component={FolderView} />
       <Route path="/feeds" component={FeedCatalog} />
+      <Route path="/feeds/:id" component={FeedDetail} />
       <Route path="/discover" component={Discover} />
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/admin" component={Admin} />
