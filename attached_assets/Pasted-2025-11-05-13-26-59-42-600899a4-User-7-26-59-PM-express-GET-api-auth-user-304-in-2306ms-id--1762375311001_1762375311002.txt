@@ -1,0 +1,297 @@
+2025-11-05 13:26:59.42
+600899a4
+User
+7:26:59 PM [express] GET /api/auth/user 304 in 2306ms :: {"id":"41556120","email":"matthewaltman2008…
+2025-11-05 13:26:59.63
+600899a4
+User
+7:26:59 PM [express] GET /api/preferences 304 in 137ms :: {"userId":"41556120","favoriteTopics":["me…
+2025-11-05 13:26:59.78
+600899a4
+User
+7:26:59 PM [express] GET /api/digest/latest 304 in 291ms :: {"id":"PYItTm0se7xZjqGs4OOAk","slug":"20…
+2025-11-05 13:27:06.78
+600899a4
+User
+7:27:06 PM [express] GET /api/admin/metrics/jobs 200 in 169ms :: {"jobs":[{"id":"Ee9h5JQElMqtoZ5eWxz…
+2025-11-05 13:27:06.84
+600899a4
+User
+7:27:06 PM [express] GET /api/feeds/submissions/pending 304 in 167ms :: []
+
+2025-11-05 13:27:07.05
+600899a4
+User
+7:27:07 PM [express] GET /api/admin/users 200 in 141ms :: [{"id":"41556120","email":"matthewaltman20…
+2025-11-05 13:27:14.21
+600899a4
+User
+Starting ingestion job (with enrichment) (subscribed feeds only)...
+2025-11-05 13:27:14.26
+600899a4
+User
+Fetching subscribed feeds across all users...
+2025-11-05 13:27:14.36
+600899a4
+User
+Found 22 unique subscribed feeds
+2025-11-05 13:27:14.63
+600899a4
+User
+Processing 22 feeds from database catalog...
+2025-11-05 13:27:14.63
+600899a4
+User
+Processing feed 1 of 22: Huberman Lab Podcast
+2025-11-05 13:27:14.64
+600899a4
+User
+Processing feed 2 of 22: Nature Medicine
+2025-11-05 13:27:14.64
+600899a4
+User
+Processing feed 3 of 22: Nature
+2025-11-05 13:27:14.64
+600899a4
+User
+Processing feed 4 of 22: Cal Newport Blog
+2025-11-05 13:27:14.64
+600899a4
+User
+Processing feed 5 of 22: All-In Podcast
+2025-11-05 13:27:14.64
+600899a4
+User
+Processing feed 6 of 22: Ali Abdaal
+2025-11-05 13:27:14.64
+600899a4
+User
+Processing feed 7 of 22: Diary of a CEO
+2025-11-05 13:27:14.64
+600899a4
+User
+Processing feed 8 of 22: Dr. Ben Bikman
+2025-11-05 13:27:14.64
+600899a4
+User
+Processing feed 9 of 22: Dr. Rhonda Patrick - FoundMyFitness
+2025-11-05 13:27:14.64
+600899a4
+User
+Processing feed 10 of 22: Dr. Peter Attia
+2025-11-05 13:27:15.09
+600899a4
+User
+Failed to parse RSS feed https://www.youtube.com/feeds/videos.xml?channel_id=UCFk__lBKkAh-tBhl7YRo0Sg: Error: Status code 404
+2025-11-05 13:27:15.09
+600899a4
+User
+at ClientRequest. (/home/runner/workspace/node_modules/rss-parser/lib/parser.js:88:25)
+2025-11-05 13:27:15.09
+600899a4
+User
+at Object.onceWrapper (node:events:639:26)
+2025-11-05 13:27:15.09
+600899a4
+User
+at ClientRequest.emit (node:events:524:28)
+2025-11-05 13:27:15.09
+600899a4
+User
+at HTTPParser.parserOnIncomingClient [as onIncoming] (node:_http_client:702:27)
+2025-11-05 13:27:15.09
+600899a4
+User
+at HTTPParser.parserOnHeadersComplete (node:_http_common:118:17)
+2025-11-05 13:27:15.09
+600899a4
+User
+at TLSSocket.socketOnData (node:_http_client:544:22)
+2025-11-05 13:27:15.09
+600899a4
+User
+at TLSSocket.emit (node:events:524:28)
+2025-11-05 13:27:15.09
+600899a4
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-11-05 13:27:15.09
+600899a4
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-11-05 13:27:15.09
+600899a4
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-11-05 13:27:15.09
+600899a4
+User
+Error fetching feed Dr. Peter Attia (https://www.youtube.com/feeds/videos.xml?channel_id=UCFk__lBKkAh-tBhl7YRo0Sg): Error: Status code 404
+2025-11-05 13:27:15.09
+600899a4
+User
+at ClientRequest. (/home/runner/workspace/node_modules/rss-parser/lib/parser.js:88:25)
+2025-11-05 13:27:15.09
+600899a4
+User
+at Object.onceWrapper (node:events:639:26)
+2025-11-05 13:27:15.09
+600899a4
+User
+at ClientRequest.emit (node:events:524:28)
+2025-11-05 13:27:15.09
+600899a4
+User
+at HTTPParser.parserOnIncomingClient [as onIncoming] (node:_http_client:702:27)
+2025-11-05 13:27:15.09
+600899a4
+User
+at HTTPParser.parserOnHeadersComplete (node:_http_common:118:17)
+2025-11-05 13:27:15.09
+600899a4
+User
+at TLSSocket.socketOnData (node:_http_client:544:22)
+2025-11-05 13:27:15.09
+600899a4
+User
+at TLSSocket.emit (node:events:524:28)
+2025-11-05 13:27:15.09
+600899a4
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-11-05 13:27:15.09
+600899a4
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-11-05 13:27:15.09
+600899a4
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-11-05 13:27:15.09
+600899a4
+User
+Failed to parse RSS feed https://feeds.megaphone.fm/diaryofaceo: Error: Status code 503
+2025-11-05 13:27:15.09
+600899a4
+User
+at ClientRequest. (/home/runner/workspace/node_modules/rss-parser/lib/parser.js:88:25)
+2025-11-05 13:27:15.09
+600899a4
+User
+at Object.onceWrapper (node:events:639:26)
+2025-11-05 13:27:15.09
+600899a4
+User
+at ClientRequest.emit (node:events:524:28)
+2025-11-05 13:27:15.09
+600899a4
+User
+at HTTPParser.parserOnIncomingClient [as onIncoming] (node:_http_client:702:27)
+2025-11-05 13:27:15.09
+600899a4
+User
+at TLSSocket.socketOnData (node:_http_client:544:22)
+2025-11-05 13:27:15.09
+600899a4
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-11-05 13:27:15.09
+600899a4
+User
+at ClientRequest. (/home/runner/workspace/node_modules/rss-parser/lib/parser.js:88:25)
+2025-11-05 13:27:15.09
+600899a4
+User
+at Object.onceWrapper (node:events:639:26)
+2025-11-05 13:27:15.09
+600899a4
+User
+at ClientRequest.emit (node:events:524:28)
+2025-11-05 13:27:15.09
+600899a4
+User
+at HTTPParser.parserOnHeadersComplete (node:_http_common:118:17)
+2025-11-05 13:27:15.09
+600899a4
+User
+at TLSSocket.socketOnData (node:_http_client:544:22)
+2025-11-05 13:27:15.09
+600899a4
+User
+at addChunk (node:internal/streams/readable:561:12)
+2025-11-05 13:27:15.09
+600899a4
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-11-05 13:27:15.09
+600899a4
+User
+Failed to parse RSS feed https://feeds.megaphone.fm/all-in: Error: Status code 404
+2025-11-05 13:27:15.09
+600899a4
+User
+at ClientRequest. (/home/runner/workspace/node_modules/rss-parser/lib/parser.js:88:25)
+2025-11-05 13:27:15.09
+600899a4
+User
+at Object.onceWrapper (node:events:639:26)
+2025-11-05 13:27:15.09
+600899a4
+User
+at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+2025-11-05 13:27:15.09
+600899a4
+User
+at ClientRequest. (/home/runner/workspace/node_modules/rss-parser/lib/parser.js:88:25)
+2025-11-05 13:27:15.09
+600899a4
+User
+at Object.onceWrapper (node:events:639:26)
+2025-11-05 13:27:15.09
+600899a4
+User
+at ClientRequest.emit (node:events:524:28)
+2025-11-05 13:27:15.09
+600899a4
+User
+at TLSSocket.emit (node:events:524:28)
+2025-11-05 13:27:15.09
+600899a4
+User
+at Readable.push (node:internal/streams/readable:392:5)
+2025-11-05 13:27:15.68
+600899a4
+User
+Failed to parse RSS feed https://www.youtube.com/feeds/videos.xml?channel_id=UCzYFLZljAqsCOoZOYCb4agg: Error: Status code 404
+2025-11-05 13:27:16.91
+600899a4
+User
+Processing feed 11 of 22: Dr. Robert Lustig
+2025-11-05 13:27:16.91
+600899a4
+User
+Processing feed 12 of 22: The Doctor's Farmacy
+2025-11-05 13:27:16.91
+600899a4
+User
+Processing feed 13 of 22: The Drive with Dr. Peter Attia
+2025-11-05 13:27:16.91
+600899a4
+User
+Processing feed 14 of 22: The Doctor's Farmacy with Dr. Mark Hyman
+2025-11-05 13:27:16.91
+600899a4
+User
+Processing feed 15 of 22: The Practical AI Podcast
+2025-11-05 13:27:16.91
+600899a4
+User
+Processing feed 16 of 22: ZOE Science & Nutrition
+2025-11-05 13:27:16.91
+600899a4
+User
+Processing feed 17 of 22: r/Fitness
+2025-11-05 13:27:16.91
+600899a4
+User
+Processing feed 18 of 22: r/Longevity

@@ -74,9 +74,8 @@ export default function Home() {
   // Refresh digest mutation
   const refreshMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('/api/digest/refresh', {
-        method: 'POST',
-      });
+      const response = await apiRequest('POST', '/api/digest/refresh');
+      return await response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/digest/latest'] });
