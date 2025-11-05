@@ -27,6 +27,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   await setupAuth(app);
 
+  // Health endpoint for email configuration (admin-only)
+  app.get('/health/email', isAuthenticated, isAdmin, (_req, res) => {
+    const resendFrom = process.env.RESEND_FROM || null;
+    const apiKeySet = !!process.env.RESEND_API_KEY;
+    const domainHint = resendFrom ? resendFrom.split('@')[1] : null;
+    
+    res.json({
+      ok: true,
+      from: resendFrom,
+      apiKeySet,
+      domainHint,
+    });
+  });
+
   // Auth endpoints
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {

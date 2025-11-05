@@ -12,6 +12,7 @@ let resend: Resend | null = null;
 if (env.resendApiKey) {
   resend = new Resend(env.resendApiKey);
   console.log('✉️  Resend email client initialized');
+  console.log(`[EMAIL] using From: ${env.resendFrom || '(not configured - will fail on send)'}`);
 } else {
   console.log('⚠️  Resend API key not configured - email alerts disabled');
 }
@@ -34,9 +35,13 @@ export async function sendAlert(alert: EmailAlert): Promise<void> {
     return;
   }
 
+  if (!env.resendFrom) {
+    throw new Error('RESEND_FROM missing (use a verified domain like alerts@getlucidfeed.com)');
+  }
+
   try {
     const { data, error } = await resend.emails.send({
-      from: 'Lucid Feed Alerts <alerts@lucidfeed.app>',
+      from: env.resendFrom,
       to: env.alertEmails,
       subject: alert.subject,
       text: alert.text,
@@ -171,6 +176,10 @@ export async function sendFeedRequestNotification(
     return;
   }
 
+  if (!env.resendFrom) {
+    throw new Error('RESEND_FROM missing (use a verified domain like alerts@getlucidfeed.com)');
+  }
+
   try {
     const feedList = feeds
       .slice(0, 5) // Limit to top 5 feeds
@@ -218,7 +227,7 @@ export async function sendFeedRequestNotification(
     `;
 
     const { data, error } = await resend.emails.send({
-      from: 'Lucid Feed <notifications@lucidfeed.app>',
+      from: env.resendFrom,
       to: userEmail,
       subject: `✅ Feeds found for "${searchQuery}"`,
       text,

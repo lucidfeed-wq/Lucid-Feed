@@ -39,6 +39,8 @@ export interface EnvConfig {
 
   // Resend
   resendApiKey: string | undefined;
+  resendFrom: string | undefined;
+  resendTo: string[];
 
   // Turnstile (preferred) or reCAPTCHA fallback
   turnstileSiteKey: string | undefined;
@@ -98,6 +100,8 @@ export const env: EnvConfig = {
 
   // Resend
   resendApiKey: process.env.RESEND_API_KEY,
+  resendFrom: process.env.RESEND_FROM,
+  resendTo: parseEmails(process.env.RESEND_TO),
 
   // Turnstile
   turnstileSiteKey: process.env.TURNSTILE_SITE_KEY,

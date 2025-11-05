@@ -4,6 +4,10 @@ type Digest = { week: string; intro?: string; items: DigestItem[] };
 export async function sendWeeklyDigest(digest: Digest) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("RESEND_API_KEY missing");
+  
+  const from = process.env.RESEND_FROM;
+  if (!from) throw new Error("RESEND_FROM missing (use a verified domain like alerts@getlucidfeed.com)");
+  
   if (!digest?.items?.length) throw new Error("digest.items empty");
 
   // Choose recipient strategy:
@@ -21,7 +25,7 @@ export async function sendWeeklyDigest(digest: Digest) {
   }
 
   const payload = {
-    from: "alerts@getlucidfeed.com",
+    from,
     to,
     subject: `LucidFeed — ${digest.week}`,
     // Use the published Resend template alias (prebuilt in the UI).
