@@ -4,7 +4,7 @@
  */
 
 import { env } from './env';
-import type { SubscriptionTier } from '@shared/schema';
+import type { SubscriptionTier } from '../shared/schema';
 
 export interface TierLimits {
   digestFrequency: 'weekly' | 'daily' | 'realtime';
