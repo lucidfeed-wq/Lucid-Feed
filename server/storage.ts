@@ -57,6 +57,8 @@ export interface IStorage {
   getFolderItems(userId: string, folderId: string): Promise<Item[]>;
   
   // Feed Catalog
+  getFeedById(feedId: string): Promise<FeedCatalog | undefined>;
+  getItemsByFeedUrl(feedUrl: string, limit?: number): Promise<Item[]>;
   getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string; featured?: boolean }): Promise<FeedCatalog[]>;
   getSuggestedFeeds(topics: string[], sourceTypes: string[], limit?: number): Promise<FeedCatalog[]>;
   submitFeed(submission: InsertUserFeedSubmission): Promise<UserFeedSubmission>;
@@ -526,6 +528,31 @@ export class PostgresStorage implements IStorage {
   }
 
   // Feed Catalog
+  async getFeedById(feedId: string): Promise<FeedCatalog | undefined> {
+    const result = await db
+      .select()
+      .from(feedCatalog)
+      .where(eq(feedCatalog.id, feedId))
+      .limit(1);
+    
+    return result[0];
+  }
+
+  async getItemsByFeedUrl(feedUrl: string, limit: number = 5): Promise<Item[]> {
+    // Extract domain from feed URL to match items
+    const feedDomain = new URL(feedUrl).hostname.replace(/^www\./, '');
+    
+    // Match items by domain in their URL (best effort matching)
+    const results = await db
+      .select()
+      .from(items)
+      .where(sql`${items.url} LIKE ${'%' + feedDomain + '%'}`)
+      .orderBy(desc(items.publishedAt))
+      .limit(limit);
+    
+    return results;
+  }
+
   async getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string; featured?: boolean }): Promise<FeedCatalog[]> {
     let query = db.select().from(feedCatalog);
     

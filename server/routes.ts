@@ -737,6 +737,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Feed preview endpoints (protected)
+  app.get('/api/feeds/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const feed = await storage.getFeedById(id);
+      
+      if (!feed) {
+        return res.status(404).json({ error: 'Feed not found' });
+      }
+      
+      res.json(feed);
+    } catch (error) {
+      console.error('Error fetching feed:', error);
+      res.status(500).json({ error: 'Failed to fetch feed' });
+    }
+  });
+
+  app.get('/api/feeds/:id/items', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const limit = parseInt(req.query.limit as string) || 5;
+      
+      // First get the feed to get its URL
+      const feed = await storage.getFeedById(id);
+      
+      if (!feed) {
+        return res.status(404).json({ error: 'Feed not found' });
+      }
+      
+      // Get sample items from this feed
+      const items = await storage.getItemsByFeedUrl(feed.url, limit);
+      
+      res.json(items);
+    } catch (error) {
+      console.error('Error fetching feed items:', error);
+      res.status(500).json({ error: 'Failed to fetch feed items' });
+    }
+  });
+
   // Feed Discovery endpoints (protected)
   app.get('/api/discover/feeds', isAuthenticated, async (req: any, res) => {
     try {
