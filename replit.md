@@ -115,3 +115,14 @@ The application uses Resend for sending email alerts about cost spikes, daily su
 4. Add `ALERT_EMAILS` (comma-separated list of recipient emails) to your Replit Secrets
 
 If Resend is not configured, the application will continue to work normally but email alerts will be skipped silently.
+
+### reCAPTCHA Bot Protection Setup
+The application uses Google reCAPTCHA v2 to protect the onboarding flow from bot signups:
+1. Get reCAPTCHA keys from https://www.google.com/recaptcha/admin/create (choose "reCAPTCHA v2" → "I'm not a robot" checkbox)
+2. Add your Replit domain (e.g., `your-repl.replit.app`) to the authorized domains
+3. Add these secrets to Replit Secrets:
+   - `RECAPTCHA_SITE_KEY` - Your site key (public)
+   - `RECAPTCHA_SECRET_KEY` - Your secret key (private)
+   - `VITE_RECAPTCHA_SITE_KEY` - Same as RECAPTCHA_SITE_KEY (needed for frontend)
+
+The reCAPTCHA widget will appear during the final step of onboarding and is verified server-side before allowing digest generation.

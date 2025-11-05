@@ -918,7 +918,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/digest/generate", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const { recaptchaToken } = req.body;
+      
       console.log(`[POST /api/digest/generate] Generating personalized digest for user ${userId}`);
+      
+      // Verify reCAPTCHA token (required for onboarding security)
+      if (!recaptchaToken) {
+        return res.status(400).json({ error: "reCAPTCHA verification required" });
+      }
+
+      const { env } = await import('../config/env');
+      const secretKey = env.recaptchaSecretKey;
+
+      if (secretKey) {
+        // Only verify if configured (fail closed in production)
+        try {
+          const verifyUrl = `https://www.google.com/recaptcha/api/siteverify`;
+          const response = await fetch(verifyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `secret=${secretKey}&response=${recaptchaToken}`
+          });
+
+          const data = await response.json();
+
+          if (!data.success) {
+            console.error("[reCAPTCHA] Verification failed for user", userId, data['error-codes']);
+            return res.status(400).json({ error: "reCAPTCHA verification failed" });
+          }
+          console.log("[reCAPTCHA] Verified successfully for user", userId);
+        } catch (error) {
+          console.error("[reCAPTCHA] Verification error:", error);
+          return res.status(500).json({ error: "reCAPTCHA verification error" });
+        }
+      } else {
+        console.warn("[reCAPTCHA] Secret key not configured - bypassing verification");
+      }
       
       const { id, slug } = await generatePersonalizedDigest(userId);
       
@@ -932,6 +967,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error generating personalized digest:", error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate digest';
       res.status(500).json({ error: errorMessage });
+    }
+  });
+
+  // reCAPTCHA verification endpoint
+  app.post("/api/verify-recaptcha", async (req, res) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ success: false, message: "reCAPTCHA token is required" });
+      }
+
+      const { env } = await import('../config/env');
+      const secretKey = env.recaptchaSecretKey;
+
+      if (!secretKey) {
+        console.warn("reCAPTCHA secret key not configured");
+        // Allow through if not configured (for development)
+        return res.json({ success: true, message: "reCAPTCHA not configured, bypassing verification" });
+      }
+
+      // Verify token with Google
+      const verifyUrl = `https://www.google.com/recaptcha/api/siteverify`;
+      const response = await fetch(verifyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `secret=${secretKey}&response=${token}`
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        res.json({ success: true, message: "reCAPTCHA verified successfully" });
+      } else {
+        res.status(400).json({ success: false, message: "reCAPTCHA verification failed", errors: data['error-codes'] });
+      }
+    } catch (error) {
+      console.error("Error verifying reCAPTCHA:", error);
+      res.status(500).json({ success: false, message: "reCAPTCHA verification error" });
     }
   });
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Topic, SourceType } from "@shared/schema";
 import logoImage from "@assets/brandkit-template-663-2025-11-04_1762296047785.png";
+import ReCAPTCHA from "react-google-recaptcha";
 
 interface CategoryGroup {
   category: string;
@@ -138,6 +139,8 @@ export default function Onboarding() {
   const [selectedTopics, setSelectedTopics] = useState<Topic[]>([]);
   const [selectedSourceTypes, setSelectedSourceTypes] = useState<SourceType[]>([]);
   const [subscribedFeeds, setSubscribedFeeds] = useState<string[]>([]);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   // Build feed suggestions query URL with params (increased limit from 12 to 50 for better variety)
   // LIVE FILTERING: Updates dynamically as user selects topics/source types
@@ -289,8 +292,8 @@ export default function Onboarding() {
   };
 
   const generateDigestMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("POST", "/api/digest/generate", {});
+    mutationFn: async ({ recaptchaToken }: { recaptchaToken: string }) => {
+      return await apiRequest("POST", "/api/digest/generate", { recaptchaToken });
     },
     onSuccess: (data: any) => {
       console.log("[Onboarding] Digest generated:", data);
@@ -314,7 +317,7 @@ export default function Onboarding() {
     },
   });
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (subscribedFeeds.length === 0) {
       toast({
         title: "Subscribe to feeds",
@@ -324,13 +327,24 @@ export default function Onboarding() {
       return;
     }
     
+    // Verify reCAPTCHA if token not already verified
+    if (!recaptchaToken) {
+      toast({
+        title: "Verification required",
+        description: "Please complete the reCAPTCHA verification to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Trigger digest generation with loading toast
+    // reCAPTCHA will be verified server-side in the digest generation endpoint
     toast({
       title: "Generating your digest...",
       description: "This may take a moment as we fetch and analyze content.",
     });
     
-    generateDigestMutation.mutate();
+    generateDigestMutation.mutate({ recaptchaToken });
   };
 
   const progress = ((currentStep - 1) / 4) * 100;
@@ -592,6 +606,17 @@ export default function Onboarding() {
                 </div>
               )}
 
+              {/* reCAPTCHA Verification */}
+              <div className="flex justify-center py-4" data-testid="recaptcha-container">
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY || ""}
+                  onChange={(token) => setRecaptchaToken(token)}
+                  onExpired={() => setRecaptchaToken(null)}
+                  data-testid="recaptcha"
+                />
+              </div>
+
               <div className="flex justify-between items-center pt-4 border-t">
                 <Button
                   variant="outline"
@@ -606,7 +631,7 @@ export default function Onboarding() {
                   </p>
                   <Button
                     onClick={handleComplete}
-                    disabled={subscribedFeeds.length === 0 || generateDigestMutation.isPending}
+                    disabled={subscribedFeeds.length === 0 || !recaptchaToken || generateDigestMutation.isPending}
                     data-testid="button-complete"
                   >
                     {generateDigestMutation.isPending ? 'Generating Digest...' : 'Complete Onboarding'}
