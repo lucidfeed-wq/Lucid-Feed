@@ -25,11 +25,13 @@ export async function autoSeedFeedCatalog(): Promise<void> {
     
     console.log("🌱 Feed catalog empty - auto-seeding from catalog...");
     
-    // Read seed file
-    const seedPath = path.join(__dirname, "../seeds/feed-catalog.json");
+    // Read seed file from project root (works in both dev and production)
+    // In production, esbuild bundles to dist/ but seed file stays in source
+    const seedPath = path.join(process.cwd(), "server/seeds/feed-catalog.json");
     
     if (!fs.existsSync(seedPath)) {
-      console.warn("⚠️  Seed file not found - skipping auto-seed");
+      console.warn("⚠️  Seed file not found at:", seedPath);
+      console.warn("   Current working directory:", process.cwd());
       return;
     }
     

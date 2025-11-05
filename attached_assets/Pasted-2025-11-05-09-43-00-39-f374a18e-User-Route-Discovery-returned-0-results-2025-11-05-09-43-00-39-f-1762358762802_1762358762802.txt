@@ -1,0 +1,335 @@
+2025-11-05 09:43:00.39
+f374a18e
+User
+[Route] ✓ Discovery returned 0 results
+2025-11-05 09:43:00.39
+f374a18e
+User
+========================================
+2025-11-05 09:43:00.44
+f374a18e
+User
+3:43:00 PM [express] GET /api/discover/feeds 200 in 142ms :: []
+2025-11-05 09:43:00.52
+f374a18e
+User
+========== DISCOVERY ROUTE CALLED ==========
+2025-11-05 09:43:00.52
+f374a18e
+User
+[Route] Query: "met", SourceTypes: undefined, Featured: undefined
+2025-11-05 09:43:00.52
+f374a18e
+User
+[Route] Full query params: { query: 'met' }
+2025-11-05 09:43:00.57
+f374a18e
+User
+[Storage] getFeedCatalog returned 0 feeds
+2025-11-05 09:43:00.57
+f374a18e
+User
+[Route] ✓ Fetched 0 feeds from catalog
+2025-11-05 09:43:00.57
+f374a18e
+User
+[Discovery] Filtering 0 feeds for query: "met"
+2025-11-05 09:43:00.57
+f374a18e
+User
+[Discovery] Found 0 matches for "met"
+2025-11-05 09:43:00.57
+f374a18e
+User
+🔍 Search miss: "met" - Consider adding relevant feeds to catalog
+2025-11-05 09:43:00.57
+f374a18e
+User
+[Route] ✓ Discovery returned 0 results
+2025-11-05 09:43:00.57
+f374a18e
+User
+========================================
+2025-11-05 09:43:00.62
+f374a18e
+User
+3:43:00 PM [express] GET /api/discover/feeds 200 in 410ms :: []
+2025-11-05 09:43:00.71
+f374a18e
+User
+========== DISCOVERY ROUTE CALLED ==========
+2025-11-05 09:43:00.71
+f374a18e
+User
+[Route] Query: "metab", SourceTypes: undefined, Featured: undefined
+2025-11-05 09:43:00.76
+f374a18e
+User
+[Route] ✓ Fetched 0 feeds from catalog
+2025-11-05 09:43:00.76
+f374a18e
+User
+[Route] ✓ Discovery returned 0 results
+2025-11-05 09:43:02.83
+f374a18e
+User
+========== DISCOVERY ROUTE CALLED ==========
+2025-11-05 09:43:02.83
+f374a18e
+User
+[Route] Query: "f", SourceTypes: undefined, Featured: undefined
+2025-11-05 09:43:02.83
+f374a18e
+User
+[Route] Full query params: { query: 'f' }
+2025-11-05 09:43:02.88
+f374a18e
+User
+[Storage] getFeedCatalog returned 0 feeds
+2025-11-05 09:43:02.88
+f374a18e
+User
+[Route] ✓ Fetched 0 feeds from catalog
+2025-11-05 09:43:02.88
+f374a18e
+User
+[Discovery] Filtering 0 feeds for query: "f"
+2025-11-05 09:43:02.88
+f374a18e
+User
+[Discovery] Found 0 matches for "f"
+2025-11-05 09:43:02.88
+f374a18e
+User
+🔍 Search miss: "f" - Consider adding relevant feeds to catalog
+2025-11-05 09:43:02.88
+f374a18e
+User
+[Route] ✓ Discovery returned 0 results
+2025-11-05 09:43:02.88
+f374a18e
+User
+========================================
+2025-11-05 09:43:02.92
+f374a18e
+User
+3:43:02 PM [express] GET /api/discover/feeds 200 in 138ms :: []
+2025-11-05 09:43:03.01
+f374a18e
+User
+========== DISCOVERY ROUTE CALLED ==========
+2025-11-05 09:43:03.01
+f374a18e
+User
+[Route] Query: "fu", SourceTypes: undefined, Featured: undefined
+2025-11-05 09:43:03.01
+f374a18e
+User
+[Route] Full query params: { query: 'fu' }
+2025-11-05 09:43:03.05
+f374a18e
+User
+[Storage] getFeedCatalog returned 0 feeds
+2025-11-05 09:43:03.05
+f374a18e
+User
+[Route] ✓ Fetched 0 feeds from catalog
+2025-11-05 09:43:03.05
+f374a18e
+User
+[Discovery] Filtering 0 feeds for query: "fu"
+2025-11-05 09:43:03.05
+f374a18e
+User
+[Discovery] Found 0 matches for "fu"
+2025-11-05 09:43:03.06
+f374a18e
+User
+🔍 Search miss: "fu" - Consider adding relevant feeds to catalog
+2025-11-05 09:43:03.06
+f374a18e
+User
+[Route] ✓ Discovery returned 0 results
+2025-11-05 09:43:03.06
+f374a18e
+User
+========================================
+2025-11-05 09:43:03.10
+f374a18e
+User
+3:43:03 PM [express] GET /api/discover/feeds 200 in 138ms :: []
+2025-11-05 09:43:03.13
+f374a18e
+User
+========== DISCOVERY ROUTE CALLED ==========
+2025-11-05 09:43:03.13
+f374a18e
+User
+[Route] Query: "fun", SourceTypes: undefined, Featured: undefined
+2025-11-05 09:43:03.13
+f374a18e
+User
+[Route] Full query params: { query: 'fun' }
+2025-11-05 09:43:03.18
+f374a18e
+User
+[Storage] getFeedCatalog returned 0 feeds
+2025-11-05 09:43:03.18
+f374a18e
+User
+[Route] ✓ Fetched 0 feeds from catalog
+2025-11-05 09:43:03.18
+f374a18e
+User
+[Discovery] Filtering 0 feeds for query: "fun"
+2025-11-05 09:43:03.18
+f374a18e
+User
+[Discovery] Found 0 matches for "fun"
+2025-11-05 09:43:03.18
+f374a18e
+User
+🔍 Search miss: "fun" - Consider adding relevant feeds to catalog
+2025-11-05 09:43:03.18
+f374a18e
+User
+[Route] ✓ Discovery returned 0 results
+2025-11-05 09:43:03.18
+f374a18e
+User
+========================================
+2025-11-05 09:43:03.23
+f374a18e
+User
+3:43:03 PM [express] GET /api/discover/feeds 200 in 138ms :: []
+2025-11-05 09:43:03.29
+f374a18e
+User
+========== DISCOVERY ROUTE CALLED ==========
+2025-11-05 09:43:03.29
+f374a18e
+User
+[Route] Query: "func", SourceTypes: undefined, Featured: undefined
+2025-11-05 09:43:03.29
+f374a18e
+User
+[Route] Full query params: { query: 'func' }
+2025-11-05 09:43:03.34
+f374a18e
+User
+[Storage] getFeedCatalog returned 0 feeds
+2025-11-05 09:43:03.34
+f374a18e
+User
+[Route] ✓ Fetched 0 feeds from catalog
+2025-11-05 09:43:03.34
+f374a18e
+User
+[Discovery] Filtering 0 feeds for query: "func"
+2025-11-05 09:43:03.34
+f374a18e
+User
+[Discovery] Found 0 matches for "func"
+2025-11-05 09:43:03.34
+f374a18e
+User
+🔍 Search miss: "func" - Consider adding relevant feeds to catalog
+2025-11-05 09:43:03.34
+f374a18e
+User
+[Route] ✓ Discovery returned 0 results
+2025-11-05 09:43:03.34
+f374a18e
+User
+========================================
+2025-11-05 09:43:03.38
+f374a18e
+User
+3:43:03 PM [express] GET /api/discover/feeds 200 in 143ms :: []
+2025-11-05 09:43:03.41
+f374a18e
+User
+========== DISCOVERY ROUTE CALLED ==========
+2025-11-05 09:43:03.41
+f374a18e
+User
+[Route] Query: "funct", SourceTypes: undefined, Featured: undefined
+2025-11-05 09:43:03.41
+f374a18e
+User
+[Route] Full query params: { query: 'funct' }
+2025-11-05 09:43:03.46
+f374a18e
+User
+[Storage] getFeedCatalog returned 0 feeds
+2025-11-05 09:43:03.46
+f374a18e
+User
+[Route] ✓ Fetched 0 feeds from catalog
+2025-11-05 09:43:03.46
+f374a18e
+User
+[Route] ✓ Discovery returned 0 results
+2025-11-05 09:43:03.51
+f374a18e
+User
+3:43:03 PM [express] GET /api/discover/feeds 200 in 144ms :: []
+2025-11-05 09:43:03.59
+f374a18e
+User
+========== DISCOVERY ROUTE CALLED ==========
+2025-11-05 09:43:03.59
+f374a18e
+User
+[Route] Query: "functi", SourceTypes: undefined, Featured: undefined
+2025-11-05 09:43:03.59
+f374a18e
+User
+[Route] Full query params: { query: 'functi' }
+2025-11-05 09:43:03.64
+f374a18e
+User
+[Storage] getFeedCatalog returned 0 feeds
+2025-11-05 09:43:03.64
+f374a18e
+User
+[Route] ✓ Fetched 0 feeds from catalog
+2025-11-05 09:43:03.64
+f374a18e
+User
+[Discovery] Filtering 0 feeds for query: "functi"
+2025-11-05 09:43:03.64
+f374a18e
+User
+[Discovery] Found 0 matches for "functi"
+2025-11-05 09:43:03.64
+f374a18e
+User
+========================================
+2025-11-05 09:43:03.73
+f374a18e
+User
+[Storage] getFeedCatalog returned 0 feeds
+2025-11-05 09:53:42.84
+f374a18e
+User
+3:53:42 PM [express] GET /api/auth/user 200 in 290ms :: {"id":"41556120","email":"matthewaltman2008@…
+2025-11-05 09:53:43.06
+f374a18e
+User
+3:53:43 PM [express] GET /api/digest/latest 404 in 155ms :: {"error":"No digest available"}
+2025-11-05 09:53:43.22
+f374a18e
+User
+3:53:43 PM [express] GET /api/preferences 304 in 281ms :: {"userId":"41556120","favoriteTopics":["me…
+2025-11-05 09:54:48.04
+f374a18e
+User
+3:54:48 PM [express] GET /api/digest/latest 404 in 288ms :: {"error":"No digest available"}
+
+Collapse
+
+Wrap
+
+Colors
+
