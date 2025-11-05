@@ -14,6 +14,7 @@ import { generateMissingEmbeddings } from "./services/embeddings";
 import { discoverFeeds, verifyRssFeed } from "./services/feed-discovery/discovery-service";
 import { canSubscribeToFeed, canSendChatMessage } from "./tierChecks";
 import Stripe from "stripe";
+import marketingRouter from "./routes/marketing";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -1554,6 +1555,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to start bulk enrichment" });
     }
   });
+
+  // Mount marketing automation routes
+  app.use(marketingRouter);
 
   const httpServer = createServer(app);
   return httpServer;
