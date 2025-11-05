@@ -13,8 +13,15 @@ export interface TierCheckResult {
 
 /**
  * Get user's current subscription tier
+ * Test accounts are automatically treated as Pro tier
  */
 export async function getUserTier(storage: IStorage, userId: string): Promise<SubscriptionTier> {
+  // Check if user is a test account first
+  const user = await storage.getUser(userId);
+  if (user?.isTestAccount) {
+    return 'pro';
+  }
+  
   const subscription = await storage.getUserSubscription(userId);
   return (subscription?.tier as SubscriptionTier) || 'free';
 }
