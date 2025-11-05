@@ -1,11 +1,10 @@
 import { useLocation } from "wouter";
-import { Sparkles, Brain, TrendingUp, Zap, Shield, Users, FileText, MessageSquare, BarChart3 } from "lucide-react";
+import { Brain, TrendingUp, Zap, Shield, MessageSquare, BarChart3 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { HeroSection } from "@/components/enhanced/HeroSection";
 import { FeatureSection } from "@/components/enhanced/FeatureSection";
 import { FAQSection } from "@/components/enhanced/FAQSection";
 import { PricingCard } from "@/components/enhanced/PricingCard";
-import { DataStatsCard } from "@/components/enhanced/DataStatsCard";
 
 export function LandingPage() {
   const [, navigate] = useLocation();
@@ -147,59 +146,11 @@ export function LandingPage() {
           href: "/discover",
         }}
         stats={[
-          { label: "Curated Sources", value: "100+" },
-          { label: "Daily Items", value: "500+" },
-          { label: "Active Users", value: "10K+" },
+          { label: "Curated Sources", value: "500+" },
+          { label: "Items This Week", value: "950+" },
         ]}
       />
 
-      {/* Stats Section */}
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <DataStatsCard
-              icon={<FileText className="h-6 w-6" />}
-              color="#3b82f6"
-              title="Articles Curated"
-              subtitle="This week"
-              value="2,847"
-              change="+12%"
-              isIncrease={true}
-              percent={85}
-            />
-            <DataStatsCard
-              icon={<Users className="h-6 w-6" />}
-              color="#10b981"
-              title="Active Readers"
-              subtitle="This month"
-              value="9,842"
-              change="+23%"
-              isIncrease={true}
-              percent={92}
-            />
-            <DataStatsCard
-              icon={<Brain className="h-6 w-6" />}
-              color="#8b5cf6"
-              title="AI Summaries"
-              subtitle="Generated"
-              value="18K+"
-              change="+34%"
-              isIncrease={true}
-              percent={78}
-            />
-            <DataStatsCard
-              icon={<Sparkles className="h-6 w-6" />}
-              color="#f59e0b"
-              title="Avg Quality Score"
-              subtitle="All content"
-              value="8.4/10"
-              change="+0.3"
-              isIncrease={true}
-              percent={84}
-            />
-          </div>
-        </div>
-      </section>
 
       <FeatureSection
         title="Features"
@@ -245,7 +196,7 @@ export function LandingPage() {
             Ready to Transform Your Content Discovery?
           </h2>
           <p className="mb-8 text-lg opacity-90 max-w-2xl mx-auto">
-            Join thousands of professionals who use Lucid Feed to stay informed and make better decisions.
+            Start curating your personalized feed today and stay informed with AI-powered insights.
           </p>
           <button
             onClick={() => navigate("/onboarding")}
