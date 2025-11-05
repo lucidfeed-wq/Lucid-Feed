@@ -1038,11 +1038,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       console.log(`[POST /api/digest/refresh] Starting digest refresh for user ${userId}`);
 
-      // 1. Get user subscription
-      const subscription = await storage.getUserSubscription(userId);
-      const tier = (subscription?.tier || 'free') as 'free' | 'premium' | 'pro';
+      // 1. Get user and check if test account
+      const user = await storage.getUser(userId);
+      const isTestAccount = user?.isTestAccount || false;
 
-      // 2. Check tier limits
+      // 2. Get user subscription
+      const subscription = await storage.getUserSubscription(userId);
+      let tier = (subscription?.tier || 'free') as 'free' | 'premium' | 'pro';
+      
+      // Test accounts are treated as 'pro' tier
+      if (isTestAccount) {
+        tier = 'pro';
+      }
+
+      // 3. Check tier limits
       const limits: Record<'free' | 'premium' | 'pro', number> = {
         free: 0,
         premium: 1,
@@ -1057,13 +1066,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // 3. Get today's usage
+      // 4. Get today's usage
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
       const usage = await storage.getDailyUsage(userId, today);
       const refreshCount = usage?.digestRefreshes || 0;
 
-      // 4. Check if user exceeded limit
-      if (refreshCount >= limits[tier]) {
+      // 5. Check if user exceeded limit (skip for test accounts)
+      if (!isTestAccount && refreshCount >= limits[tier]) {
         return res.status(429).json({ 
           error: `Daily refresh limit reached (${limits[tier]} per day)`,
           limit: limits[tier],
@@ -1072,18 +1081,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // 5. Run ingestion
+      // 6. Run ingestion
       console.log(`[POST /api/digest/refresh] Running ingestion job...`);
       await runIngestJob({ useSubscribedFeeds: true });
 
-      // 6. Run digest generation
+      // 7. Run digest generation
       console.log(`[POST /api/digest/refresh] Generating weekly digest...`);
       const { id, slug } = await generateWeeklyDigest();
 
-      // 7. Increment refresh counter
+      // 8. Increment refresh counter (still track for test accounts)
       await storage.incrementDigestRefresh(userId, today);
 
-      // 8. Return new digest
+      // 9. Return new digest
       const digest = await storage.getDigestBySlug(slug);
       
       res.json({ 
@@ -1095,7 +1104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         usage: {
           used: refreshCount + 1,
           limit: limits[tier],
-          tier
+          tier: isTestAccount ? 'pro (test)' : tier
         }
       });
     } catch (error) {
