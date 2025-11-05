@@ -1405,6 +1405,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Seed feed catalog (for production deployment)
+  app.post("/api/admin/seed-feeds", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      // Dynamic import to avoid issues
+      const { execSync } = await import('child_process');
+      
+      console.log(`[Admin] Feed catalog seeding initiated by ${req.user.claims.sub}`);
+      
+      // Run the seed script in background
+      res.json({
+        success: true,
+        message: "Feed seeding started. Check server logs for progress.",
+      });
+      
+      // Execute seeding in background
+      setTimeout(async () => {
+        try {
+          const output = execSync('tsx server/scripts/seed-feeds.ts', {
+            cwd: process.cwd(),
+            encoding: 'utf-8'
+          });
+          console.log('[Admin] Seed output:', output);
+        } catch (error: any) {
+          console.error('[Admin] Seed error:', error.message);
+        }
+      }, 100);
+      
+    } catch (error) {
+      console.error("Error seeding feeds:", error);
+      res.status(500).json({ error: "Failed to seed feed catalog" });
+    }
+  });
+
   // Admin metrics endpoint - job observability
   app.get("/api/admin/metrics/jobs", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
