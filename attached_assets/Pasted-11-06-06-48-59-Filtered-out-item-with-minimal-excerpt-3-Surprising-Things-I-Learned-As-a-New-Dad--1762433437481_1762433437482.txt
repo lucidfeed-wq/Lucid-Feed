@@ -1,0 +1,66 @@
+11-06 06:48:59
+Filtered out item with minimal excerpt: "3 Surprising Things I Learned As a New Dad"
+11-06 06:48:59
+Filtered out item with minimal excerpt: "How To Make Money On YouTube While You Sleep"
+11-06 06:48:59
+Filtered out item with minimal excerpt: "How To Crush Your Goals Every Time"
+11-06 06:48:59
+Filtered out item with minimal excerpt: "The Secret Skill Everyone Needs in 2025"
+11-06 06:48:59
+Filtered out item with minimal excerpt: "The most surprising thing about building apps with your spouse"
+11-06 06:48:59
+Filtered out item with minimal excerpt: "What to do if you're too ambitious"
+11-06 06:48:59
+Filtered out item with minimal excerpt: "The secret to actually get stuff done"
+11-06 06:48:59
+Filtered out item with minimal excerpt: "Rapid Fire Questions with Ali Abdaal"
+11-06 06:48:59
+Filtered out item with minimal excerpt: "The Only 2 Systems You Need To Start A Business"
+11-06 06:48:59
+Filtered out low-content item: "Rant Wednesday - November 05, 2025" (content quality: 8)
+11-06 06:48:59
+Filtered out low-content item: "Gym Story Saturday" (content quality: 5)
+11-06 06:48:59
+Filtered out item with minimal excerpt: "Could treating aging cause a population crisis? – Andrew Steele [OC]"
+11-06 06:48:59
+Filtered out item with minimal excerpt: "Everyone's buzzing about the blood test that detects 50 types of cancer. I tried it."
+11-06 06:48:59
+Filtered out item with minimal excerpt: "Elevating cytosolic NADPH metabolism in endothelial cells ameliorates vascular aging"
+11-06 06:48:59
+Filtered out item with minimal excerpt: "Measurements taken from 1,803 Brits from birth through old age allowed scientists to correlate life course exposures with the age and longevity profiles of seven major organs."
+11-06 06:48:59
+Filtered out item with minimal excerpt: "The Truth About What’s Failing in Longevity Science"
+11-06 06:48:59
+Filtered out item with minimal excerpt: "SGLT-2 Inhibitors: Do They Differ in Their Potential for Healthspan Extension?"
+11-06 06:48:59
+Filtered out item with minimal excerpt: "Zag Bio emerges with plans to treat immune disease by targeting the thymus"
+11-06 06:48:59
+Filtered out item with minimal excerpt: "Can bowhead whales with their 200-year lifespan help us to slow ageing?"
+11-06 06:48:59
+Filtered out low-content item: "Appetizers and…whatcha giving out for Halloween???" (content quality: 8)
+11-06 06:48:59
+Filtered 43 items with insufficient content
+11-06 06:49:05
+Ingestion complete: 5 inserted, 58 skipped, 0 merged, 43 filtered
+11-06 06:49:05
+[POST /api/digest/refresh] Generating weekly digest...
+11-06 06:49:05
+Starting weekly digest generation...
+11-06 06:49:05
+Digest configuration: 15 research, 15 community, 10 expert videos
+11-06 06:49:05
+Found 543 items in window
+11-06 06:49:05
+0 items filtered for insufficient content
+11-06 06:49:05
+Generating AI summaries for 30 items...
+11-06 06:49:05
+Generating 2 new summaries...
+11-06 06:49:09
+Generating category summaries...
+11-06 06:49:17
+Category summaries generated
+11-06 06:49:17
+Digest created: gFUzh955x2YtACCmLsxKs (2025w-45-1762433357)
+11-06 06:49:20
+12:49:20 PM [express] POST /api/digest/refresh 200 in 184457ms :: {"success":true,"digestId":"gFUzh95…
