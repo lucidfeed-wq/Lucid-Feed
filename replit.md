@@ -32,7 +32,14 @@ Lucid Feed is a full-stack TypeScript project with React for the frontend and Ex
 - **Automated Database Seeding**: Idempotently seeds 500 curated feeds from `feed-catalog.json` on app startup if the catalog is empty.
 - **Enhanced Onboarding**: Users onboard by selecting categories, subtopics, source types, and subscribing to 50 dynamically filtered feed suggestions. An initial personalized digest is generated immediately.
 - **User-Driven Feed Requests**: Users can request feeds, which are processed daily, and notifications are sent when matches are found.
-- **Feed Health Monitoring**: Comprehensive feed reliability system with per-feed error tracking, intelligent error categorization (transient vs permanent), and auto-deactivation after 5 consecutive failures. Includes automated email alerts to admins when feeds are deactivated, admin endpoints for viewing feed health status and manually reactivating feeds, and weekly automated retry jobs to help degraded feeds recover.
+- **Real-Time Self-Healing Feed System**: Advanced feed recovery system that automatically detects and fixes failing feeds in real-time during digest generation. Features include:
+  - **Healing Orchestrator**: Diagnoses and repairs feeds within 2-second SLA using multiple strategies (DNS checks, redirect following, format detection)
+  - **Smart Recovery Tactics**: Prioritized tactics including redirect resolution, format fallback, cached content, and source-specific adapters
+  - **Learning Loop**: Machine learning system that optimizes healing tactics based on success rates and patterns across similar feed types
+  - **Alternative Discovery**: Background service with 5 strategies to automatically find replacement feeds when originals fail permanently
+  - **User Notifications**: Simple, non-technical notifications about feed issues with daily digest emails and in-app banner
+  - **Graceful Fallback**: Always delivers content using cached data when healing fails
+  - **Comprehensive Monitoring**: Admin dashboards with healing metrics, success rates, failure patterns, and per-feed history
 
 ### System Design Choices
 - **Backend Architecture**: Modular design separating business logic, services, content fetching, and infrastructure.
