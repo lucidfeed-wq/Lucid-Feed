@@ -16,6 +16,7 @@ import { canSubscribeToFeed, canSendChatMessage } from "./tierChecks";
 import Stripe from "stripe";
 import marketingRouter from "./routes/marketing";
 import { migrateFeedTopics } from "./services/migrate-topics";
+import { healingMonitor } from "./services/healing/monitoring";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -1959,6 +1960,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false,
         error: "Migration failed",
         message: error.message 
+      });
+    }
+  });
+
+  // Healing Monitoring Endpoints
+  
+  // Get real-time healing dashboard
+  app.get("/api/admin/healing/dashboard", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const dashboard = await healingMonitor.getHealingDashboard();
+      res.json(dashboard);
+    } catch (error: any) {
+      console.error("Error fetching healing dashboard:", error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message || "Failed to fetch healing dashboard"
+      });
+    }
+  });
+
+  // Get comprehensive healing health report
+  app.get("/api/admin/healing/report", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const report = await healingMonitor.generateHealthReport();
+      res.json(report);
+    } catch (error: any) {
+      console.error("Error generating healing report:", error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message || "Failed to generate healing report"
+      });
+    }
+  });
+
+  // Get per-feed healing history
+  app.get("/api/admin/healing/feed/:feedId", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { feedId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      
+      const history = await healingMonitor.getFeedHealingHistory(feedId, limit);
+      res.json(history);
+    } catch (error: any) {
+      console.error(`Error fetching healing history for feed ${req.params.feedId}:`, error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message || "Failed to fetch feed healing history"
+      });
+    }
+  });
+
+  // Get healing success rate for a time range
+  app.get("/api/admin/healing/success-rate", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const hours = req.query.hours ? parseInt(req.query.hours as string) : undefined;
+      const days = req.query.days ? parseInt(req.query.days as string) : undefined;
+      
+      if (!hours && !days) {
+        return res.status(400).json({ 
+          success: false,
+          error: "Please provide either 'hours' or 'days' query parameter" 
+        });
+      }
+      
+      const successRate = await healingMonitor.getHealingSuccessRate({ hours, days });
+      res.json({
+        success: true,
+        successRate,
+        timeRange: hours ? `${hours} hours` : `${days} days`,
+      });
+    } catch (error: any) {
+      console.error("Error calculating healing success rate:", error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message || "Failed to calculate healing success rate"
+      });
+    }
+  });
+
+  // Get failure patterns analysis
+  app.get("/api/admin/healing/failure-patterns", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const patterns = await healingMonitor.getFailurePatterns();
+      res.json({
+        success: true,
+        patterns,
+        totalPatterns: patterns.length,
+      });
+    } catch (error: any) {
+      console.error("Error analyzing failure patterns:", error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message || "Failed to analyze failure patterns"
+      });
+    }
+  });
+
+  // Track a healing attempt (for manual testing)
+  app.post("/api/admin/healing/track", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { feedId, success, tactic, duration, error, metadata } = req.body;
+      
+      if (!feedId || success === undefined || !tactic || duration === undefined) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required fields: feedId, success, tactic, duration"
+        });
+      }
+      
+      await healingMonitor.trackHealingAttempt(feedId, {
+        success,
+        tactic,
+        duration,
+        error,
+        metadata,
+      });
+      
+      res.json({
+        success: true,
+        message: "Healing attempt tracked successfully",
+      });
+    } catch (error: any) {
+      console.error("Error tracking healing attempt:", error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message || "Failed to track healing attempt"
       });
     }
   });

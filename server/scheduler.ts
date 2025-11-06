@@ -73,10 +73,36 @@ export function initializeScheduler() {
     }
   });
 
+  // Start the discovery job processor
+  // This runs continuously with its own interval
+  console.log("🚀 Starting discovery job processor...");
+  import("./services/discovery/discovery-job-processor").then(({ discoveryJobProcessor }) => {
+    discoveryJobProcessor.start();
+    console.log("✅ Discovery job processor started");
+  }).catch(error => {
+    console.error("Failed to start discovery job processor:", error);
+  });
+
+  // Process discovery queue every hour
+  // This is a safety net in case the processor's own interval misses something
+  cron.schedule("0 * * * *", async () => {
+    try {
+      const { discoveryJobProcessor } = await import("./services/discovery/discovery-job-processor");
+      const status = discoveryJobProcessor.getStatus();
+      
+      if (status.queueStatus.pending > 0) {
+        console.log(`📋 Discovery queue status: ${status.queueStatus.pending} pending, ${status.queueStatus.processing} processing`);
+      }
+    } catch (error) {
+      console.error("Failed to check discovery queue:", error);
+    }
+  });
+
   console.log("Scheduler initialized");
   console.log("- Daily ingestion: Every day at midnight UTC");
   console.log("- Weekly digest: Every Monday at 06:00 CST (12:00 UTC)");
   console.log("- Feed request processing: Every day at 2 AM UTC");
   console.log("- Topic migration cleanup: Every day at 3 AM UTC");
   console.log("- Weekly feed health retry: Every Sunday at 4 AM UTC");
+  console.log("- Discovery processor: Running continuously (checks every 30s)");
 }

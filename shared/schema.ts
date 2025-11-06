@@ -1041,3 +1041,75 @@ export const insertFeedRequestSchema = createInsertSchema(feedRequests).omit({ i
 
 export type FeedRequest = typeof feedRequests.$inferSelect;
 export type InsertFeedRequest = z.infer<typeof insertFeedRequestSchema>;
+
+// Discovery attempts table - track alternative feed discovery attempts
+export const discoveryAttempts = pgTable("discovery_attempts", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  originalFeedId: varchar("original_feed_id", { length: 255 }).notNull().references(() => feedCatalog.id, { onDelete: 'cascade' }),
+  candidateFeedId: varchar("candidate_feed_id", { length: 255 }).references(() => feedCatalog.id, { onDelete: 'cascade' }),
+  candidateUrl: text("candidate_url").notNull(), // URL discovered (may not be in catalog yet)
+  strategy: varchar("strategy", { length: 100 }).notNull(), // topic_based, domain_variant, social_api, search_engine, wayback_machine
+  confidence: integer("confidence").notNull().default(0), // 0-100 confidence score
+  accepted: boolean("accepted"), // null = pending, true = user accepted, false = user rejected
+  autoSubscribed: boolean("auto_subscribed").notNull().default(false), // Was it auto-subscribed?
+  metadata: json("metadata").$type<{
+    similarityScore?: number;
+    matchedTopics?: string[];
+    discoveryDetails?: Record<string, any>;
+    userFeedbackReason?: string;
+    validationErrors?: string[];
+  }>(),
+  validatedAt: timestamp("validated_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
+}, (table) => ({
+  originalFeedIdx: index("discovery_attempts_original_feed_idx").on(table.originalFeedId),
+  candidateFeedIdx: index("discovery_attempts_candidate_feed_idx").on(table.candidateFeedId),
+  strategyIdx: index("discovery_attempts_strategy_idx").on(table.strategy),
+  acceptedIdx: index("discovery_attempts_accepted_idx").on(table.accepted),
+  createdAtIdx: index("discovery_attempts_created_at_idx").on(table.createdAt),
+}));
+
+export const discoveryAttemptSchema = z.object({
+  id: z.string(),
+  originalFeedId: z.string(),
+  candidateFeedId: z.string().nullable().optional(),
+  candidateUrl: z.string(),
+  strategy: z.string(),
+  confidence: z.number(),
+  accepted: z.boolean().nullable().optional(),
+  autoSubscribed: z.boolean(),
+  metadata: z.object({
+    similarityScore: z.number().optional(),
+    matchedTopics: z.array(z.string()).optional(),
+    discoveryDetails: z.record(z.any()).optional(),
+    userFeedbackReason: z.string().optional(),
+    validationErrors: z.array(z.string()).optional(),
+  }).optional(),
+  validatedAt: z.date().nullable().optional(),
+  createdAt: z.date().optional(),
+  processedAt: z.date().nullable().optional(),
+});
+
+export const insertDiscoveryAttemptSchema = createInsertSchema(discoveryAttempts).omit({ id: true, createdAt: true });
+
+export type DiscoveryAttempt = typeof discoveryAttempts.$inferSelect;
+export type InsertDiscoveryAttempt = z.infer<typeof insertDiscoveryAttemptSchema>;
+
+// Feed candidate type for discovery
+export interface FeedCandidate {
+  url: string;
+  title?: string;
+  description?: string;
+  sourceType?: SourceType;
+  topics?: Topic[];
+  confidence: number;
+  strategy: string;
+  similarityScore?: number;
+  validationResult?: {
+    isValid: boolean;
+    hasItems: boolean;
+    itemCount?: number;
+    error?: string;
+  };
+}

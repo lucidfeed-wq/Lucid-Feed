@@ -1,8 +1,8 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions, dailyUsage, folders, itemFolders, chatConversations, chatSettings, feedRequests, feedHealthAttempts, feedHealingProfiles, feedNotifications } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription, DailyUsage, InsertDailyUsage, Folder, InsertFolder, ItemFolder, InsertItemFolder, ChatConversation, InsertChatConversation, ChatSettings, InsertChatSettings, FeedRequest, InsertFeedRequest, FeedHealthAttempt, InsertFeedHealthAttempt, FeedHealingProfile, InsertFeedHealingProfile, FeedNotification, InsertFeedNotification } from "@shared/schema";
-import { eq, and, gte, lte, desc, inArray, or, like, sql, avg, count } from "drizzle-orm";
+import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions, dailyUsage, folders, itemFolders, chatConversations, chatSettings, feedRequests, feedHealthAttempts, feedHealingProfiles, feedNotifications, discoveryAttempts } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription, DailyUsage, InsertDailyUsage, Folder, InsertFolder, ItemFolder, InsertItemFolder, ChatConversation, InsertChatConversation, ChatSettings, InsertChatSettings, FeedRequest, InsertFeedRequest, FeedHealthAttempt, InsertFeedHealthAttempt, FeedHealingProfile, InsertFeedHealingProfile, FeedNotification, InsertFeedNotification, DiscoveryAttempt, InsertDiscoveryAttempt } from "@shared/schema";
+import { eq, and, gte, lte, desc, inArray, or, like, sql, avg, count, isNull } from "drizzle-orm";
 
 export interface IStorage {
   // Items
@@ -128,6 +128,14 @@ export interface IStorage {
   getRecentNotificationForFeed(userId: string, feedId: string, hours?: number): Promise<FeedNotification | undefined>;
   getUserNotifications(userId: string, limit?: number): Promise<FeedNotification[]>;
   markNotificationAsNotified(notificationId: string): Promise<void>;
+  
+  // Discovery Attempts
+  saveDiscoveryAttempt(attempt: InsertDiscoveryAttempt): Promise<DiscoveryAttempt>;
+  getDiscoveryHistory(feedId: string): Promise<DiscoveryAttempt[]>;
+  markDiscoveryAccepted(attemptId: string, accepted: boolean, feedbackReason?: string): Promise<void>;
+  getAcceptedDiscoveryAttempts(feedId: string): Promise<DiscoveryAttempt[]>;
+  getDiscoveryAttemptCount(feedId: string): Promise<number>;
+  autoSubscribeUsersToAlternative(originalFeedId: string, newFeedId: string): Promise<number>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -1565,6 +1573,114 @@ export class PostgresStorage implements IStorage {
       .update(feedNotifications)
       .set({ lastNotifiedAt: new Date() })
       .where(eq(feedNotifications.id, notificationId));
+  }
+
+  // Discovery Attempts
+  async saveDiscoveryAttempt(attempt: InsertDiscoveryAttempt): Promise<DiscoveryAttempt> {
+    const id = nanoid();
+    const [discoveryAttempt] = await db
+      .insert(discoveryAttempts)
+      .values({
+        ...attempt,
+        id,
+      })
+      .returning();
+    return discoveryAttempt;
+  }
+
+  async getDiscoveryHistory(feedId: string): Promise<DiscoveryAttempt[]> {
+    return await db
+      .select()
+      .from(discoveryAttempts)
+      .where(eq(discoveryAttempts.originalFeedId, feedId))
+      .orderBy(desc(discoveryAttempts.createdAt));
+  }
+
+  async markDiscoveryAccepted(
+    attemptId: string, 
+    accepted: boolean, 
+    feedbackReason?: string
+  ): Promise<void> {
+    const updates: any = {
+      accepted,
+      processedAt: new Date(),
+    };
+    
+    if (feedbackReason) {
+      const [attempt] = await db
+        .select()
+        .from(discoveryAttempts)
+        .where(eq(discoveryAttempts.id, attemptId))
+        .limit(1);
+      
+      if (attempt) {
+        const metadata = attempt.metadata || {};
+        updates.metadata = {
+          ...metadata,
+          userFeedbackReason: feedbackReason,
+        };
+      }
+    }
+    
+    await db
+      .update(discoveryAttempts)
+      .set(updates)
+      .where(eq(discoveryAttempts.id, attemptId));
+  }
+
+  async getAcceptedDiscoveryAttempts(feedId: string): Promise<DiscoveryAttempt[]> {
+    return await db
+      .select()
+      .from(discoveryAttempts)
+      .where(
+        and(
+          eq(discoveryAttempts.originalFeedId, feedId),
+          eq(discoveryAttempts.accepted, true)
+        )
+      )
+      .orderBy(desc(discoveryAttempts.createdAt));
+  }
+
+  async getDiscoveryAttemptCount(feedId: string): Promise<number> {
+    const result = await db
+      .select({ count: count() })
+      .from(discoveryAttempts)
+      .where(eq(discoveryAttempts.originalFeedId, feedId));
+    return result[0]?.count || 0;
+  }
+
+  async autoSubscribeUsersToAlternative(
+    originalFeedId: string, 
+    newFeedId: string
+  ): Promise<number> {
+    // Get all users subscribed to the original feed
+    const subscriptions = await db
+      .select()
+      .from(userFeedSubscriptions)
+      .where(eq(userFeedSubscriptions.feedId, originalFeedId));
+    
+    let subscribedCount = 0;
+    
+    // Subscribe each user to the new feed (if not already subscribed)
+    for (const subscription of subscriptions) {
+      const existingSubscription = await db
+        .select()
+        .from(userFeedSubscriptions)
+        .where(
+          and(
+            eq(userFeedSubscriptions.userId, subscription.userId),
+            eq(userFeedSubscriptions.feedId, newFeedId)
+          )
+        )
+        .limit(1);
+      
+      if (existingSubscription.length === 0) {
+        await this.subscribeFeed(subscription.userId, newFeedId);
+        subscribedCount++;
+      }
+    }
+    
+    return subscribedCount;
   }
 }
 

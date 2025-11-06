@@ -7,6 +7,7 @@ import type { HealingResult, HealingContext, DiagnosticResult, RecoveryResult } 
 import { TacticPriority } from './types';
 import { HealingSession } from './healing-session';
 import { storage } from '../../storage';
+import { learningLoop, type HealingAttempt } from './learning-loop';
 
 // Import diagnostic strategies
 import {
@@ -69,20 +70,37 @@ export class HealingOrchestrator {
         timeoutMs: budgetMs
       };
 
-      // Step 1: Run diagnostics in parallel (if applicable)
+      // Step 1: Check learning loop for best tactic
+      const bestTactic = await learningLoop.getBestTactic(feed.id);
+      
+      // Step 2: Run diagnostics in parallel (if applicable)
       const diagnosticResults = await this.runDiagnostics(context, session);
       
-      // Step 2: Determine recommended tactics based on diagnostics
+      // Step 3: Determine recommended tactics based on diagnostics and learning
       const recommendedTactics = this.aggregateRecommendations(diagnosticResults);
       
-      // Step 3: Get applicable tactics and prioritize them
+      // Add learned tactic to recommendations if available
+      if (bestTactic && !recommendedTactics.includes(bestTactic)) {
+        recommendedTactics.unshift(bestTactic); // Add to beginning for priority
+      }
+      
+      // Step 4: Get applicable tactics and prioritize them
       const applicableTactics = this.recoveryTactics.filter(t => 
         t.isApplicable(context) || recommendedTactics.includes(t.name)
       );
       
-      const prioritizedTactics = session.prioritizeTactics(
-        applicableTactics.map(t => t.getMeta())
-      );
+      // Reorder tactics based on learning (prioritize learned tactic)
+      const tacticMetas = applicableTactics.map(t => {
+        const meta = t.getMeta();
+        // Boost priority for learned tactic
+        if (bestTactic && meta.name === bestTactic) {
+          meta.priority = TacticPriority.HIGH;
+          meta.successRate = 0.9; // High confidence
+        }
+        return meta;
+      });
+      
+      const prioritizedTactics = session.prioritizeTactics(tacticMetas);
 
       // Step 4: Execute tactics in priority order until success or timeout
       let healingResult: HealingResult | null = null;
@@ -138,8 +156,22 @@ export class HealingOrchestrator {
         );
       }
 
-      // Record the healing attempt
+      // Record the healing attempt and learn from it
       await this.recordOutcome(feed.id, healingResult);
+
+      // Learn from this attempt asynchronously (non-blocking)
+      const attempt: HealingAttempt = {
+        feedId: feed.id,
+        tactic: healingResult.tactic || 'unknown',
+        success: healingResult.success,
+        durationMs: healingResult.duration,
+        error: healingResult.error
+      };
+      
+      // Fire and forget - don't wait for learning to complete
+      learningLoop.learnFromAttempt(feed.id, attempt).catch(err => 
+        console.error(`Failed to learn from healing attempt: ${err}`)
+      );
 
       // Add diagnostic summary to result
       healingResult.diagnosticSummary = {
@@ -262,11 +294,34 @@ export class HealingOrchestrator {
       } else {
         const currentFeed = await storage.getFeedById(feedId);
         if (currentFeed) {
+          const newFailureCount = (currentFeed.consecutiveFailures || 0) + 1;
+          
+          // Check if feed is permanently failing
+          const isPermanentFailure = newFailureCount >= 5 || 
+                                    result.error?.includes('404') ||
+                                    result.error?.includes('permanently') ||
+                                    currentFeed.lastErrorMessage?.includes('404');
+          
           await storage.updateFeedHealth(feedId, {
-            lastFetchStatus: 'transient_error',
-            consecutiveFailures: (currentFeed.consecutiveFailures || 0) + 1,
+            lastFetchStatus: isPermanentFailure ? 'permanent_error' : 'transient_error',
+            consecutiveFailures: newFailureCount,
             lastErrorMessage: result.error || 'Healing failed'
           });
+          
+          // Trigger alternative discovery for permanently failed feeds
+          if (isPermanentFailure) {
+            console.log(`🔴 Feed ${feedId} appears permanently failed, triggering discovery`);
+            
+            // Import discovery processor dynamically to avoid circular dependencies
+            const { discoveryJobProcessor } = await import('../discovery/discovery-job-processor');
+            
+            // Queue discovery job
+            await discoveryJobProcessor.queueDiscovery(
+              feedId, 
+              'permanent_failure',
+              newFailureCount >= 10 ? 'high' : 'medium'
+            );
+          }
         }
       }
 
@@ -383,6 +438,114 @@ export class HealingOrchestrator {
       }
     } catch (error) {
       console.error(`Failed to update feed URL for ${feedId}:`, error);
+    }
+  }
+
+  /**
+   * Get healing metrics for a specific feed
+   */
+  async getHealingMetrics(feedId: string) {
+    return await learningLoop.getFeedMetrics(feedId);
+  }
+
+  /**
+   * Analyze patterns across all feeds
+   */
+  async analyzeHealingPatterns() {
+    return await learningLoop.analyzePatterns();
+  }
+
+  /**
+   * Get overall healing statistics
+   */
+  async getHealingStatistics(days: number = 30) {
+    try {
+      // Get all feeds
+      const feeds = await storage.getFeedCatalog();
+      
+      // Collect statistics
+      let totalHealed = 0;
+      let totalFailed = 0;
+      const tacticSuccess = new Map<string, { success: number; total: number }>();
+      const sourceTypeStats = new Map<string, { healed: number; failed: number }>();
+      
+      for (const feed of feeds) {
+        const profile = await storage.getHealingProfile(feed.id);
+        if (profile) {
+          const successes = profile.successCount || 0;
+          const failures = profile.failureCount || 0;
+          totalHealed += successes;
+          totalFailed += failures;
+          
+          // Track source type stats
+          const sourceType = feed.sourceType || 'unknown';
+          if (!sourceTypeStats.has(sourceType)) {
+            sourceTypeStats.set(sourceType, { healed: 0, failed: 0 });
+          }
+          const stats = sourceTypeStats.get(sourceType)!;
+          stats.healed += successes;
+          stats.failed += failures;
+          
+          // Track tactic success
+          if (profile.lastSuccessfulTactic) {
+            if (!tacticSuccess.has(profile.lastSuccessfulTactic)) {
+              tacticSuccess.set(profile.lastSuccessfulTactic, { success: 0, total: 0 });
+            }
+            const tacticStat = tacticSuccess.get(profile.lastSuccessfulTactic)!;
+            tacticStat.success += successes;
+            tacticStat.total += successes + failures;
+          }
+        }
+      }
+      
+      // Calculate success rates
+      const overallSuccessRate = totalHealed > 0 
+        ? totalHealed / (totalHealed + totalFailed) 
+        : 0;
+      
+      const tacticRanking = Array.from(tacticSuccess.entries())
+        .map(([tactic, stats]) => ({
+          tactic,
+          successRate: stats.total > 0 ? stats.success / stats.total : 0,
+          totalAttempts: stats.total
+        }))
+        .sort((a, b) => b.successRate - a.successRate);
+      
+      const sourceTypeRanking = Array.from(sourceTypeStats.entries())
+        .map(([sourceType, stats]) => ({
+          sourceType,
+          successRate: (stats.healed + stats.failed) > 0 
+            ? stats.healed / (stats.healed + stats.failed) 
+            : 0,
+          totalHealed: stats.healed,
+          totalFailed: stats.failed
+        }))
+        .sort((a, b) => b.successRate - a.successRate);
+      
+      return {
+        summary: {
+          totalHealed,
+          totalFailed,
+          overallSuccessRate,
+          totalFeeds: feeds.length
+        },
+        tacticRanking,
+        sourceTypeRanking,
+        patterns: await learningLoop.analyzePatterns()
+      };
+    } catch (error) {
+      console.error('Failed to get healing statistics:', error);
+      return {
+        summary: {
+          totalHealed: 0,
+          totalFailed: 0,
+          overallSuccessRate: 0,
+          totalFeeds: 0
+        },
+        tacticRanking: [],
+        sourceTypeRanking: [],
+        patterns: []
+      };
     }
   }
 }
