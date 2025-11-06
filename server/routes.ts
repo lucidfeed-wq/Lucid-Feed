@@ -1686,6 +1686,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin feed health endpoint - monitor failing/degraded feeds
+  app.get("/api/admin/feeds/health", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const allFeeds = await storage.getFeedCatalog({});
+      
+      // Categorize feeds by health status
+      const healthy = allFeeds.filter(f => f.isActive && f.consecutiveFailures === 0);
+      const degraded = allFeeds.filter(f => f.isActive && f.consecutiveFailures > 0 && f.consecutiveFailures < 5);
+      const deactivated = allFeeds.filter(f => !f.isActive);
+      
+      // Get feeds with errors (sorted by failure count)
+      const failingFeeds = allFeeds
+        .filter(f => f.consecutiveFailures > 0)
+        .sort((a, b) => b.consecutiveFailures - a.consecutiveFailures)
+        .slice(0, 50); // Limit to top 50 for performance
+      
+      res.json({
+        summary: {
+          total: allFeeds.length,
+          healthy: healthy.length,
+          degraded: degraded.length,
+          deactivated: deactivated.length,
+          healthRate: ((healthy.length / allFeeds.length) * 100).toFixed(1),
+        },
+        failingFeeds: failingFeeds.map(f => ({
+          id: f.id,
+          name: f.name,
+          url: f.url,
+          sourceType: f.sourceType,
+          isActive: f.isActive,
+          consecutiveFailures: f.consecutiveFailures,
+          lastFetchStatus: f.lastFetchStatus,
+          lastErrorMessage: f.lastErrorMessage,
+          lastFetchedAt: f.lastFetchedAt,
+        })),
+      });
+    } catch (error) {
+      console.error("Error fetching feed health:", error);
+      res.status(500).json({ error: "Failed to fetch feed health" });
+    }
+  });
+
+  // Admin endpoint to manually reactivate a feed
+  app.post("/api/admin/feeds/:feedId/reactivate", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { feedId } = req.params;
+      await storage.reactivateFeed(feedId);
+      
+      res.json({
+        success: true,
+        message: `Feed ${feedId} has been reactivated and failures reset`,
+      });
+    } catch (error) {
+      console.error("Error reactivating feed:", error);
+      res.status(500).json({ error: "Failed to reactivate feed" });
+    }
+  });
+
   // Admin endpoint to generate embeddings
   app.post("/admin/run/embeddings", async (req, res) => {
     try {
