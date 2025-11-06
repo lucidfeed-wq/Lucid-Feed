@@ -1096,26 +1096,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // 6. Run ingestion
-      console.log(`[POST /api/digest/refresh] Running ingestion job...`);
-      await runIngestJob({ useSubscribedFeeds: true });
+      // 6. Run ingestion (with error handling)
+      let ingestionSuccess = false;
+      let ingestionError: string | null = null;
+      try {
+        console.log(`[POST /api/digest/refresh] Running ingestion job...`);
+        await runIngestJob({ useSubscribedFeeds: true });
+        ingestionSuccess = true;
+        console.log(`[POST /api/digest/refresh] Ingestion completed successfully`);
+      } catch (error) {
+        ingestionError = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`⚠️  Ingestion failed but continuing to digest generation:`, error);
+        console.error(`Ingestion error details:`, ingestionError);
+        // Continue to digest generation - it will use existing content in the database
+      }
 
-      // 7. Run digest generation
-      console.log(`[POST /api/digest/refresh] Generating weekly digest...`);
-      const { id, slug } = await generateWeeklyDigest();
+      // 7. Run digest generation (with error handling)
+      let id: string;
+      let slug: string;
+      let digest: any;
+      try {
+        console.log(`[POST /api/digest/refresh] Generating weekly digest...`);
+        const result = await generateWeeklyDigest();
+        id = result.id;
+        slug = result.slug;
+        console.log(`[POST /api/digest/refresh] Digest generated successfully: ${slug}`);
+        
+        // Fetch the digest immediately to ensure we have content
+        digest = await storage.getDigestBySlug(slug);
+        if (!digest) {
+          throw new Error('Digest was created but not found in storage');
+        }
+      } catch (error) {
+        const digestError = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`❌ Digest generation failed:`, error);
+        console.error(`Digest error details:`, digestError);
+        
+        // If digest generation fails, try to return the most recent digest as fallback
+        const fallbackDigest = await storage.getLatestDigest();
+        if (fallbackDigest) {
+          console.log(`⚠️  Returning fallback digest: ${fallbackDigest.slug}`);
+          return res.json({
+            success: true,
+            digestId: fallbackDigest.id,
+            slug: fallbackDigest.slug,
+            digest: fallbackDigest,
+            message: 'Using previous digest (refresh failed)',
+            warnings: [
+              ingestionError ? `Ingestion: ${ingestionError}` : undefined,
+              `Digest generation: ${digestError}`
+            ].filter(Boolean),
+            usage: {
+              used: refreshCount,
+              limit: limits[tier],
+              tier: isTestAccount ? 'pro (test)' : tier
+            }
+          });
+        }
+        
+        // If no fallback digest, fail completely
+        return res.status(500).json({ 
+          error: 'Failed to generate digest and no fallback available',
+          details: digestError,
+          ingestionSuccess,
+          ingestionError
+        });
+      }
 
       // 8. Increment refresh counter (still track for test accounts)
-      await storage.incrementDigestRefresh(userId, today);
+      try {
+        await storage.incrementDigestRefresh(userId, today);
+      } catch (error) {
+        console.error(`⚠️  Failed to increment refresh counter:`, error);
+        // Non-critical error, continue
+      }
 
-      // 9. Return new digest
-      const digest = await storage.getDigestBySlug(slug);
+      // 9. Return the digest
+      const warnings = ingestionError ? [`Ingestion: ${ingestionError}`] : [];
       
       res.json({ 
         success: true,
         digestId: id,
         slug,
         digest,
-        message: 'Digest refreshed successfully',
+        message: ingestionSuccess 
+          ? 'Digest refreshed successfully' 
+          : 'Digest created with existing content (ingestion failed)',
+        warnings: warnings.length > 0 ? warnings : undefined,
         usage: {
           used: refreshCount + 1,
           limit: limits[tier],
@@ -1123,7 +1190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error) {
-      console.error("Error refreshing digest:", error);
+      console.error("❌ Unexpected error in digest refresh:", error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to refresh digest';
       res.status(500).json({ error: errorMessage });
     }

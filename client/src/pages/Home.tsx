@@ -79,10 +79,19 @@ export default function Home() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/digest/latest'] });
-      toast({
-        title: "Digest Refreshed",
-        description: "Your digest has been updated with the latest content.",
-      });
+      
+      // Show warnings if ingestion failed but digest succeeded
+      if (data?.warnings && Array.isArray(data.warnings) && data.warnings.length > 0) {
+        toast({
+          title: "Digest Created with Warnings",
+          description: "Your digest was created, but some content sources had errors. The digest may not include the very latest items.",
+        });
+      } else {
+        toast({
+          title: "Digest Refreshed",
+          description: "Your digest has been updated with the latest content.",
+        });
+      }
     },
     onError: (error: any) => {
       const errorData = error?.response?.data;
