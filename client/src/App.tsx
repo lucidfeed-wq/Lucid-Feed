@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 // Temporarily disabled to debug white screen issue
 // import { AuthenticatedFeedHealthBanner } from "@/components/AuthenticatedFeedHealthBanner";
 import Home from "@/pages/Home";
@@ -49,14 +50,16 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        {/* Temporarily disabled to debug white screen issue */}
-        {/* <AuthenticatedFeedHealthBanner /> */}
-        <Router />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          {/* Temporarily disabled to debug white screen issue */}
+          {/* <AuthenticatedFeedHealthBanner /> */}
+          <Router />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
