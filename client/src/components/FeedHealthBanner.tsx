@@ -109,45 +109,45 @@ export function FeedHealthBanner() {
       <Alert 
         className={`border-2 shadow-lg ${errorCount > 0 ? 'border-destructive' : warningCount > 0 ? 'border-yellow-500' : 'border-blue-500'}`}
       >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1">
-            <AlertTitle className="flex items-center gap-2">
-              {errorCount > 0 ? (
-                <AlertCircle className="h-4 w-4 text-destructive" />
-              ) : warningCount > 0 ? (
-                <AlertTriangle className="h-4 w-4 text-yellow-500" />
-              ) : (
-                <Info className="h-4 w-4 text-blue-500" />
-              )}
-              Feed Health Update
-            </AlertTitle>
-            <AlertDescription className="mt-2">
-              {summaryMessage()}
-            </AlertDescription>
-          </div>
-          <div className="flex gap-1">
-            <CollapsibleTrigger asChild>
+        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <AlertTitle className="flex items-center gap-2">
+                {errorCount > 0 ? (
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                ) : warningCount > 0 ? (
+                  <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                ) : (
+                  <Info className="h-4 w-4 text-blue-500" />
+                )}
+                Feed Health Update
+              </AlertTitle>
+              <AlertDescription className="mt-2">
+                {summaryMessage()}
+              </AlertDescription>
+            </div>
+            <div className="flex gap-1">
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  data-testid="button-expand-notifications"
+                >
+                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsExpanded(!isExpanded)}
-                data-testid="button-expand-notifications"
+                onClick={handleDismissAll}
+                data-testid="button-dismiss-all"
               >
-                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                <X className="h-4 w-4" />
               </Button>
-            </CollapsibleTrigger>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDismissAll}
-              data-testid="button-dismiss-all"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            </div>
           </div>
-        </div>
 
-        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <CollapsibleContent className="mt-4">
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {visibleNotifications.map((notification) => (
