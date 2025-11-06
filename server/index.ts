@@ -68,9 +68,18 @@ app.use((req, res, next) => {
   await autoSeedFeedCatalog();
   
   // Auto-migrate feed topics on startup (fixes invalid topics from old catalog)
-  const migrationResult = await migrateFeedTopics();
-  if (migrationResult.updated > 0) {
-    console.log(`🔄 Startup migration: Updated ${migrationResult.updated} feeds with corrected topics`);
+  try {
+    const migrationResult = await migrateFeedTopics();
+    if (migrationResult.updated > 0) {
+      console.log(`🔄 Startup migration: Updated ${migrationResult.updated} feeds with corrected topics`);
+    } else {
+      console.log(`✓ Topic migration check: ${migrationResult.unchanged} feeds already correct`);
+    }
+    if (migrationResult.errors > 0) {
+      console.log(`⚠️  Topic migration had ${migrationResult.errors} errors`);
+    }
+  } catch (error: any) {
+    console.error(`❌ Startup migration failed: ${error.message}`);
   }
 
   // List all registered routes for diagnostics
