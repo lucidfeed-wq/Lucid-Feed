@@ -29,6 +29,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   await setupAuth(app);
 
+  // Public health check endpoint for healing system
+  app.get('/api/health/healing', async (req, res) => {
+    try {
+      const healthStatus: {
+        healingSystemStatus: 'operational' | 'error';
+        lastHealingAttempt: Date | null;
+        discoveryJobsActive: boolean;
+        notificationSystemStatus: 'operational' | 'error';
+        databaseConnection: 'ok' | 'error';
+      } = {
+        healingSystemStatus: 'operational',
+        lastHealingAttempt: null,
+        discoveryJobsActive: false,
+        notificationSystemStatus: 'operational',
+        databaseConnection: 'ok'
+      };
+
+      // Check database connection
+      try {
+        // Try a simple database query
+        await storage.getFeedCatalog();
+      } catch (dbError) {
+        console.error('Health check: Database connection error:', dbError);
+        healthStatus.databaseConnection = 'error';
+        healthStatus.healingSystemStatus = 'error';
+      }
+
+      // Check healing system status
+      try {
+        // Get healing dashboard data to check system health
+        const dashboard = await healingMonitor.getHealingDashboard();
+        
+        // Check if there are recent healing attempts
+        if (dashboard.recentAttempts && dashboard.recentAttempts.length > 0) {
+          healthStatus.lastHealingAttempt = dashboard.recentAttempts[0].attemptedAt;
+        }
+
+        // Check if healing system is operational based on metrics
+        const successRate = dashboard.metrics.totalAttempts > 0
+          ? (dashboard.metrics.successfulAttempts / dashboard.metrics.totalAttempts) * 100
+          : 100; // If no attempts, consider it operational
+        
+        if (successRate < 10 && dashboard.metrics.totalAttempts > 10) {
+          // If success rate is very low with significant attempts, mark as error
+          healthStatus.healingSystemStatus = 'error';
+        }
+
+        // Check if there are feeds currently being healed
+        healthStatus.discoveryJobsActive = dashboard.activeFeedsUnderHealing.length > 0;
+      } catch (healingError) {
+        console.error('Health check: Healing system error:', healingError);
+        healthStatus.healingSystemStatus = 'error';
+      }
+
+      // Check notification system
+      try {
+        // Try to query notifications table to verify it's accessible
+        await storage.getUserNotifications('health-check-user', 1);
+        // If we get here, notification system is operational
+      } catch (notifError) {
+        // It's expected to not find notifications for a fake user
+        // Only mark as error if it's a database/system error
+        const errorMessage = notifError instanceof Error ? notifError.message : String(notifError);
+        if (errorMessage.includes('connect') || errorMessage.includes('database') || errorMessage.includes('table')) {
+          console.error('Health check: Notification system error:', notifError);
+          healthStatus.notificationSystemStatus = 'error';
+        }
+      }
+
+      res.json(healthStatus);
+    } catch (error) {
+      console.error('Health check endpoint error:', error);
+      res.status(500).json({
+        healingSystemStatus: 'error',
+        lastHealingAttempt: null,
+        discoveryJobsActive: false,
+        notificationSystemStatus: 'error',
+        databaseConnection: 'error'
+      });
+    }
+  });
+
   // Auth endpoints
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
