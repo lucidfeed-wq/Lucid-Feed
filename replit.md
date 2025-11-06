@@ -32,6 +32,7 @@ Lucid Feed is a full-stack TypeScript project with React for the frontend and Ex
 - **Automated Database Seeding**: Idempotently seeds 500 curated feeds from `feed-catalog.json` on app startup if the catalog is empty.
 - **Enhanced Onboarding**: Users onboard by selecting categories, subtopics, source types, and subscribing to 50 dynamically filtered feed suggestions. An initial personalized digest is generated immediately.
 - **User-Driven Feed Requests**: Users can request feeds, which are processed daily, and notifications are sent when matches are found.
+- **Feed Health Monitoring**: Comprehensive feed reliability system with per-feed error tracking, intelligent error categorization (transient vs permanent), and auto-deactivation after 5 consecutive failures. Includes automated email alerts to admins when feeds are deactivated, admin endpoints for viewing feed health status and manually reactivating feeds, and weekly automated retry jobs to help degraded feeds recover.
 
 ### System Design Choices
 - **Backend Architecture**: Modular design separating business logic, services, content fetching, and infrastructure.
