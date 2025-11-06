@@ -388,6 +388,16 @@ export type InsertUserRating = z.infer<typeof insertUserRatingSchema>;
 export const feedDomains = ['health', 'technology', 'finance', 'science', 'climate', 'general'] as const;
 export type FeedDomain = typeof feedDomains[number];
 
+// Feed healing enums
+export const feedErrorTypes = ['dns_failure', 'redirect', 'format_change', 'auth_error', 'permanent_404', 'timeout', 'other'] as const;
+export type FeedErrorType = typeof feedErrorTypes[number];
+
+export const healingTactics = ['redirect_follow', 'format_fallback', 'cached_content', 'source_adapter', 'alternative_discovery'] as const;
+export type HealingTactic = typeof healingTactics[number];
+
+export const healingStatuses = ['healthy', 'degraded', 'healing', 'failed'] as const;
+export type HealingStatus = typeof healingStatuses[number];
+
 // Feed catalog table - master list of all available RSS feeds
 export const feedCatalog = pgTable("feed_catalog", {
   id: varchar("id", { length: 255 }).primaryKey(),
@@ -411,6 +421,10 @@ export const feedCatalog = pgTable("feed_catalog", {
   lastFetchStatus: varchar("last_fetch_status", { length: 20 }), // 'success', 'permanent_error', 'transient_error'
   consecutiveFailures: integer("consecutive_failures").notNull().default(0),
   lastErrorMessage: text("last_error_message"),
+  // Feed healing fields
+  healingStatus: varchar("healing_status", { length: 20 }).default('healthy'),
+  lastHealingAt: timestamp("last_healing_at"),
+  preferredRecoveryTactic: varchar("preferred_recovery_tactic", { length: 50 }),
 }, (table) => ({
   domainIdx: index("feed_catalog_domain_idx").on(table.domain),
   isApprovedIdx: index("feed_catalog_is_approved_idx").on(table.isApproved),
@@ -440,12 +454,79 @@ export const feedCatalogSchema = z.object({
   lastFetchStatus: z.enum(['success', 'permanent_error', 'transient_error']).nullable().optional(),
   consecutiveFailures: z.number().default(0),
   lastErrorMessage: z.string().nullable().optional(),
+  healingStatus: z.enum(healingStatuses).nullable().optional(),
+  lastHealingAt: z.date().nullable().optional(),
+  preferredRecoveryTactic: z.enum(healingTactics).nullable().optional(),
 });
 
 export const insertFeedCatalogSchema = createInsertSchema(feedCatalog).omit({ id: true, createdAt: true });
 
 export type FeedCatalog = typeof feedCatalog.$inferSelect;
 export type InsertFeedCatalog = z.infer<typeof insertFeedCatalogSchema>;
+
+// Feed health attempts table - tracks healing attempts for failing feeds
+export const feedHealthAttempts = pgTable("feed_health_attempts", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  feedId: varchar("feed_id", { length: 255 }).notNull().references(() => feedCatalog.id, { onDelete: 'cascade' }),
+  attemptedAt: timestamp("attempted_at").notNull().defaultNow(),
+  errorType: varchar("error_type", { length: 50 }).notNull(),
+  diagnosticSummary: jsonb("diagnostic_summary"),
+  tactic: varchar("tactic", { length: 50 }).notNull(),
+  tacticSucceeded: boolean("tactic_succeeded").notNull().default(false),
+  durationMs: integer("duration_ms"),
+  fallbackUsed: boolean("fallback_used").notNull().default(false),
+  context: jsonb("context"),
+}, (table) => ({
+  feedIdIdx: index("feed_health_attempts_feed_id_idx").on(table.feedId),
+  attemptedAtIdx: index("feed_health_attempts_attempted_at_idx").on(table.attemptedAt),
+  errorTypeIdx: index("feed_health_attempts_error_type_idx").on(table.errorType),
+}));
+
+export const feedHealthAttemptSchema = z.object({
+  id: z.string(),
+  feedId: z.string(),
+  attemptedAt: z.date(),
+  errorType: z.enum(feedErrorTypes),
+  diagnosticSummary: z.any().optional(),
+  tactic: z.enum(healingTactics),
+  tacticSucceeded: z.boolean(),
+  durationMs: z.number().nullable().optional(),
+  fallbackUsed: z.boolean(),
+  context: z.any().optional(),
+});
+
+export const insertFeedHealthAttemptSchema = createInsertSchema(feedHealthAttempts).omit({ id: true, attemptedAt: true });
+
+export type FeedHealthAttempt = typeof feedHealthAttempts.$inferSelect;
+export type InsertFeedHealthAttempt = z.infer<typeof insertFeedHealthAttemptSchema>;
+
+// Feed healing profiles table - aggregated healing metrics per feed
+export const feedHealingProfiles = pgTable("feed_healing_profiles", {
+  feedId: varchar("feed_id", { length: 255 }).primaryKey().references(() => feedCatalog.id, { onDelete: 'cascade' }),
+  preferredTactic: varchar("preferred_tactic", { length: 50 }),
+  successCount: integer("success_count").notNull().default(0),
+  failureCount: integer("failure_count").notNull().default(0),
+  avgRecoveryTimeMs: integer("avg_recovery_time_ms"),
+  lastSuccessfulTactic: varchar("last_successful_tactic", { length: 50 }),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  updatedAtIdx: index("feed_healing_profiles_updated_at_idx").on(table.updatedAt),
+}));
+
+export const feedHealingProfileSchema = z.object({
+  feedId: z.string(),
+  preferredTactic: z.enum(healingTactics).nullable().optional(),
+  successCount: z.number(),
+  failureCount: z.number(),
+  avgRecoveryTimeMs: z.number().nullable().optional(),
+  lastSuccessfulTactic: z.enum(healingTactics).nullable().optional(),
+  updatedAt: z.date(),
+});
+
+export const insertFeedHealingProfileSchema = createInsertSchema(feedHealingProfiles).omit({ updatedAt: true });
+
+export type FeedHealingProfile = typeof feedHealingProfiles.$inferSelect;
+export type InsertFeedHealingProfile = z.infer<typeof insertFeedHealingProfileSchema>;
 
 // User feed submissions - pending approval
 export const userFeedSubmissions = pgTable("user_feed_submissions", {

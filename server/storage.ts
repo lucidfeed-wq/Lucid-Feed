@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions, dailyUsage, folders, itemFolders, chatConversations, chatSettings, feedRequests } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription, DailyUsage, InsertDailyUsage, Folder, InsertFolder, ItemFolder, InsertItemFolder, ChatConversation, InsertChatConversation, ChatSettings, InsertChatSettings, FeedRequest, InsertFeedRequest } from "@shared/schema";
+import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions, dailyUsage, folders, itemFolders, chatConversations, chatSettings, feedRequests, feedHealthAttempts, feedHealingProfiles } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription, DailyUsage, InsertDailyUsage, Folder, InsertFolder, ItemFolder, InsertItemFolder, ChatConversation, InsertChatConversation, ChatSettings, InsertChatSettings, FeedRequest, InsertFeedRequest, FeedHealthAttempt, InsertFeedHealthAttempt, FeedHealingProfile, InsertFeedHealingProfile } from "@shared/schema";
 import { eq, and, gte, lte, desc, inArray, or, like, sql, avg, count } from "drizzle-orm";
 
 export interface IStorage {
@@ -112,6 +112,14 @@ export interface IStorage {
   // Chat Settings
   getChatSettings(userId: string): Promise<ChatSettings | undefined>;
   upsertChatSettings(userId: string, settings: Partial<InsertChatSettings>): Promise<ChatSettings>;
+  
+  // Feed Healing
+  logHealingAttempt(attempt: InsertFeedHealthAttempt): Promise<FeedHealthAttempt>;
+  getRecentHealingAttempts(feedId: string, limit: number): Promise<FeedHealthAttempt[]>;
+  updateHealingProfile(feedId: string, profile: Partial<FeedHealingProfile>): Promise<FeedHealingProfile>;
+  getHealingProfile(feedId: string): Promise<FeedHealingProfile | undefined>;
+  recordHealingOutcome(feedId: string, success: boolean, tactic: string): Promise<void>;
+  getFeedsByHealingStatus(status: string): Promise<FeedCatalog[]>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -1368,6 +1376,111 @@ export class PostgresStorage implements IStorage {
       .limit(1);
     
     return request;
+  }
+
+  // Feed Healing Methods
+  async logHealingAttempt(attempt: InsertFeedHealthAttempt): Promise<FeedHealthAttempt> {
+    const id = nanoid();
+    const [healingAttempt] = await db
+      .insert(feedHealthAttempts)
+      .values({
+        ...attempt,
+        id,
+      } as any)
+      .returning();
+    
+    return healingAttempt;
+  }
+
+  async getRecentHealingAttempts(feedId: string, limit: number): Promise<FeedHealthAttempt[]> {
+    return await db
+      .select()
+      .from(feedHealthAttempts)
+      .where(eq(feedHealthAttempts.feedId, feedId))
+      .orderBy(desc(feedHealthAttempts.attemptedAt))
+      .limit(limit);
+  }
+
+  async updateHealingProfile(feedId: string, profile: Partial<FeedHealingProfile>): Promise<FeedHealingProfile> {
+    const existingProfile = await this.getHealingProfile(feedId);
+    
+    if (existingProfile) {
+      const [updated] = await db
+        .update(feedHealingProfiles)
+        .set({
+          ...profile,
+          updatedAt: new Date(),
+        })
+        .where(eq(feedHealingProfiles.feedId, feedId))
+        .returning();
+      
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(feedHealingProfiles)
+        .values({
+          ...profile,
+          feedId,
+          successCount: profile.successCount || 0,
+          failureCount: profile.failureCount || 0,
+          updatedAt: new Date(),
+        } as any)
+        .returning();
+      
+      return created;
+    }
+  }
+
+  async getHealingProfile(feedId: string): Promise<FeedHealingProfile | undefined> {
+    const [profile] = await db
+      .select()
+      .from(feedHealingProfiles)
+      .where(eq(feedHealingProfiles.feedId, feedId))
+      .limit(1);
+    
+    return profile;
+  }
+
+  async recordHealingOutcome(feedId: string, success: boolean, tactic: string): Promise<void> {
+    const profile = await this.getHealingProfile(feedId);
+    
+    if (profile) {
+      const updates: Partial<FeedHealingProfile> = success
+        ? { 
+            successCount: profile.successCount + 1,
+            lastSuccessfulTactic: tactic,
+          }
+        : { 
+            failureCount: profile.failureCount + 1,
+          };
+      
+      await this.updateHealingProfile(feedId, updates);
+    } else {
+      await this.updateHealingProfile(feedId, {
+        feedId,
+        successCount: success ? 1 : 0,
+        failureCount: success ? 0 : 1,
+        lastSuccessfulTactic: success ? tactic : undefined,
+      } as any);
+    }
+    
+    // Also update the feedCatalog healing status
+    const status = success ? 'healthy' : 'failed';
+    await db
+      .update(feedCatalog)
+      .set({
+        healingStatus: status,
+        lastHealingAt: new Date(),
+        ...(success && { preferredRecoveryTactic: tactic }),
+      })
+      .where(eq(feedCatalog.id, feedId));
+  }
+
+  async getFeedsByHealingStatus(status: string): Promise<FeedCatalog[]> {
+    return await db
+      .select()
+      .from(feedCatalog)
+      .where(eq(feedCatalog.healingStatus, status));
   }
 }
 
