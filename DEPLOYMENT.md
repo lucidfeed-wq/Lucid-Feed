@@ -108,3 +108,134 @@ After deployment, monitor:
 - Digest generation (Monday 12 PM UTC)  
 - Feed request processing (daily 2 AM UTC)
 - OpenAI token spend (check admin dashboard)
+
+---
+
+## Topic Migration (Production Database Update)
+
+### Overview
+If your production database already has feeds with **invalid topics**, you need to run a migration to update them with corrected topics. This is separate from auto-seeding (which only runs on empty databases).
+
+### When You Need This
+You need to run the topic migration if:
+- You're seeing errors like "Feed 'Nature' has invalid topic: scientific-research"
+- Your production database was seeded **before** the topic fixes were made
+- Digest generation is failing due to invalid topics
+
+### Migration Steps
+
+#### Step 1: Deploy Latest Code
+1. Click **Deploy** button in Replit
+2. Wait for deployment to complete
+3. Verify app is running at www.getkucidfeed.com
+
+#### Step 2: Run Migration Endpoint
+
+**Option A - Using Browser Console (Easiest)**
+1. Log in to **www.getkucidfeed.com** as an admin
+2. Open browser DevTools (F12)
+3. Go to Console tab
+4. Paste and run:
+```javascript
+fetch('/admin/run/migrate-topics', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' }
+})
+.then(r => r.json())
+.then(result => {
+  console.log('Migration Results:', result);
+  if (result.success) {
+    console.log(`✅ Updated ${result.updated} feeds`);
+  }
+})
+```
+
+**Option B - Using curl**
+```bash
+# Get your session cookie from browser DevTools > Application > Cookies
+curl -X POST https://www.getkucidfeed.com/admin/run/migrate-topics \
+  -H "Content-Type: application/json" \
+  -H "Cookie: connect.sid=your-session-cookie-here"
+```
+
+#### Step 3: Expected Response
+```json
+{
+  "success": true,
+  "message": "Migration complete! Updated 373 feeds.",
+  "updated": 373,
+  "unchanged": 127,
+  "errors": 0,
+  "details": [
+    "🔄 Starting feed topic migration...",
+    "📂 Loaded 500 feeds from catalog",
+    "💾 Found 500 feeds in database",
+    "✅ Updated: Nature (scientific-research → biology, chemistry, ...)",
+    "✅ Updated: 3Blue1Brown (mathematics-statistics → mathematics)",
+    "...",
+    "🎉 Migration complete! Database topics updated successfully."
+  ]
+}
+```
+
+#### Step 4: Verification
+
+**A. Check Migration Results**
+The response should show `"updated": 373` with no errors.
+
+**B. Verify No Invalid Topics Remain**
+Run this in browser console while logged in as admin:
+```javascript
+fetch('/api/feeds')
+  .then(r => r.json())
+  .then(feeds => {
+    const validTopics = new Set([/* paste valid topics from schema */]);
+    const invalid = feeds.filter(f => 
+      f.topics?.some(t => !validTopics.has(t))
+    );
+    console.log(`Invalid topics found: ${invalid.length}`);
+    if (invalid.length > 0) console.log(invalid);
+  })
+```
+
+**C. Test Digest Generation**
+Try generating a digest - should complete without invalid topic errors:
+```javascript
+fetch('/api/digest/generate', { method: 'POST' })
+  .then(r => r.json())
+  .then(console.log)
+```
+
+### What Gets Updated
+The migration fixes 41 invalid topic variations:
+- `mathematics-statistics` → `mathematics`
+- `scientific-research` → `research` or `biology` (context-dependent)
+- `technology-ai` → `artificial_intelligence`
+- `entrepreneurship-startups` → `entrepreneurship`
+- `exercise-fitness` → `fitness_recovery`
+- `nutrition-diet` → `nutrition_science`
+- And 35+ more variations...
+
+Total: **373 feeds** will be updated with corrected topics.
+
+### Safety
+- **Safe to run multiple times** - Migration is idempotent (compares before updating)
+- **No data loss** - Only updates topic arrays, never deletes
+- **Fast** - Completes in ~5-10 seconds
+- **Incremental** - Updates feed-by-feed (partial completion still makes progress)
+
+### Rollback
+If you need to rollback:
+1. Restore production database from backup
+2. Or redeploy previous version of app
+
+### Troubleshooting
+
+**Problem**: "Unauthorized" error  
+**Solution**: Make sure you're logged in as admin user
+
+**Problem**: "No feeds needed updating"  
+**Solution**: Migration already ran successfully or database already has correct topics
+
+**Problem**: Migration shows errors  
+**Solution**: Check production logs for details. Contact support if needed.

@@ -15,6 +15,7 @@ import { discoverFeeds, verifyRssFeed } from "./services/feed-discovery/discover
 import { canSubscribeToFeed, canSendChatMessage } from "./tierChecks";
 import Stripe from "stripe";
 import marketingRouter from "./routes/marketing";
+import { migrateFeedTopics } from "./services/migrate-topics";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -1695,6 +1696,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error starting bulk enrichment:", error);
       res.status(500).json({ error: "Failed to start bulk enrichment" });
+    }
+  });
+
+  // Admin: Migrate feed topics from catalog to database
+  app.post("/admin/run/migrate-topics", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      console.log("🔄 Starting feed topic migration...");
+      
+      const result = await migrateFeedTopics();
+      
+      res.json({
+        success: result.errors === 0,
+        message: result.updated > 0 
+          ? `Migration complete! Updated ${result.updated} feeds.`
+          : "No feeds needed updating.",
+        updated: result.updated,
+        unchanged: result.unchanged,
+        errors: result.errors,
+        details: result.details,
+      });
+      
+    } catch (error: any) {
+      console.error("Error during migration:", error);
+      res.status(500).json({ 
+        success: false,
+        error: "Migration failed",
+        message: error.message 
+      });
     }
   });
 
