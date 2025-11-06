@@ -15,7 +15,7 @@
         "mental_health",
         "preventive_medicine",
         "longevity",
-        "sleep_science"
+        "sleep_optimization"
       ],
       "featured": true,
       "starterRank": 1,
@@ -35,7 +35,7 @@
         "nutrition_science",
         "mental_health",
         "preventive_medicine",
-        "exercise_science"
+        "fitness_recovery"
       ],
       "featured": true,
       "starterRank": 2,
@@ -54,8 +54,8 @@
       "topics": [
         "neuroscience",
         "mental_health",
-        "sleep_science",
-        "exercise_science",
+        "sleep_optimization",
+        "fitness_recovery",
         "longevity"
       ],
       "featured": true,
@@ -76,7 +76,7 @@
         "artificial_intelligence",
         "machine_learning",
         "robotics",
-        "neural_networks"
+        "machine_learning"
       ],
       "featured": true,
       "starterRank": 4,
@@ -113,11 +113,11 @@
       "description": "Peer-reviewed medical journal: Nature",
       "sourceType": "journal",
       "topics": [
-        "climate_science",
+        "climate_change",
         "ecology",
-        "evolution",
+        "biology",
         "genetics",
-        "biochemistry"
+        "chemistry"
       ],
       "featured": true,
       "starterRank": 6,
@@ -134,7 +134,7 @@
       "description": "Breaking news and research from all fields of science",
       "sourceType": "journal",
       "topics": [
-        "climate_science",
+        "climate_change",
         "ecology",
         "genetics",
         "physics",
@@ -156,9 +156,9 @@
       "sourceType": "journal",
       "topics": [
         "investing",
-        "market_analysis",
+        "investing",
         "economics",
-        "trading"
+        "investing"
       ],
       "featured": true,
       "starterRank": 8,
@@ -177,8 +177,8 @@
       "topics": [
         "economics",
         "investing",
-        "market_analysis",
-        "business_strategy"
+        "investing",
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": 9,
@@ -216,7 +216,7 @@
       "topics": [
         "artificial_intelligence",
         "machine_learning",
-        "ai_ethics"
+        "ethics"
       ],
       "featured": true,
       "starterRank": 11,
@@ -233,10 +233,10 @@
       "description": "Deep work, productivity, and intentional living",
       "sourceType": "substack",
       "topics": [
-        "productivity",
-        "focus_deep_work",
+        "habit_building",
+        "focus_flow",
         "time_management",
-        "career_development"
+        "skill_development"
       ],
       "featured": true,
       "starterRank": 12,
@@ -270,7 +270,7 @@
       "description": "Visual mathematics education",
       "sourceType": "youtube",
       "topics": [
-        "mathematics-statistics"
+        "cognitive_science"
       ],
       "featured": true,
       "starterRank": null,
@@ -287,7 +287,7 @@
       "description": "Design and architecture",
       "sourceType": "podcast",
       "topics": [
-        "design-creativity"
+        "art_design"
       ],
       "featured": true,
       "starterRank": null,
@@ -305,7 +305,7 @@
       "sourceType": "podcast",
       "topics": [
         "artificial_intelligence",
-        "philosophy-ethics"
+        "philosophy"
       ],
       "featured": false,
       "starterRank": null,
@@ -322,7 +322,7 @@
       "description": "Technology company histories",
       "sourceType": "podcast",
       "topics": [
-        "business-strategy"
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -339,7 +339,7 @@
       "description": "Financial freedom strategies",
       "sourceType": "podcast",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": false,
       "starterRank": null,
@@ -371,8 +371,8 @@
       "description": "Productivity and business",
       "sourceType": "youtube",
       "topics": [
-        "productivity-habits",
-        "entrepreneurship-startups"
+        "habit_building",
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -390,7 +390,7 @@
       "sourceType": "podcast",
       "topics": [
         "artificial_intelligence",
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -407,7 +407,7 @@
       "description": "Physics experiments",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering"
+        "physics"
       ],
       "featured": false,
       "starterRank": null,
@@ -439,7 +439,7 @@
       "description": "Stock market and investing",
       "sourceType": "youtube",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -486,7 +486,7 @@
       "description": "Markets and investing",
       "sourceType": "podcast",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -518,7 +518,7 @@
       "description": "Home science projects",
       "sourceType": "youtube",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": false,
       "starterRank": null,
@@ -567,8 +567,8 @@
       "description": "Physics and cosmology",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering",
-        "space-astronomy"
+        "physics",
+        "space_exploration"
       ],
       "featured": false,
       "starterRank": null,
@@ -585,7 +585,7 @@
       "description": "Quick science facts",
       "sourceType": "youtube",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": false,
       "starterRank": null,
@@ -699,7 +699,7 @@
       "sourceType": "podcast",
       "topics": [
         "mental_health",
-        "performance-optimization"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -716,7 +716,7 @@
       "description": "Financial independence",
       "sourceType": "podcast",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": false,
       "starterRank": null,
@@ -795,7 +795,7 @@
       "description": "Thoughtful educational content",
       "sourceType": "youtube",
       "topics": [
-        "learning-education"
+        "online_learning"
       ],
       "featured": true,
       "starterRank": null,
@@ -893,7 +893,7 @@
       "description": "FIRE movement podcast",
       "sourceType": "podcast",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": true,
       "starterRank": null,
@@ -977,7 +977,7 @@
       "sourceType": "youtube",
       "topics": [
         "artificial_intelligence",
-        "business-strategy"
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -1011,7 +1011,7 @@
       "description": "Exoplanets and astrobiology",
       "sourceType": "youtube",
       "topics": [
-        "space-astronomy"
+        "space_exploration"
       ],
       "featured": true,
       "starterRank": null,
@@ -1045,7 +1045,7 @@
       "description": "Educational courses on various topics",
       "sourceType": "youtube",
       "topics": [
-        "learning-education"
+        "online_learning"
       ],
       "featured": true,
       "starterRank": null,
@@ -1079,7 +1079,7 @@
       "description": "Data science and statistics",
       "sourceType": "podcast",
       "topics": [
-        "mathematics-statistics"
+        "cognitive_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -1127,7 +1127,7 @@
       "sourceType": "youtube",
       "topics": [
         "artificial_intelligence",
-        "digital-tools-apps"
+        "software_development"
       ],
       "featured": false,
       "starterRank": null,
@@ -1160,7 +1160,7 @@
       "sourceType": "youtube",
       "topics": [
         "artificial_intelligence",
-        "digital-tools-apps"
+        "software_development"
       ],
       "featured": false,
       "starterRank": null,
@@ -1194,7 +1194,7 @@
       "description": "Conversations with high achievers",
       "sourceType": "podcast",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -1226,7 +1226,7 @@
       "description": "Maps of science",
       "sourceType": "youtube",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -1273,7 +1273,7 @@
       "description": "Insulin resistance and metabolic health",
       "sourceType": "youtube",
       "topics": [
-        "metabolic-health"
+        "metabolic"
       ],
       "featured": true,
       "starterRank": null,
@@ -1290,7 +1290,7 @@
       "description": "Longevity research and protocols",
       "sourceType": "youtube",
       "topics": [
-        "longevity-aging"
+        "longevity"
       ],
       "featured": true,
       "starterRank": null,
@@ -1324,9 +1324,9 @@
       "description": "Keto diet, intermittent fasting, and metabolic health education | keto intermittent fasting metabolic health weight loss nutrition",
       "sourceType": "youtube",
       "topics": [
-        "nutrition-diet",
-        "metabolic-health",
-        "weight-management"
+        "nutrition_science",
+        "metabolic",
+        "weight_loss"
       ],
       "featured": false,
       "starterRank": null,
@@ -1359,7 +1359,7 @@
       "sourceType": "youtube",
       "topics": [
         "fitness_recovery",
-        "longevity-aging"
+        "longevity"
       ],
       "featured": false,
       "starterRank": null,
@@ -1481,7 +1481,7 @@
       "description": "PhD in nutrition science",
       "sourceType": "youtube",
       "topics": [
-        "nutrition-diet"
+        "nutrition_science"
       ],
       "featured": true,
       "starterRank": null,
@@ -1498,9 +1498,9 @@
       "description": "Functional medicine physician covering metabolic health, nutrition, and chronic disease prevention | functional medicine metabolic health nutrition diabetes insulin resistance",
       "sourceType": "youtube",
       "topics": [
-        "metabolic-health",
-        "nutrition-diet",
-        "chronic-disease-prevention"
+        "metabolic",
+        "nutrition_science",
+        "preventive_medicine"
       ],
       "featured": true,
       "starterRank": null,
@@ -1547,7 +1547,7 @@
       "description": "Sleep research and optimization",
       "sourceType": "youtube",
       "topics": [
-        "sleep-optimization"
+        "sleep_optimization"
       ],
       "featured": true,
       "starterRank": null,
@@ -1564,7 +1564,7 @@
       "description": "Gut health research",
       "sourceType": "youtube",
       "topics": [
-        "nutrition-diet",
+        "nutrition_science",
         "mental_health"
       ],
       "featured": false,
@@ -1600,8 +1600,8 @@
       "sourceType": "youtube",
       "topics": [
         "fitness_recovery",
-        "nutrition-diet",
-        "performance-optimization"
+        "nutrition_science",
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -1619,7 +1619,7 @@
       "sourceType": "youtube",
       "topics": [
         "mental_health",
-        "nutrition-diet"
+        "nutrition_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -1666,7 +1666,7 @@
       "description": "Carnivore diet and nutrition",
       "sourceType": "youtube",
       "topics": [
-        "nutrition-diet"
+        "nutrition_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -1683,9 +1683,9 @@
       "description": "Longevity physician focusing on metabolic health, performance medicine, and healthspan optimization | longevity metabolic health performance medicine healthspan",
       "sourceType": "youtube",
       "topics": [
-        "longevity-aging",
-        "metabolic-health",
-        "performance-optimization"
+        "longevity",
+        "metabolic",
+        "fitness_recovery"
       ],
       "featured": true,
       "starterRank": null,
@@ -1717,9 +1717,9 @@
       "description": "Science communication about longevity, metabolic health, and evidence-based wellness | longevity aging metabolic health science nutrition supplementation",
       "sourceType": "youtube",
       "topics": [
-        "longevity-aging",
-        "metabolic-health",
-        "nutrition-diet"
+        "longevity",
+        "metabolic",
+        "nutrition_science"
       ],
       "featured": true,
       "starterRank": null,
@@ -1736,8 +1736,8 @@
       "description": "Sugar metabolism and health",
       "sourceType": "youtube",
       "topics": [
-        "metabolic-health",
-        "nutrition-diet"
+        "metabolic",
+        "nutrition_science"
       ],
       "featured": true,
       "starterRank": null,
@@ -1831,7 +1831,7 @@
       "description": "Fiber and gut health",
       "sourceType": "youtube",
       "topics": [
-        "nutrition-diet"
+        "nutrition_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -1878,7 +1878,7 @@
       "description": "Food as medicine",
       "sourceType": "youtube",
       "topics": [
-        "nutrition-diet"
+        "nutrition_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -1895,7 +1895,7 @@
       "description": "Economic concepts explained",
       "sourceType": "youtube",
       "topics": [
-        "business-strategy",
+        "entrepreneurship",
         "economics"
       ],
       "featured": true,
@@ -1913,7 +1913,7 @@
       "description": "Medical student productivity",
       "sourceType": "youtube",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -1945,7 +1945,7 @@
       "description": "Daily entrepreneur interviews",
       "sourceType": "podcast",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -1977,9 +1977,9 @@
       "description": "Practical health advice and lifestyle medicine | health wellness lifestyle medicine prevention",
       "sourceType": "podcast",
       "topics": [
-        "metabolic-health",
+        "metabolic",
         "mental_health",
-        "chronic-disease-prevention"
+        "preventive_medicine"
       ],
       "featured": false,
       "starterRank": null,
@@ -2012,7 +2012,7 @@
       "sourceType": "youtube",
       "topics": [
         "artificial_intelligence",
-        "digital-tools-apps"
+        "software_development"
       ],
       "featured": true,
       "starterRank": null,
@@ -2029,9 +2029,9 @@
       "description": "Dr. Rhonda Patrick explores longevity research and health optimization | longevity aging metabolic health research nutrition",
       "sourceType": "podcast",
       "topics": [
-        "longevity-aging",
-        "metabolic-health",
-        "nutrition-diet"
+        "longevity",
+        "metabolic",
+        "nutrition_science"
       ],
       "featured": true,
       "starterRank": null,
@@ -2063,7 +2063,7 @@
       "description": "Space and astronomy news",
       "sourceType": "youtube",
       "topics": [
-        "space-astronomy"
+        "space_exploration"
       ],
       "featured": false,
       "starterRank": null,
@@ -2080,7 +2080,7 @@
       "description": "Hidden side of everything",
       "sourceType": "podcast",
       "topics": [
-        "business-strategy",
+        "entrepreneurship",
         "economics"
       ],
       "featured": true,
@@ -2286,8 +2286,8 @@
       "description": "Real estate and investing",
       "sourceType": "youtube",
       "topics": [
-        "personal-finance",
-        "investing-markets"
+        "personal_finance",
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -2305,7 +2305,7 @@
       "sourceType": "youtube",
       "topics": [
         "fitness_recovery",
-        "nutrition-diet"
+        "nutrition_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -2386,7 +2386,7 @@
       "description": "Startup and business stories",
       "sourceType": "podcast",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -2420,7 +2420,7 @@
       "description": "Tom Bilyeu interviews",
       "sourceType": "podcast",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -2438,7 +2438,7 @@
       "sourceType": "podcast",
       "topics": [
         "artificial_intelligence",
-        "philosophy-ethics"
+        "philosophy"
       ],
       "featured": true,
       "starterRank": null,
@@ -2470,7 +2470,7 @@
       "description": "Informed debates",
       "sourceType": "podcast",
       "topics": [
-        "philosophy-ethics"
+        "philosophy"
       ],
       "featured": true,
       "starterRank": null,
@@ -2487,7 +2487,7 @@
       "description": "Investing insights",
       "sourceType": "podcast",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": true,
       "starterRank": null,
@@ -2504,7 +2504,7 @@
       "description": "Value investing education",
       "sourceType": "podcast",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": true,
       "starterRank": null,
@@ -2601,8 +2601,8 @@
       "sourceType": "youtube",
       "topics": [
         "fitness_recovery",
-        "nutrition-diet",
-        "performance-optimization"
+        "nutrition_science",
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -2743,7 +2743,7 @@
       "description": "Free education for everyone",
       "sourceType": "youtube",
       "topics": [
-        "learning-education"
+        "online_learning"
       ],
       "featured": true,
       "starterRank": null,
@@ -2760,7 +2760,7 @@
       "description": "Animated science explanations",
       "sourceType": "youtube",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -2777,8 +2777,8 @@
       "description": "Product management insights",
       "sourceType": "substack",
       "topics": [
-        "business-strategy",
-        "entrepreneurship-startups"
+        "entrepreneurship",
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -2796,7 +2796,7 @@
       "sourceType": "youtube",
       "topics": [
         "artificial_intelligence",
-        "philosophy-ethics"
+        "philosophy"
       ],
       "featured": true,
       "starterRank": null,
@@ -2829,7 +2829,7 @@
       "sourceType": "podcast",
       "topics": [
         "artificial_intelligence",
-        "mathematics-statistics"
+        "cognitive_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -2863,7 +2863,7 @@
       "description": "Sam Harris on various topics",
       "sourceType": "podcast",
       "topics": [
-        "philosophy-ethics"
+        "philosophy"
       ],
       "featured": true,
       "starterRank": null,
@@ -2880,7 +2880,7 @@
       "description": "Engineering and science projects",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering"
+        "physics"
       ],
       "featured": true,
       "starterRank": null,
@@ -2897,7 +2897,7 @@
       "description": "Daily marketing tips",
       "sourceType": "podcast",
       "topics": [
-        "business-strategy"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -2915,7 +2915,7 @@
       "sourceType": "youtube",
       "topics": [
         "artificial_intelligence",
-        "digital-tools-apps"
+        "software_development"
       ],
       "featured": true,
       "starterRank": null,
@@ -2932,8 +2932,8 @@
       "description": "Bloomberg finance interviews",
       "sourceType": "podcast",
       "topics": [
-        "business-strategy",
-        "investing-markets"
+        "entrepreneurship",
+        "investing"
       ],
       "featured": true,
       "starterRank": null,
@@ -2950,7 +2950,7 @@
       "description": "How companies scale",
       "sourceType": "podcast",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -2967,7 +2967,7 @@
       "description": "Minimalism and intentional living",
       "sourceType": "youtube",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -2985,7 +2985,7 @@
       "sourceType": "youtube",
       "topics": [
         "mental_health",
-        "metabolic-health"
+        "metabolic"
       ],
       "featured": false,
       "starterRank": null,
@@ -3032,7 +3032,7 @@
       "description": "Investing for millennials",
       "sourceType": "podcast",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -3066,7 +3066,7 @@
       "description": "Physics in minutes",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering"
+        "physics"
       ],
       "featured": true,
       "starterRank": null,
@@ -3113,7 +3113,7 @@
       "description": "Stock market discussion",
       "sourceType": "podcast",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -3130,7 +3130,7 @@
       "description": "Business opportunities",
       "sourceType": "podcast",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -3226,7 +3226,7 @@
       "description": "Chemistry experiments",
       "sourceType": "youtube",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -3243,7 +3243,7 @@
       "description": "Technology and business analysis",
       "sourceType": "substack",
       "topics": [
-        "entrepreneurship-startups",
+        "entrepreneurship",
         "artificial_intelligence"
       ],
       "featured": true,
@@ -3261,7 +3261,7 @@
       "description": "Mathematics and numbers",
       "sourceType": "youtube",
       "topics": [
-        "mathematics-statistics"
+        "cognitive_science"
       ],
       "featured": true,
       "starterRank": null,
@@ -3293,7 +3293,7 @@
       "description": "Evidence-based nutrition guidance and research | nutrition evidence based diet guidance",
       "sourceType": "substack",
       "topics": [
-        "nutrition-diet"
+        "nutrition_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -3325,8 +3325,8 @@
       "description": "Evidence-based nutrition science and dietary research analysis | nutrition science evidence based diet research",
       "sourceType": "youtube",
       "topics": [
-        "nutrition-diet",
-        "chronic-disease-prevention"
+        "nutrition_science",
+        "preventive_medicine"
       ],
       "featured": false,
       "starterRank": null,
@@ -3358,7 +3358,7 @@
       "description": "Different scientific fields",
       "sourceType": "podcast",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -3375,7 +3375,7 @@
       "description": "Jay Shetty on purpose",
       "sourceType": "podcast",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -3392,7 +3392,7 @@
       "description": "Online marketing strategies",
       "sourceType": "podcast",
       "topics": [
-        "business-strategy"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -3409,7 +3409,7 @@
       "description": "Daily finance tips",
       "sourceType": "podcast",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": false,
       "starterRank": null,
@@ -3426,7 +3426,7 @@
       "description": "Daily personal development",
       "sourceType": "podcast",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -3443,8 +3443,8 @@
       "description": "Physics and cosmology",
       "sourceType": "youtube",
       "topics": [
-        "space-astronomy",
-        "physics-engineering"
+        "space_exploration",
+        "physics"
       ],
       "featured": true,
       "starterRank": null,
@@ -3478,7 +3478,7 @@
       "description": "Physics explanations",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering"
+        "physics"
       ],
       "featured": false,
       "starterRank": null,
@@ -3495,7 +3495,7 @@
       "description": "Paid traffic strategies",
       "sourceType": "podcast",
       "topics": [
-        "business-strategy"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -3542,7 +3542,7 @@
       "description": "Philosophy made accessible",
       "sourceType": "podcast",
       "topics": [
-        "philosophy-ethics"
+        "philosophy"
       ],
       "featured": true,
       "starterRank": null,
@@ -3559,7 +3559,7 @@
       "description": "Physics experiments and concepts",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering"
+        "physics"
       ],
       "featured": true,
       "starterRank": null,
@@ -3593,7 +3593,7 @@
       "description": "Economics storytelling",
       "sourceType": "podcast",
       "topics": [
-        "business-strategy",
+        "entrepreneurship",
         "economics"
       ],
       "featured": true,
@@ -3611,7 +3611,7 @@
       "description": "Geopolitics and business",
       "sourceType": "youtube",
       "topics": [
-        "business-strategy"
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -3628,7 +3628,7 @@
       "description": "Civil engineering explained",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering"
+        "physics"
       ],
       "featured": true,
       "starterRank": null,
@@ -3662,7 +3662,7 @@
       "description": "Science storytelling",
       "sourceType": "podcast",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -3679,7 +3679,7 @@
       "description": "Engineering deep dives",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering"
+        "physics"
       ],
       "featured": true,
       "starterRank": null,
@@ -3745,7 +3745,7 @@
       "description": "Physicist on physics and science",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering"
+        "physics"
       ],
       "featured": true,
       "starterRank": null,
@@ -3762,7 +3762,7 @@
       "description": "Daily science news",
       "sourceType": "youtube",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -3779,7 +3779,7 @@
       "description": "Space science news",
       "sourceType": "youtube",
       "topics": [
-        "space-astronomy"
+        "space_exploration"
       ],
       "featured": false,
       "starterRank": null,
@@ -3811,7 +3811,7 @@
       "description": "Physics explained creatively",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering"
+        "physics"
       ],
       "featured": false,
       "starterRank": null,
@@ -3828,7 +3828,7 @@
       "description": "Science vs myths",
       "sourceType": "podcast",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -3845,7 +3845,7 @@
       "description": "Space flight and astronomy",
       "sourceType": "youtube",
       "topics": [
-        "space-astronomy"
+        "space_exploration"
       ],
       "featured": true,
       "starterRank": null,
@@ -3862,8 +3862,8 @@
       "description": "Science and philosophy",
       "sourceType": "podcast",
       "topics": [
-        "physics-engineering",
-        "philosophy-ethics"
+        "physics",
+        "philosophy"
       ],
       "featured": true,
       "starterRank": null,
@@ -3946,7 +3946,7 @@
       "description": "Side hustle ideas",
       "sourceType": "podcast",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -3978,7 +3978,7 @@
       "description": "Physics symbols and concepts",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering"
+        "physics"
       ],
       "featured": true,
       "starterRank": null,
@@ -3995,7 +3995,7 @@
       "description": "Online business strategies",
       "sourceType": "podcast",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -4012,8 +4012,8 @@
       "description": "Exploring the world through science",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering",
-        "scientific-research"
+        "physics",
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -4047,7 +4047,7 @@
       "description": "Neil deGrasse Tyson on space",
       "sourceType": "podcast",
       "topics": [
-        "space-astronomy"
+        "space_exploration"
       ],
       "featured": true,
       "starterRank": null,
@@ -4064,7 +4064,7 @@
       "description": "PhD discussing health and fitness",
       "sourceType": "youtube",
       "topics": [
-        "nutrition-diet",
+        "nutrition_science",
         "fitness_recovery"
       ],
       "featured": false,
@@ -4083,7 +4083,7 @@
       "sourceType": "substack",
       "topics": [
         "artificial_intelligence",
-        "business-strategy"
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -4149,7 +4149,7 @@
       "description": "Ideas worth spreading",
       "sourceType": "podcast",
       "topics": [
-        "learning-education"
+        "online_learning"
       ],
       "featured": true,
       "starterRank": null,
@@ -4166,7 +4166,7 @@
       "description": "Educational animations",
       "sourceType": "youtube",
       "topics": [
-        "learning-education"
+        "online_learning"
       ],
       "featured": true,
       "starterRank": null,
@@ -4234,7 +4234,7 @@
       "description": "Science experiments and explanations",
       "sourceType": "youtube",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": false,
       "starterRank": null,
@@ -4251,7 +4251,7 @@
       "description": "Social dynamics and communication",
       "sourceType": "podcast",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -4269,8 +4269,8 @@
       "sourceType": "podcast",
       "topics": [
         "mental_health",
-        "nutrition-diet",
-        "chronic-disease-prevention"
+        "nutrition_science",
+        "preventive_medicine"
       ],
       "featured": false,
       "starterRank": null,
@@ -4304,7 +4304,7 @@
       "description": "Student loans and investing",
       "sourceType": "podcast",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": false,
       "starterRank": null,
@@ -4321,8 +4321,8 @@
       "description": "Stoic philosophy and wisdom",
       "sourceType": "podcast",
       "topics": [
-        "philosophy-ethics",
-        "productivity-habits"
+        "philosophy",
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -4339,7 +4339,7 @@
       "description": "Personal finance advice",
       "sourceType": "podcast",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": false,
       "starterRank": null,
@@ -4356,7 +4356,7 @@
       "description": "Tech and finance insights",
       "sourceType": "substack",
       "topics": [
-        "investing-markets",
+        "investing",
         "artificial_intelligence"
       ],
       "featured": true,
@@ -4375,7 +4375,7 @@
       "sourceType": "podcast",
       "topics": [
         "mental_health",
-        "nutrition-diet"
+        "nutrition_science"
       ],
       "featured": true,
       "starterRank": null,
@@ -4392,9 +4392,9 @@
       "description": "Conversations about functional medicine, metabolic health, and wellness | functional medicine metabolic health nutrition wellness",
       "sourceType": "podcast",
       "topics": [
-        "metabolic-health",
-        "nutrition-diet",
-        "chronic-disease-prevention"
+        "metabolic",
+        "nutrition_science",
+        "preventive_medicine"
       ],
       "featured": true,
       "starterRank": null,
@@ -4411,9 +4411,9 @@
       "description": "Deep dives on health, medicine, longevity, and performance | longevity metabolic health performance medicine healthspan",
       "sourceType": "podcast",
       "topics": [
-        "longevity-aging",
-        "metabolic-health",
-        "performance-optimization"
+        "longevity",
+        "metabolic",
+        "fitness_recovery"
       ],
       "featured": true,
       "starterRank": null,
@@ -4430,7 +4430,7 @@
       "description": "Global economics and politics",
       "sourceType": "podcast",
       "topics": [
-        "business-strategy",
+        "entrepreneurship",
         "economics"
       ],
       "featured": true,
@@ -4448,7 +4448,7 @@
       "description": "Success strategies",
       "sourceType": "podcast",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -4466,7 +4466,7 @@
       "sourceType": "substack",
       "topics": [
         "mental_health",
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -4483,8 +4483,8 @@
       "description": "Politics and big ideas",
       "sourceType": "podcast",
       "topics": [
-        "philosophy-ethics",
-        "politics-society"
+        "philosophy",
+        "politics"
       ],
       "featured": true,
       "starterRank": null,
@@ -4501,7 +4501,7 @@
       "description": "Personal finance education",
       "sourceType": "youtube",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": false,
       "starterRank": null,
@@ -4518,7 +4518,7 @@
       "description": "Gary Vaynerchuk's podcast",
       "sourceType": "podcast",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -4552,7 +4552,7 @@
       "description": "Personal growth stories",
       "sourceType": "podcast",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -4569,7 +4569,7 @@
       "description": "Business growth stories",
       "sourceType": "podcast",
       "topics": [
-        "business-strategy"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -4618,7 +4618,7 @@
       "description": "Quick economic explainers",
       "sourceType": "podcast",
       "topics": [
-        "business-strategy",
+        "entrepreneurship",
         "economics"
       ],
       "featured": true,
@@ -4636,7 +4636,7 @@
       "description": "Witty science discussion",
       "sourceType": "podcast",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -4671,8 +4671,8 @@
       "description": "Mental models and decision making",
       "sourceType": "podcast",
       "topics": [
-        "productivity-habits",
-        "business-strategy"
+        "habit_building",
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -4704,7 +4704,7 @@
       "description": "FI tax optimization",
       "sourceType": "podcast",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": false,
       "starterRank": null,
@@ -4737,8 +4737,8 @@
       "sourceType": "podcast",
       "topics": [
         "fitness_recovery",
-        "nutrition-diet",
-        "metabolic-health"
+        "nutrition_science",
+        "metabolic"
       ],
       "featured": false,
       "starterRank": null,
@@ -4772,7 +4772,7 @@
       "description": "Personal development",
       "sourceType": "podcast",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -4789,7 +4789,7 @@
       "description": "Simple living",
       "sourceType": "podcast",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -4806,9 +4806,9 @@
       "description": "Nutrition, lifestyle, and wellness with Shawn Stevenson | nutrition lifestyle wellness sleep health",
       "sourceType": "podcast",
       "topics": [
-        "nutrition-diet",
-        "sleep-optimization",
-        "metabolic-health"
+        "nutrition_science",
+        "sleep_optimization",
+        "metabolic"
       ],
       "featured": false,
       "starterRank": null,
@@ -4842,7 +4842,7 @@
       "description": "Financial planning advice",
       "sourceType": "podcast",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": false,
       "starterRank": null,
@@ -4859,8 +4859,8 @@
       "description": "Longevity and health optimization",
       "sourceType": "podcast",
       "topics": [
-        "longevity-aging",
-        "metabolic-health"
+        "longevity",
+        "metabolic"
       ],
       "featured": true,
       "starterRank": null,
@@ -4877,8 +4877,8 @@
       "description": "Business and crypto",
       "sourceType": "podcast",
       "topics": [
-        "entrepreneurship-startups",
-        "investing-markets"
+        "entrepreneurship",
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -4895,8 +4895,8 @@
       "description": "Eric Weinstein's podcast",
       "sourceType": "podcast",
       "topics": [
-        "philosophy-ethics",
-        "scientific-research"
+        "philosophy",
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -4947,7 +4947,7 @@
       "description": "Scott Galloway on business",
       "sourceType": "podcast",
       "topics": [
-        "business-strategy"
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -4964,8 +4964,8 @@
       "description": "Evidence-based nutrition science and plant-based health | nutrition science evidence based plant based health",
       "sourceType": "podcast",
       "topics": [
-        "nutrition-diet",
-        "chronic-disease-prevention"
+        "nutrition_science",
+        "preventive_medicine"
       ],
       "featured": false,
       "starterRank": null,
@@ -4982,7 +4982,7 @@
       "description": "Evidence-based investing",
       "sourceType": "podcast",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": true,
       "starterRank": null,
@@ -4999,7 +4999,7 @@
       "description": "Plant-based nutrition, endurance, and holistic wellness | plant based nutrition endurance wellness fitness",
       "sourceType": "podcast",
       "topics": [
-        "nutrition-diet",
+        "nutrition_science",
         "fitness_recovery",
         "mental_health"
       ],
@@ -5018,7 +5018,7 @@
       "description": "Lewis Howes interviews",
       "sourceType": "podcast",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -5035,7 +5035,7 @@
       "description": "Sleep health and tips",
       "sourceType": "youtube",
       "topics": [
-        "sleep-optimization"
+        "sleep_optimization"
       ],
       "featured": false,
       "starterRank": null,
@@ -5052,7 +5052,7 @@
       "description": "Startup founders chat",
       "sourceType": "podcast",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -5069,7 +5069,7 @@
       "description": "DIY biology and science",
       "sourceType": "youtube",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": false,
       "starterRank": null,
@@ -5086,8 +5086,8 @@
       "description": "Deconstructing world-class performers across health, business, and creativity | performance optimization productivity habits success",
       "sourceType": "podcast",
       "topics": [
-        "performance-optimization",
-        "productivity-habits",
+        "fitness_recovery",
+        "habit_building",
         "mental_health"
       ],
       "featured": false,
@@ -5105,8 +5105,8 @@
       "description": "High performers and their habits",
       "sourceType": "podcast",
       "topics": [
-        "productivity-habits",
-        "entrepreneurship-startups"
+        "habit_building",
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -5123,7 +5123,7 @@
       "description": "Tony Robbins teachings",
       "sourceType": "podcast",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -5141,7 +5141,7 @@
       "sourceType": "podcast",
       "topics": [
         "artificial_intelligence",
-        "learning-education"
+        "online_learning"
       ],
       "featured": false,
       "starterRank": null,
@@ -5207,9 +5207,9 @@
       "description": "Intermittent fasting, metabolic flexibility, and health science | intermittent fasting metabolic flexibility keto weight loss",
       "sourceType": "youtube",
       "topics": [
-        "nutrition-diet",
-        "metabolic-health",
-        "weight-management"
+        "nutrition_science",
+        "metabolic",
+        "weight_loss"
       ],
       "featured": false,
       "starterRank": null,
@@ -5226,8 +5226,8 @@
       "description": "Productivity and study tips",
       "sourceType": "youtube",
       "topics": [
-        "productivity-habits",
-        "learning-education"
+        "habit_building",
+        "online_learning"
       ],
       "featured": false,
       "starterRank": null,
@@ -5245,7 +5245,7 @@
       "sourceType": "youtube",
       "topics": [
         "artificial_intelligence",
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -5279,7 +5279,7 @@
       "description": "Stories about sound",
       "sourceType": "podcast",
       "topics": [
-        "design-creativity"
+        "art_design"
       ],
       "featured": true,
       "starterRank": null,
@@ -5330,8 +5330,8 @@
       "description": "Physics and philosophy",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering",
-        "philosophy-ethics"
+        "physics",
+        "philosophy"
       ],
       "featured": true,
       "starterRank": null,
@@ -5348,7 +5348,7 @@
       "description": "Mind-bending science questions",
       "sourceType": "youtube",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -5365,8 +5365,8 @@
       "description": "Science exploration and education",
       "sourceType": "youtube",
       "topics": [
-        "scientific-research",
-        "physics-engineering"
+        "biology",
+        "physics"
       ],
       "featured": true,
       "starterRank": null,
@@ -5383,7 +5383,7 @@
       "description": "Philosophy and psychology",
       "sourceType": "podcast",
       "topics": [
-        "philosophy-ethics"
+        "philosophy"
       ],
       "featured": false,
       "starterRank": null,
@@ -5432,7 +5432,7 @@
       "description": "Performance optimization",
       "sourceType": "youtube",
       "topics": [
-        "performance-optimization"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -5449,7 +5449,7 @@
       "description": "Philosophy and consciousness",
       "sourceType": "podcast",
       "topics": [
-        "philosophy-ethics"
+        "philosophy"
       ],
       "featured": true,
       "starterRank": null,
@@ -5466,7 +5466,7 @@
       "description": "Warren Buffett investing",
       "sourceType": "podcast",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -5500,7 +5500,7 @@
       "description": "Economics and logistics",
       "sourceType": "youtube",
       "topics": [
-        "business-strategy"
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -5517,7 +5517,7 @@
       "description": "Bitcoin podcast",
       "sourceType": "podcast",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -5534,9 +5534,9 @@
       "description": "Deep dives into health research, metabolic science, and evidence-based wellness | health research metabolic science evidence based wellness",
       "sourceType": "youtube",
       "topics": [
-        "metabolic-health",
-        "nutrition-diet",
-        "sleep-optimization"
+        "metabolic",
+        "nutrition_science",
+        "sleep_optimization"
       ],
       "featured": false,
       "starterRank": null,
@@ -5570,7 +5570,7 @@
       "description": "Startup advice and stories",
       "sourceType": "youtube",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": true,
       "starterRank": null,
@@ -5605,7 +5605,7 @@
       "sourceType": "podcast",
       "topics": [
         "artificial_intelligence",
-        "philosophy-ethics"
+        "philosophy"
       ],
       "featured": true,
       "starterRank": null,
@@ -5622,7 +5622,7 @@
       "description": "Nutrition research",
       "sourceType": "podcast",
       "topics": [
-        "nutrition-diet"
+        "nutrition_science"
       ],
       "featured": true,
       "starterRank": null,
@@ -5656,7 +5656,7 @@
       "description": "Engineering principles",
       "sourceType": "youtube",
       "topics": [
-        "physics-engineering"
+        "physics"
       ],
       "featured": true,
       "starterRank": null,
@@ -5674,7 +5674,7 @@
       "sourceType": "youtube",
       "topics": [
         "artificial_intelligence",
-        "learning-education"
+        "online_learning"
       ],
       "featured": true,
       "starterRank": null,
@@ -5755,7 +5755,7 @@
       "description": "Culinary questions",
       "sourceType": "reddit",
       "topics": [
-        "food-cooking"
+        "nutrition_science"
       ],
       "featured": true,
       "starterRank": null,
@@ -5772,7 +5772,7 @@
       "description": "Expert history answers",
       "sourceType": "reddit",
       "topics": [
-        "history-culture"
+        "history"
       ],
       "featured": true,
       "starterRank": null,
@@ -5789,7 +5789,7 @@
       "description": "Philosophy questions",
       "sourceType": "reddit",
       "topics": [
-        "philosophy-ethics"
+        "philosophy"
       ],
       "featured": true,
       "starterRank": null,
@@ -5806,7 +5806,7 @@
       "description": "Open-ended questions",
       "sourceType": "reddit",
       "topics": [
-        "general-discussion"
+        "sociology"
       ],
       "featured": false,
       "starterRank": null,
@@ -5823,7 +5823,7 @@
       "description": "Science questions answered by experts",
       "sourceType": "reddit",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -5840,7 +5840,7 @@
       "description": "Astronomy community",
       "sourceType": "reddit",
       "topics": [
-        "space-astronomy"
+        "space_exploration"
       ],
       "featured": true,
       "starterRank": null,
@@ -5887,7 +5887,7 @@
       "description": "Biology discussion",
       "sourceType": "reddit",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -5904,7 +5904,7 @@
       "description": "Bitcoin community",
       "sourceType": "reddit",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -5938,7 +5938,7 @@
       "description": "Passive index investing",
       "sourceType": "reddit",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": true,
       "starterRank": null,
@@ -5955,7 +5955,7 @@
       "description": "Budget planning",
       "sourceType": "reddit",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": false,
       "starterRank": null,
@@ -5972,7 +5972,7 @@
       "description": "Durable product recommendations",
       "sourceType": "reddit",
       "topics": [
-        "consumer-products"
+        "marketing"
       ],
       "featured": false,
       "starterRank": null,
@@ -6036,7 +6036,7 @@
       "description": "Chemistry discussion",
       "sourceType": "reddit",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -6083,7 +6083,7 @@
       "description": "Climate science",
       "sourceType": "reddit",
       "topics": [
-        "environmental-sustainability"
+        "sustainable_living"
       ],
       "featured": true,
       "starterRank": null,
@@ -6100,7 +6100,7 @@
       "description": "Cooking community",
       "sourceType": "reddit",
       "topics": [
-        "food-cooking"
+        "nutrition_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -6117,7 +6117,7 @@
       "description": "Credit card advice",
       "sourceType": "reddit",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": false,
       "starterRank": null,
@@ -6151,7 +6151,7 @@
       "description": "Poor data visualizations",
       "sourceType": "reddit",
       "topics": [
-        "mathematics-statistics"
+        "cognitive_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -6169,7 +6169,7 @@
       "sourceType": "reddit",
       "topics": [
         "artificial_intelligence",
-        "mathematics-statistics"
+        "cognitive_science"
       ],
       "featured": true,
       "starterRank": null,
@@ -6186,7 +6186,7 @@
       "description": "Personal development journey",
       "sourceType": "reddit",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -6220,7 +6220,7 @@
       "description": "Dividend investing",
       "sourceType": "reddit",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -6252,7 +6252,7 @@
       "description": "Affordable healthy eating",
       "sourceType": "reddit",
       "topics": [
-        "nutrition-diet"
+        "nutrition_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -6269,7 +6269,7 @@
       "description": "Entrepreneurship discussion",
       "sourceType": "reddit",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -6286,7 +6286,7 @@
       "description": "Environmental issues",
       "sourceType": "reddit",
       "topics": [
-        "environmental-sustainability"
+        "sustainable_living"
       ],
       "featured": false,
       "starterRank": null,
@@ -6303,7 +6303,7 @@
       "description": "Financial independence retire early",
       "sourceType": "reddit",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": true,
       "starterRank": null,
@@ -6367,7 +6367,7 @@
       "description": "Frugal lifestyle tips",
       "sourceType": "reddit",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": false,
       "starterRank": null,
@@ -6433,7 +6433,7 @@
       "description": "Building discipline",
       "sourceType": "reddit",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -6450,7 +6450,7 @@
       "description": "Motivation and inspiration",
       "sourceType": "reddit",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -6467,7 +6467,7 @@
       "description": "Study techniques",
       "sourceType": "reddit",
       "topics": [
-        "learning-education"
+        "online_learning"
       ],
       "featured": false,
       "starterRank": null,
@@ -6484,7 +6484,7 @@
       "description": "Healthy eating and nutrition ideas | healthy food nutrition eating recipes",
       "sourceType": "reddit",
       "topics": [
-        "nutrition-diet"
+        "nutrition_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -6501,7 +6501,7 @@
       "description": "Historical discussion",
       "sourceType": "reddit",
       "topics": [
-        "history-culture"
+        "history"
       ],
       "featured": true,
       "starterRank": null,
@@ -6563,7 +6563,7 @@
       "description": "Investment discussion",
       "sourceType": "reddit",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -6627,7 +6627,7 @@
       "description": "Learning to code",
       "sourceType": "reddit",
       "topics": [
-        "learning-education",
+        "online_learning",
         "artificial_intelligence"
       ],
       "featured": true,
@@ -6645,7 +6645,7 @@
       "description": "Practical life hacks",
       "sourceType": "reddit",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -6662,7 +6662,7 @@
       "description": "Practical life tips",
       "sourceType": "reddit",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -6696,8 +6696,8 @@
       "description": "Longevity research and anti-aging interventions | longevity aging research anti-aging interventions",
       "sourceType": "reddit",
       "topics": [
-        "longevity-aging",
-        "metabolic-health"
+        "longevity",
+        "metabolic"
       ],
       "featured": true,
       "starterRank": null,
@@ -6746,7 +6746,7 @@
       "description": "Mathematics discussion",
       "sourceType": "reddit",
       "topics": [
-        "mathematics-statistics"
+        "cognitive_science"
       ],
       "featured": true,
       "starterRank": null,
@@ -6763,7 +6763,7 @@
       "description": "Meal preparation",
       "sourceType": "reddit",
       "topics": [
-        "nutrition-diet"
+        "nutrition_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -6906,7 +6906,7 @@
       "description": "Options trading discussion",
       "sourceType": "reddit",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -6983,7 +6983,7 @@
       "description": "Personal finance advice",
       "sourceType": "reddit",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": true,
       "starterRank": null,
@@ -7000,7 +7000,7 @@
       "description": "Philosophy discussion",
       "sourceType": "reddit",
       "topics": [
-        "philosophy-ethics"
+        "philosophy"
       ],
       "featured": false,
       "starterRank": null,
@@ -7017,7 +7017,7 @@
       "description": "Physics discussion",
       "sourceType": "reddit",
       "topics": [
-        "physics-engineering"
+        "physics"
       ],
       "featured": true,
       "starterRank": null,
@@ -7096,7 +7096,7 @@
       "description": "Productivity tips and tools",
       "sourceType": "reddit",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -7164,7 +7164,7 @@
       "description": "Housing market analysis",
       "sourceType": "reddit",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -7181,7 +7181,7 @@
       "description": "Real estate discussion",
       "sourceType": "reddit",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -7230,7 +7230,7 @@
       "description": "Peer-reviewed science articles",
       "sourceType": "reddit",
       "topics": [
-        "scientific-research"
+        "biology"
       ],
       "featured": true,
       "starterRank": null,
@@ -7247,8 +7247,8 @@
       "description": "Evidence-based nutrition discussions and research | nutrition science evidence based research diet",
       "sourceType": "reddit",
       "topics": [
-        "nutrition-diet",
-        "metabolic-health"
+        "nutrition_science",
+        "metabolic"
       ],
       "featured": true,
       "starterRank": null,
@@ -7265,7 +7265,7 @@
       "description": "Security analysis",
       "sourceType": "reddit",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": true,
       "starterRank": null,
@@ -7282,7 +7282,7 @@
       "description": "Self improvement",
       "sourceType": "reddit",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -7299,7 +7299,7 @@
       "description": "Side hustle ideas",
       "sourceType": "reddit",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -7316,7 +7316,7 @@
       "description": "Sleep science and optimization discussions | sleep optimization insomnia rest recovery",
       "sourceType": "reddit",
       "topics": [
-        "sleep-optimization",
+        "sleep_optimization",
         "mental_health"
       ],
       "featured": false,
@@ -7334,7 +7334,7 @@
       "description": "Sleep optimization",
       "sourceType": "reddit",
       "topics": [
-        "sleep-optimization"
+        "sleep_optimization"
       ],
       "featured": false,
       "starterRank": null,
@@ -7351,7 +7351,7 @@
       "description": "Small business advice",
       "sourceType": "reddit",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -7368,7 +7368,7 @@
       "description": "Solo travel tips",
       "sourceType": "reddit",
       "topics": [
-        "travel-adventure"
+        "adventure_travel"
       ],
       "featured": false,
       "starterRank": null,
@@ -7385,7 +7385,7 @@
       "description": "Space and astronomy",
       "sourceType": "reddit",
       "topics": [
-        "space-astronomy"
+        "space_exploration"
       ],
       "featured": true,
       "starterRank": null,
@@ -7402,7 +7402,7 @@
       "description": "Startup discussion",
       "sourceType": "reddit",
       "topics": [
-        "entrepreneurship-startups"
+        "entrepreneurship"
       ],
       "featured": false,
       "starterRank": null,
@@ -7419,7 +7419,7 @@
       "description": "Stock market discussion",
       "sourceType": "reddit",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -7436,7 +7436,7 @@
       "description": "Stoic philosophy",
       "sourceType": "reddit",
       "topics": [
-        "philosophy-ethics"
+        "philosophy"
       ],
       "featured": true,
       "starterRank": null,
@@ -7562,7 +7562,7 @@
       "description": "Travel community",
       "sourceType": "reddit",
       "topics": [
-        "travel-adventure"
+        "adventure_travel"
       ],
       "featured": false,
       "starterRank": null,
@@ -7594,7 +7594,7 @@
       "description": "Value investing strategy",
       "sourceType": "reddit",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": true,
       "starterRank": null,
@@ -7626,7 +7626,7 @@
       "description": "Stock trading community",
       "sourceType": "reddit",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -7677,7 +7677,7 @@
       "description": "Useful knowledge",
       "sourceType": "reddit",
       "topics": [
-        "productivity-habits"
+        "habit_building"
       ],
       "featured": false,
       "starterRank": null,
@@ -7694,7 +7694,7 @@
       "description": "Zero waste lifestyle",
       "sourceType": "reddit",
       "topics": [
-        "environmental-sustainability"
+        "sustainable_living"
       ],
       "featured": false,
       "starterRank": null,
@@ -7745,7 +7745,7 @@
       "description": "PC setups",
       "sourceType": "reddit",
       "topics": [
-        "digital-tools-apps"
+        "software_development"
       ],
       "featured": false,
       "starterRank": null,
@@ -7796,7 +7796,7 @@
       "description": "Cryptocurrency discussion",
       "sourceType": "reddit",
       "topics": [
-        "investing-markets"
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -7830,7 +7830,7 @@
       "description": "Beautiful data visualizations",
       "sourceType": "reddit",
       "topics": [
-        "mathematics-statistics"
+        "cognitive_science"
       ],
       "featured": true,
       "starterRank": null,
@@ -7898,7 +7898,7 @@
       "description": "Ethereum blockchain",
       "sourceType": "reddit",
       "topics": [
-        "investing-markets",
+        "investing",
         "artificial_intelligence"
       ],
       "featured": false,
@@ -7916,7 +7916,7 @@
       "description": "Simple explanations",
       "sourceType": "reddit",
       "topics": [
-        "learning-education"
+        "online_learning"
       ],
       "featured": false,
       "starterRank": null,
@@ -7933,8 +7933,8 @@
       "description": "High net worth FI",
       "sourceType": "reddit",
       "topics": [
-        "personal-finance",
-        "investing-markets"
+        "personal_finance",
+        "investing"
       ],
       "featured": false,
       "starterRank": null,
@@ -7969,7 +7969,7 @@
       "sourceType": "reddit",
       "topics": [
         "fitness_recovery",
-        "nutrition-diet"
+        "nutrition_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -8037,7 +8037,7 @@
       "description": "Lean financial independence",
       "sourceType": "reddit",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": false,
       "starterRank": null,
@@ -8088,7 +8088,7 @@
       "description": "Weight loss support",
       "sourceType": "reddit",
       "topics": [
-        "weight-management"
+        "weight_loss"
       ],
       "featured": false,
       "starterRank": null,
@@ -8105,7 +8105,7 @@
       "description": "Mechanical keyboards",
       "sourceType": "reddit",
       "topics": [
-        "digital-tools-apps"
+        "software_development"
       ],
       "featured": false,
       "starterRank": null,
@@ -8242,7 +8242,7 @@
       "sourceType": "reddit",
       "topics": [
         "artificial_intelligence",
-        "futurism"
+        "emerging_tech"
       ],
       "featured": false,
       "starterRank": null,
@@ -8276,7 +8276,7 @@
       "description": "Statistics discussion",
       "sourceType": "reddit",
       "topics": [
-        "mathematics-statistics"
+        "cognitive_science"
       ],
       "featured": false,
       "starterRank": null,
@@ -8310,7 +8310,7 @@
       "description": "Tax discussion",
       "sourceType": "reddit",
       "topics": [
-        "personal-finance"
+        "personal_finance"
       ],
       "featured": false,
       "starterRank": null,
@@ -8327,7 +8327,7 @@
       "description": "Interesting facts learned",
       "sourceType": "reddit",
       "topics": [
-        "learning-education"
+        "online_learning"
       ],
       "featured": false,
       "starterRank": null,
