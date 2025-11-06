@@ -253,7 +253,7 @@
       "description": "Meditation and mindfulness",
       "sourceType": "podcast",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -304,7 +304,7 @@
       "description": "AI safety and alignment",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "philosophy-ethics"
       ],
       "featured": false,
@@ -389,7 +389,7 @@
       "description": "Tech and business discussion",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "entrepreneurship-startups"
       ],
       "featured": true,
@@ -550,7 +550,7 @@
       "description": "Software design patterns",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -602,7 +602,7 @@
       "description": "Technology and semiconductor history",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -619,7 +619,7 @@
       "description": "Science-based fitness training",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -636,7 +636,7 @@
       "description": "Tech reviews and deals",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -698,7 +698,7 @@
       "description": "Fitness and biohacking",
       "sourceType": "podcast",
       "topics": [
-        "health-wellness",
+        "mental_health",
         "performance-optimization"
       ],
       "featured": false,
@@ -778,7 +778,7 @@
       "description": "Fitness and workout routines",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -812,7 +812,7 @@
       "description": "Strength training workouts",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -829,7 +829,7 @@
       "description": "Programming and AI experiments",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -876,7 +876,7 @@
       "description": "Home workout programs",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -925,7 +925,7 @@
       "description": "AI and machine learning projects",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -942,7 +942,7 @@
       "description": "Beginner coders",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -959,7 +959,7 @@
       "description": "Creative coding tutorials",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -976,7 +976,7 @@
       "description": "Technology and business stories",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "business-strategy"
       ],
       "featured": true,
@@ -994,7 +994,7 @@
       "description": "Computer science concepts",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -1028,7 +1028,7 @@
       "description": "Python programming tutorials",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -1062,7 +1062,7 @@
       "description": "True cybersecurity stories",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -1126,7 +1126,7 @@
       "description": "Laptop and tech reviews",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "digital-tools-apps"
       ],
       "featured": false,
@@ -1159,7 +1159,7 @@
       "description": "Web design and development",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "digital-tools-apps"
       ],
       "featured": false,
@@ -1177,7 +1177,7 @@
       "description": "Short developer insights",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -1307,7 +1307,7 @@
       "description": "Brain energy and mental health",
       "sourceType": "youtube",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -1358,7 +1358,7 @@
       "description": "Muscle health and longevity",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness",
+        "fitness_recovery",
         "longevity-aging"
       ],
       "featured": false,
@@ -1565,7 +1565,7 @@
       "sourceType": "youtube",
       "topics": [
         "nutrition-diet",
-        "health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -1582,7 +1582,7 @@
       "description": "Medical doctor explains health topics",
       "sourceType": "youtube",
       "topics": [
-        "health-wellness"
+        "mental_health"
       ],
       "featured": true,
       "starterRank": null,
@@ -1599,7 +1599,7 @@
       "description": "Evidence-based fitness, muscle building, and nutrition science | fitness muscle building nutrition science hypertrophy",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness",
+        "fitness_recovery",
         "nutrition-diet",
         "performance-optimization"
       ],
@@ -1618,7 +1618,7 @@
       "description": "Women's health and fasting",
       "sourceType": "youtube",
       "topics": [
-        "health-wellness",
+        "mental_health",
         "nutrition-diet"
       ],
       "featured": false,
@@ -1769,7 +1769,7 @@
       "description": "Holistic health and wellness",
       "sourceType": "youtube",
       "topics": [
-        "health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -1978,7 +1978,7 @@
       "sourceType": "podcast",
       "topics": [
         "metabolic-health",
-        "mental-health-wellness",
+        "mental_health",
         "chronic-disease-prevention"
       ],
       "featured": false,
@@ -2011,7 +2011,7 @@
       "description": "Fast programming tutorials",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "digital-tools-apps"
       ],
       "featured": true,
@@ -2188,7 +2188,7 @@
       "description": "Full stack development",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -2205,7 +2205,7 @@
       "description": "Movement and mobility training",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -2222,7 +2222,7 @@
       "description": "In-depth PC hardware",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -2239,7 +2239,7 @@
       "description": "Natural bodybuilding strategies",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -2304,7 +2304,7 @@
       "description": "Fitness and nutrition coaching",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness",
+        "fitness_recovery",
         "nutrition-diet"
       ],
       "featured": false,
@@ -2352,7 +2352,7 @@
       "description": "PC hardware reviews",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -2369,7 +2369,7 @@
       "description": "Human behavior insights",
       "sourceType": "podcast",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": true,
       "starterRank": null,
@@ -2403,7 +2403,7 @@
       "description": "Bodyweight fitness training",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -2437,7 +2437,7 @@
       "description": "AI impact on society",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "philosophy-ethics"
       ],
       "featured": true,
@@ -2521,7 +2521,7 @@
       "description": "Invisible forces shaping behavior",
       "sourceType": "podcast",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": true,
       "starterRank": null,
@@ -2553,7 +2553,7 @@
       "description": "JavaScript community",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -2600,7 +2600,7 @@
       "description": "Science-based fitness and bodybuilding education | fitness bodybuilding science based training nutrition",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness",
+        "fitness_recovery",
         "nutrition-diet",
         "performance-optimization"
       ],
@@ -2619,7 +2619,7 @@
       "description": "Science-based muscle building",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": true,
       "starterRank": null,
@@ -2636,7 +2636,7 @@
       "description": "Phone durability tests",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -2795,7 +2795,7 @@
       "description": "AI and tech interviews",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "philosophy-ethics"
       ],
       "featured": true,
@@ -2828,7 +2828,7 @@
       "description": "Data science topics",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "mathematics-statistics"
       ],
       "featured": false,
@@ -2846,7 +2846,7 @@
       "description": "Tech reviews and builds",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -2914,7 +2914,7 @@
       "description": "Tech product reviews",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "digital-tools-apps"
       ],
       "featured": true,
@@ -2984,7 +2984,7 @@
       "description": "Metabolic psychiatry",
       "sourceType": "youtube",
       "topics": [
-        "mental-health-wellness",
+        "mental_health",
         "metabolic-health"
       ],
       "featured": false,
@@ -3049,7 +3049,7 @@
       "description": "Fitness and health education",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -3147,7 +3147,7 @@
       "description": "Science-based fitness",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -3209,7 +3209,7 @@
       "description": "IT and cybersecurity",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -3244,7 +3244,7 @@
       "sourceType": "substack",
       "topics": [
         "entrepreneurship-startups",
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -3461,7 +3461,7 @@
       "description": "Fitness workouts",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -3576,7 +3576,7 @@
       "description": "Natural bodybuilding and fitness",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -3645,7 +3645,7 @@
       "description": "Programming tutorials",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -3711,7 +3711,7 @@
       "description": "Evidence-based strength training",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -3728,7 +3728,7 @@
       "description": "Information security",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -3880,7 +3880,7 @@
       "description": "Game dev and coding",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -3897,7 +3897,7 @@
       "description": "Security news and analysis",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -3929,7 +3929,7 @@
       "description": "Web design and development",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -4030,7 +4030,7 @@
       "description": "Software engineering careers",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -4065,7 +4065,7 @@
       "sourceType": "youtube",
       "topics": [
         "nutrition-diet",
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -4082,7 +4082,7 @@
       "description": "Technology strategy analysis",
       "sourceType": "substack",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "business-strategy"
       ],
       "featured": true,
@@ -4100,7 +4100,7 @@
       "description": "Data science careers",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -4132,7 +4132,7 @@
       "description": "Web development podcast",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -4183,7 +4183,7 @@
       "description": "ML and AI research",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -4200,7 +4200,7 @@
       "description": "Python programming",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -4217,7 +4217,7 @@
       "description": "How technology works",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -4268,7 +4268,7 @@
       "description": "Brain health, cognitive function, and mental wellness | brain health cognitive function mental wellness",
       "sourceType": "podcast",
       "topics": [
-        "mental-health-wellness",
+        "mental_health",
         "nutrition-diet",
         "chronic-disease-prevention"
       ],
@@ -4287,7 +4287,7 @@
       "description": "Open source software",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -4357,7 +4357,7 @@
       "sourceType": "substack",
       "topics": [
         "investing-markets",
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -4374,7 +4374,7 @@
       "description": "Dr. Mark Hyman's podcast",
       "sourceType": "podcast",
       "topics": [
-        "health-wellness",
+        "mental_health",
         "nutrition-diet"
       ],
       "featured": true,
@@ -4465,7 +4465,7 @@
       "description": "Health, wellness, and personal development | wellness personal development health mindfulness",
       "sourceType": "substack",
       "topics": [
-        "mental-health-wellness",
+        "mental_health",
         "productivity-habits"
       ],
       "featured": false,
@@ -4535,7 +4535,7 @@
       "description": "Brain optimization",
       "sourceType": "podcast",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -4601,7 +4601,7 @@
       "description": "Science of happiness",
       "sourceType": "podcast",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": true,
       "starterRank": null,
@@ -4653,8 +4653,8 @@
       "description": "Long-form conversations",
       "sourceType": "podcast",
       "topics": [
-        "health-wellness",
-        "technology-ai"
+        "mental_health",
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -4736,7 +4736,7 @@
       "description": "Fitness, nutrition, and wellness coaching | fitness nutrition wellness coaching training",
       "sourceType": "podcast",
       "topics": [
-        "exercise-fitness",
+        "fitness_recovery",
         "nutrition-diet",
         "metabolic-health"
       ],
@@ -4755,7 +4755,7 @@
       "description": "Mindfulness tips",
       "sourceType": "podcast",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -4825,7 +4825,7 @@
       "description": "Health and wellness",
       "sourceType": "podcast",
       "topics": [
-        "health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -4913,7 +4913,7 @@
       "description": "Practical AI applications",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -4930,7 +4930,7 @@
       "description": "Privacy and OSINT",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -5000,8 +5000,8 @@
       "sourceType": "podcast",
       "topics": [
         "nutrition-diet",
-        "exercise-fitness",
-        "mental-health-wellness"
+        "fitness_recovery",
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -5088,7 +5088,7 @@
       "topics": [
         "performance-optimization",
         "productivity-habits",
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -5140,7 +5140,7 @@
       "description": "Learn to code podcast",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "learning-education"
       ],
       "featured": false,
@@ -5158,7 +5158,7 @@
       "description": "Programming and development",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -5175,7 +5175,7 @@
       "description": "Web development insights",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -5244,7 +5244,7 @@
       "description": "Technology and science stories",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "scientific-research"
       ],
       "featured": true,
@@ -5262,7 +5262,7 @@
       "description": "Web development tutorials",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -5296,7 +5296,7 @@
       "description": "AI and ML research",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -5313,7 +5313,7 @@
       "description": "Tech product unboxings",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -5415,7 +5415,7 @@
       "description": "Natural bodybuilding science",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -5483,7 +5483,7 @@
       "description": "Simplified web development",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -5553,7 +5553,7 @@
       "description": "Fitness challenges and experiments",
       "sourceType": "youtube",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -5587,7 +5587,7 @@
       "description": "Yoga practice and mindfulness",
       "sourceType": "youtube",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -5604,7 +5604,7 @@
       "description": "Technology and attention",
       "sourceType": "podcast",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "philosophy-ethics"
       ],
       "featured": true,
@@ -5639,7 +5639,7 @@
       "description": "Technology explained visually",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -5673,7 +5673,7 @@
       "description": "Free coding education",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "learning-education"
       ],
       "featured": true,
@@ -5721,7 +5721,7 @@
       "description": "Anxiety support",
       "sourceType": "reddit",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -5738,7 +5738,7 @@
       "description": "AI discussion",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -5921,7 +5921,7 @@
       "description": "Bodyweight training",
       "sourceType": "reddit",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": true,
       "starterRank": null,
@@ -5989,7 +5989,7 @@
       "description": "CS career advice",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -6134,7 +6134,7 @@
       "description": "Cycling community",
       "sourceType": "reddit",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -6168,7 +6168,7 @@
       "description": "Data science discussion",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "mathematics-statistics"
       ],
       "featured": true,
@@ -6203,7 +6203,7 @@
       "description": "Depression support",
       "sourceType": "reddit",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -6350,7 +6350,7 @@
       "description": "Fitness discussion and advice",
       "sourceType": "reddit",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": true,
       "starterRank": null,
@@ -6399,7 +6399,7 @@
       "description": "Future of technology",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -6416,7 +6416,7 @@
       "description": "Game development",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -6580,7 +6580,7 @@
       "description": "JavaScript programming",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -6628,7 +6628,7 @@
       "sourceType": "reddit",
       "topics": [
         "learning-education",
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -6679,7 +6679,7 @@
       "description": "Local AI models",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -6729,7 +6729,7 @@
       "description": "Machine learning research",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -6780,7 +6780,7 @@
       "description": "Meditation practice",
       "sourceType": "reddit",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -6797,7 +6797,7 @@
       "description": "Mental health support",
       "sourceType": "reddit",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -6829,7 +6829,7 @@
       "description": "Mindfulness practice",
       "sourceType": "reddit",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -7049,7 +7049,7 @@
       "description": "Posture improvement",
       "sourceType": "reddit",
       "topics": [
-        "health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -7113,7 +7113,7 @@
       "description": "Programming discussion",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -7130,7 +7130,7 @@
       "description": "Psychology and mental health",
       "sourceType": "reddit",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": true,
       "starterRank": null,
@@ -7147,7 +7147,7 @@
       "description": "Python programming",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -7198,7 +7198,7 @@
       "description": "Running community",
       "sourceType": "reddit",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -7317,7 +7317,7 @@
       "sourceType": "reddit",
       "topics": [
         "sleep-optimization",
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -7468,7 +7468,7 @@
       "description": "Swimming community",
       "sourceType": "reddit",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -7500,7 +7500,7 @@
       "description": "Technology news and discussion",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -7643,7 +7643,7 @@
       "description": "Web development",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -7660,7 +7660,7 @@
       "description": "Yoga practice",
       "sourceType": "reddit",
       "topics": [
-        "mental-health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -7711,7 +7711,7 @@
       "description": "Amazon Web Services",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -7728,7 +7728,7 @@
       "description": "Back pain management",
       "sourceType": "reddit",
       "topics": [
-        "health-wellness"
+        "mental_health"
       ],
       "featured": false,
       "starterRank": null,
@@ -7762,7 +7762,7 @@
       "description": "PC building advice",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -7779,7 +7779,7 @@
       "description": "General coding",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -7813,7 +7813,7 @@
       "description": "Cybersecurity discussion",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -7847,7 +7847,7 @@
       "description": "Deep learning discussion",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -7864,7 +7864,7 @@
       "description": "DevOps practices",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -7881,7 +7881,7 @@
       "description": "Docker containers",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -7899,7 +7899,7 @@
       "sourceType": "reddit",
       "topics": [
         "investing-markets",
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -7951,7 +7951,7 @@
       "description": "Flexibility training",
       "sourceType": "reddit",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -7968,7 +7968,7 @@
       "description": "Healthy weight gain",
       "sourceType": "reddit",
       "topics": [
-        "exercise-fitness",
+        "fitness_recovery",
         "nutrition-diet"
       ],
       "featured": false,
@@ -7986,7 +7986,7 @@
       "description": "Go programming language",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -8003,7 +8003,7 @@
       "description": "Home lab setups",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -8020,7 +8020,7 @@
       "description": "Kubernetes orchestration",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -8054,7 +8054,7 @@
       "description": "Learning machine learning",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -8071,7 +8071,7 @@
       "description": "Learning Python",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -8122,7 +8122,7 @@
       "description": "Network security",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -8139,7 +8139,7 @@
       "description": "Next.js framework",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -8156,7 +8156,7 @@
       "description": "Node.js development",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -8173,7 +8173,7 @@
       "description": "Digital privacy",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -8190,7 +8190,7 @@
       "description": "React framework",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -8207,7 +8207,7 @@
       "description": "Rust programming language",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": true,
       "starterRank": null,
@@ -8224,7 +8224,7 @@
       "description": "Self-hosted services",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -8241,7 +8241,7 @@
       "description": "AI singularity discussion",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai",
+        "artificial_intelligence",
         "futurism"
       ],
       "featured": false,
@@ -8259,7 +8259,7 @@
       "description": "AI image generation",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -8293,7 +8293,7 @@
       "description": "Svelte framework",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -8344,7 +8344,7 @@
       "description": "TypeScript programming",
       "sourceType": "reddit",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
@@ -8361,7 +8361,7 @@
       "description": "Women's fitness community",
       "sourceType": "reddit",
       "topics": [
-        "exercise-fitness"
+        "fitness_recovery"
       ],
       "featured": false,
       "starterRank": null,
@@ -8378,7 +8378,7 @@
       "description": "Python and machine learning",
       "sourceType": "youtube",
       "topics": [
-        "technology-ai"
+        "artificial_intelligence"
       ],
       "featured": false,
       "starterRank": null,
