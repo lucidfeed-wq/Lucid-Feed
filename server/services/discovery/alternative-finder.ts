@@ -367,19 +367,17 @@ export class AlternativeFinder {
       await storage.saveFeedNotification({
         userId,
         feedId: oldFeed.id,
-        type: 'alternative_found',
-        title: `Alternative found for "${oldFeed.name}"`,
-        message: `We found a replacement feed: "${newFeed.name}". The original feed appears to be broken, would you like to switch to the alternative?`,
-        metadata: {
+        severity: 'info',
+        message: `Alternative found for "${oldFeed.name}": We found a replacement feed: "${newFeed.name}". The original feed appears to be broken, would you like to switch to the alternative?`,
+        technicalDetails: JSON.stringify({
           oldFeedId: oldFeed.id,
           oldFeedName: oldFeed.name,
           newFeedId: newFeed.id,
           newFeedName: newFeed.name,
           newFeedUrl: newFeed.url,
           confidence: 75, // Default confidence for manual review
-        },
+        }),
         isRead: false,
-        priority: 'medium',
       });
 
       console.log(`📧 Notified user ${userId} about alternative for feed ${oldFeed.id}`);

@@ -1,0 +1,66 @@
+11-06 12:40:52
+internalQuery: undefined,
+11-06 12:40:52
+where: undefined,
+11-06 12:40:52
+schema: 'public',
+11-06 12:40:52
+table: 'feed_notifications',
+11-06 12:40:52
+column: 'severity',
+11-06 12:40:52
+dataType: undefined,
+11-06 12:40:52
+constraint: undefined,
+11-06 12:40:52
+file: 'execMain.c',
+11-06 12:40:52
+line: '2021',
+11-06 12:40:52
+routine: 'ExecConstraints'
+11-06 12:40:52
+}
+11-06 12:40:52
+📧 Notified 1 users about alternative for All-In Podcast
+11-06 12:40:52
+[Storage] getFeedCatalog returned 498 feeds
+11-06 12:40:52
+✅ Auto-subscribed 1 users to alternative feed RDr_eLvptDWnczJ9RGMuW
+11-06 12:40:52
+✓ Content quality: 14/40 - The content lacks scientific citations and rigorous evidence, making it difficult to assess the validity of claims. While it poses a relevant question, the lack of structured responses or actionable insights limits its clinical value and practical applicability.
+11-06 12:40:52
+✓ Unified Score: 59/100 (Content: 14, Engagement: 20, Credibility: 10)
+11-06 12:40:54
+✓ Content quality: 16/40 - The content lacks scientific citations and credible sources to support its claims, limiting its evidence quality. While it provides a simple recipe that could be of interest to practitioners, it does not offer substantial clinical insights or actionable recommendations for patient outcomes.
+11-06 12:40:54
+✓ Unified Score: 61/100 (Content: 16, Engagement: 20, Credibility: 10)
+11-06 12:40:54
+✓ Content quality: 15/40 - The content lacks scientific citations and rigorous evidence, making it difficult to assess its validity. While it presents a personal experience that may resonate with others, it does not offer actionable insights or clear clinical guidance for practitioners.
+11-06 12:40:54
+✓ Unified Score: 58/100 (Content: 15, Engagement: 17.6, Credibility: 10)
+11-06 12:40:54
+Progress: 27/27
+11-06 12:40:54
+✓ Enrichment complete: 27 items processed
+11-06 12:40:56
+Saved/retrieved 27 enriched items
+11-06 12:40:56
+Quality filtered: 27 items (from 27)
+11-06 12:40:56
+Topic matches - Journals: 0/0, YouTube: 0/0, Community: 25/27
+11-06 12:40:56
+⚠ Too few journal matches (0), using all quality journals
+11-06 12:40:56
+⚠ Too few YouTube matches (0), using all quality videos
+11-06 12:40:56
+✓ Using topic-filtered community (25 items)
+11-06 12:40:56
+Final source breakdown: 0 journals, 0 youtube, 25 community
+11-06 12:40:56
+Final selection: 10 items (0 research, 10 community, 0 expert)
+11-06 12:41:09
+Personalized digest created: hkxj1EVYQl2Csl8GxCvHm (personal-41556120-1762454469)
+11-06 12:41:09
+[POST /api/digest/refresh] Digest generated successfully: personal-41556120-1762454469
+11-06 12:41:09
+6:41:09 PM [express] POST /api/digest/refresh 200 in 122154ms :: {"success":true,"digestId":"hkxj1EV…
