@@ -49,13 +49,21 @@ export function FeedHealthBanner() {
   }
 
   const handleDismiss = (notificationId: string) => {
-    setDismissedIds(prev => new Set([...prev, notificationId]));
+    setDismissedIds(prev => {
+      const newSet = new Set(prev);
+      newSet.add(notificationId);
+      return newSet;
+    });
     markAsReadMutation.mutate([notificationId]);
   };
 
   const handleDismissAll = () => {
     const ids = visibleNotifications.map(n => n.id);
-    setDismissedIds(prev => new Set([...prev, ...ids]));
+    setDismissedIds(prev => {
+      const newSet = new Set(prev);
+      ids.forEach(id => newSet.add(id));
+      return newSet;
+    });
     markAsReadMutation.mutate(ids);
   };
 
@@ -71,12 +79,12 @@ export function FeedHealthBanner() {
     }
   };
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: string): "default" | "destructive" | "outline" | "secondary" | null | undefined => {
     switch (severity) {
       case 'error':
         return 'destructive';
       case 'warning':
-        return 'warning';
+        return 'outline';
       case 'info':
       default:
         return 'default';
@@ -181,7 +189,7 @@ export function FeedHealthBanner() {
                   Don't worry! We're actively working on all these issues.
                 </p>
                 <Button
-                  variant="link"
+                  variant="ghost"
                   size="sm"
                   className="text-xs"
                   onClick={() => window.location.href = '/feeds'}
