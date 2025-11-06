@@ -66,6 +66,8 @@ export interface IStorage {
   getPendingFeedSubmissions(): Promise<UserFeedSubmission[]>;
   reviewFeedSubmission(id: string, reviewerId: string, status: 'approved' | 'rejected', reviewNotes?: string): Promise<UserFeedSubmission>;
   updateFeedHealth(feedId: string, health: { lastFetchStatus: 'success' | 'permanent_error' | 'transient_error'; consecutiveFailures?: number; lastErrorMessage?: string | null }): Promise<void>;
+  deactivateFeed(feedId: string): Promise<void>;
+  reactivateFeed(feedId: string): Promise<void>;
   
   // Job Runs (observability)
   createJobRun(jobRun: Omit<InsertJobRun, 'startedAt'>): Promise<JobRun>;
@@ -755,6 +757,25 @@ export class PostgresStorage implements IStorage {
         lastFetchStatus: health.lastFetchStatus,
         consecutiveFailures: health.consecutiveFailures ?? 0,
         lastErrorMessage: health.lastErrorMessage ?? null,
+      })
+      .where(eq(feedCatalog.id, feedId));
+  }
+
+  async deactivateFeed(feedId: string): Promise<void> {
+    await db
+      .update(feedCatalog)
+      .set({ isActive: false })
+      .where(eq(feedCatalog.id, feedId));
+  }
+
+  async reactivateFeed(feedId: string): Promise<void> {
+    await db
+      .update(feedCatalog)
+      .set({ 
+        isActive: true,
+        consecutiveFailures: 0, // Reset failures when manually reactivating
+        lastFetchStatus: null,
+        lastErrorMessage: null,
       })
       .where(eq(feedCatalog.id, feedId));
   }

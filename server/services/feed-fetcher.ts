@@ -31,6 +31,9 @@ interface FeedError {
   url: string;
   error: string;
   type: ErrorType;
+  feedId?: string;
+  consecutiveFailures?: number;
+  wasDeactivated?: boolean;
 }
 
 /**
@@ -231,10 +234,22 @@ export async function fetchFeedItems(feeds: FeedCatalog[]): Promise<InsertItem[]
             url: feed.url, 
             error: errorMsg,
             type: errorType,
+            feedId: feed.id,
+            consecutiveFailures: newFailures,
           });
           
+          // Auto-deactivate feed after 5 consecutive failures
+          const FAILURE_THRESHOLD = 5;
+          if (newFailures >= FAILURE_THRESHOLD && currentFeed?.isActive) {
+            console.log(`🚨 Auto-deactivating feed "${feed.name}" after ${newFailures} consecutive failures`);
+            await storage.deactivateFeed(feed.id);
+            
+            // Track for email alert
+            failedFeeds[failedFeeds.length - 1].wasDeactivated = true;
+          }
+          
           // Mark as unhealthy if too many consecutive failures
-          const healthStatus = newFailures >= 5 ? 'unhealthy' : 'degraded';
+          const healthStatus = newFailures >= FAILURE_THRESHOLD ? 'unhealthy (deactivated)' : 'degraded';
           healthySummary.push({
             feedId: feed.id,
             name: feed.name,
@@ -271,6 +286,7 @@ export async function fetchFeedItems(feeds: FeedCatalog[]): Promise<InsertItem[]
     // Group by error type
     const permanentErrors = failedFeeds.filter(f => f.type === ErrorType.PERMANENT);
     const transientErrors = failedFeeds.filter(f => f.type === ErrorType.TRANSIENT);
+    const deactivatedFeeds = failedFeeds.filter(f => f.wasDeactivated);
     
     if (permanentErrors.length > 0) {
       console.log('\n  Permanent errors (not retried):');
@@ -284,6 +300,19 @@ export async function fetchFeedItems(feeds: FeedCatalog[]): Promise<InsertItem[]
       transientErrors.forEach(f => {
         console.log(`    - ${f.name}: ${f.error}`);
       });
+    }
+    
+    // Send email alert for deactivated feeds
+    if (deactivatedFeeds.length > 0) {
+      console.log(`\n🚨 ${deactivatedFeeds.length} feed(s) were auto-deactivated`);
+      try {
+        const { sendFeedHealthAlert } = await import('../lib/resend');
+        await sendFeedHealthAlert(deactivatedFeeds);
+        console.log('✉️  Feed health alert email sent');
+      } catch (error) {
+        console.error('Failed to send feed health alert email:', error);
+        // Don't fail the whole job if email fails
+      }
     }
   }
   
@@ -396,6 +425,7 @@ function normalizeFeedEntry(entry: any, feed: FeedCatalog): InsertItem {
     title,
     authorOrChannel,
     publishedAt,
+    ingestedAt: new Date().toISOString(),
     rawExcerpt: rawExcerpt.substring(0, 500),
     engagement: {
       comments: 0,

@@ -258,3 +258,73 @@ export async function sendFeedRequestNotification(
     throw error;
   }
 }
+
+/**
+ * Send feed health alert when feeds are auto-deactivated
+ */
+export async function sendFeedHealthAlert(deactivatedFeeds: Array<{ 
+  name: string; 
+  url: string; 
+  error: string; 
+  feedId?: string;
+  consecutiveFailures?: number;
+}>): Promise<void> {
+  if (!resend) {
+    console.log('[Feed Health Alert] Skipped (Resend not configured)');
+    return;
+  }
+
+  if (!resendFromAddress) {
+    console.warn('[Feed Health Alert] Skipped (FROM address not configured)');
+    return;
+  }
+
+  try {
+    let text = `🚨 FEED HEALTH ALERT 🚨\n\n`;
+    text += `${deactivatedFeeds.length} feed(s) were automatically deactivated after 5 consecutive failures:\n\n`;
+    
+    deactivatedFeeds.forEach((feed, i) => {
+      text += `${i + 1}. ${feed.name}\n`;
+      text += `   URL: ${feed.url}\n`;
+      text += `   Failures: ${feed.consecutiveFailures || 5}\n`;
+      text += `   Error: ${feed.error}\n\n`;
+    });
+    
+    text += `These feeds have been deactivated and will no longer be fetched.\n`;
+    text += `Review and fix these feeds in the admin panel: https://www.getlucidfeed.com/admin/feeds\n`;
+
+    const html = `
+      <h2>🚨 Feed Health Alert</h2>
+      <p><strong>${deactivatedFeeds.length} feed(s) were automatically deactivated</strong> after 5 consecutive failures:</p>
+      <ul style="list-style: none; padding: 0;">
+        ${deactivatedFeeds.map((feed, i) => `
+          <li style="margin-bottom: 1.5em; padding: 1em; background: #f8f9fa; border-left: 4px solid #dc3545;">
+            <strong>${i + 1}. ${feed.name}</strong><br>
+            <span style="color: #666;">URL:</span> <a href="${feed.url}" style="color: #0066cc;">${feed.url}</a><br>
+            <span style="color: #666;">Failures:</span> ${feed.consecutiveFailures || 5}<br>
+            <span style="color: #666;">Error:</span> <code style="background: #fff; padding: 2px 6px; border-radius: 3px;">${feed.error}</code>
+          </li>
+        `).join('')}
+      </ul>
+      <p>These feeds have been deactivated and will no longer be fetched until manually reactivated.</p>
+      <p>
+        <a href="https://www.getlucidfeed.com/admin/feeds" style="display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; margin-top: 1em;">
+          Review Feeds in Admin Panel
+        </a>
+      </p>
+      <p style="color: #666; font-size: 0.9em; margin-top: 2em;">
+        Automated feed health monitoring<br>
+        - Lucid Feed System
+      </p>
+    `;
+
+    await sendAlert({
+      subject: `🚨 Feed Health: ${deactivatedFeeds.length} feed(s) auto-deactivated`,
+      text,
+      html,
+    });
+  } catch (error) {
+    console.error('[Feed Health Alert] Error sending email:', error);
+    // Don't throw - we don't want email failures to break ingestion
+  }
+}
