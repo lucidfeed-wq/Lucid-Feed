@@ -21,7 +21,8 @@ export const topics = [
   
   // Science & Nature
   'neuroscience', 'psychology', 'genetics', 'space_exploration', 'physics',
-  'biology', 'ecology', 'chemistry', 'cognitive_science',
+  'biology', 'ecology', 'chemistry', 'cognitive_science', 'mathematics',
+  'research',
   
   // Technology & AI
   'artificial_intelligence', 'machine_learning', 'automation', 'robotics',

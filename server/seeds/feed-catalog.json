@@ -270,7 +270,7 @@
       "description": "Visual mathematics education",
       "sourceType": "youtube",
       "topics": [
-        "cognitive_science"
+        "mathematics"
       ],
       "featured": true,
       "starterRank": null,
@@ -518,7 +518,7 @@
       "description": "Home science projects",
       "sourceType": "youtube",
       "topics": [
-        "biology"
+        "research"
       ],
       "featured": false,
       "starterRank": null,
@@ -585,7 +585,7 @@
       "description": "Quick science facts",
       "sourceType": "youtube",
       "topics": [
-        "biology"
+        "research"
       ],
       "featured": false,
       "starterRank": null,
@@ -1079,7 +1079,7 @@
       "description": "Data science and statistics",
       "sourceType": "podcast",
       "topics": [
-        "cognitive_science"
+        "mathematics"
       ],
       "featured": false,
       "starterRank": null,
@@ -1226,7 +1226,7 @@
       "description": "Maps of science",
       "sourceType": "youtube",
       "topics": [
-        "biology"
+        "research"
       ],
       "featured": true,
       "starterRank": null,
@@ -2829,7 +2829,7 @@
       "sourceType": "podcast",
       "topics": [
         "artificial_intelligence",
-        "cognitive_science"
+        "mathematics"
       ],
       "featured": false,
       "starterRank": null,
@@ -3261,7 +3261,7 @@
       "description": "Mathematics and numbers",
       "sourceType": "youtube",
       "topics": [
-        "cognitive_science"
+        "mathematics"
       ],
       "featured": true,
       "starterRank": null,
@@ -3828,7 +3828,7 @@
       "description": "Science vs myths",
       "sourceType": "podcast",
       "topics": [
-        "biology"
+        "research"
       ],
       "featured": true,
       "starterRank": null,
@@ -5823,7 +5823,7 @@
       "description": "Science questions answered by experts",
       "sourceType": "reddit",
       "topics": [
-        "biology"
+        "research"
       ],
       "featured": true,
       "starterRank": null,
@@ -6151,7 +6151,7 @@
       "description": "Poor data visualizations",
       "sourceType": "reddit",
       "topics": [
-        "cognitive_science"
+        "mathematics"
       ],
       "featured": false,
       "starterRank": null,
@@ -6169,7 +6169,7 @@
       "sourceType": "reddit",
       "topics": [
         "artificial_intelligence",
-        "cognitive_science"
+        "mathematics"
       ],
       "featured": true,
       "starterRank": null,
@@ -6746,7 +6746,7 @@
       "description": "Mathematics discussion",
       "sourceType": "reddit",
       "topics": [
-        "cognitive_science"
+        "mathematics"
       ],
       "featured": true,
       "starterRank": null,
@@ -7230,7 +7230,7 @@
       "description": "Peer-reviewed science articles",
       "sourceType": "reddit",
       "topics": [
-        "biology"
+        "research"
       ],
       "featured": true,
       "starterRank": null,
@@ -7830,7 +7830,7 @@
       "description": "Beautiful data visualizations",
       "sourceType": "reddit",
       "topics": [
-        "cognitive_science"
+        "mathematics"
       ],
       "featured": true,
       "starterRank": null,
@@ -8276,7 +8276,7 @@
       "description": "Statistics discussion",
       "sourceType": "reddit",
       "topics": [
-        "cognitive_science"
+        "mathematics"
       ],
       "featured": false,
       "starterRank": null,
