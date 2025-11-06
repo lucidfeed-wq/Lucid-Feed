@@ -16,7 +16,7 @@ export interface TranscriptSegment {
  */
 function extractVideoId(url: string): string | null {
   const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\/]+)/,
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&\?\/]+)/,
     /^([a-zA-Z0-9_-]{11})$/, // Direct video ID
   ];
   

@@ -1,0 +1,66 @@
+11-05 18:03:10
+Feed "r/Fitness" has invalid topic "exercise-fitness" - filtering out
+11-05 18:03:10
+Feed "r/Fitness" has invalid topic "exercise-fitness" - filtering out
+11-05 18:03:10
+Feed "r/Fitness" has invalid topic "exercise-fitness" - filtering out
+11-05 18:03:10
+Feed "r/Fitness" has invalid topic "exercise-fitness" - filtering out
+11-05 18:03:10
+Feed "r/Fitness" has invalid topic "exercise-fitness" - filtering out
+11-05 18:03:10
+Feed "r/Fitness" has invalid topic "exercise-fitness" - filtering out
+11-05 18:03:10
+Feed "r/Fitness" has invalid topic "exercise-fitness" - filtering out
+11-05 18:03:10
+Feed "r/Fitness" has invalid topic "exercise-fitness" - filtering out
+11-05 18:03:10
+Feed "r/Fitness" has invalid topic "exercise-fitness" - filtering out
+11-05 18:04:53
+Feed "The Practical AI Podcast" has invalid topic "technology-ai" - filtering out
+11-05 18:04:53
+Feed "The Practical AI Podcast" has invalid topic "technology-ai" - filtering out
+11-05 18:04:53
+Feed "The Practical AI Podcast" has invalid topic "technology-ai" - filtering out
+11-05 18:04:53
+Feed "The Practical AI Podcast" has invalid topic "technology-ai" - filtering out
+11-05 18:04:53
+Feed "The Practical AI Podcast" has invalid topic "technology-ai" - filtering out
+11-05 18:04:53
+Feed "The Practical AI Podcast" has invalid topic "technology-ai" - filtering out
+11-05 18:04:53
+Feed "The Practical AI Podcast" has invalid topic "technology-ai" - filtering out
+11-05 18:04:53
+Feed "The Practical AI Podcast" has invalid topic "technology-ai" - filtering out
+11-05 18:04:53
+Feed "The Practical AI Podcast" has invalid topic "technology-ai" - filtering out
+11-05 18:04:53
+Feed "The Practical AI Podcast" has invalid topic "technology-ai" - filtering out
+11-05 18:06:06
+Invalid YouTube URL: https://www.youtube.com/shorts/6R0QIkWyAdI
+11-05 18:06:09
+Invalid YouTube URL: https://www.youtube.com/shorts/_-Bnx1f42zU
+11-05 18:06:09
+Invalid YouTube URL: https://www.youtube.com/shorts/IEqYSULgn8I
+11-05 18:06:09
+Invalid YouTube URL: https://www.youtube.com/shorts/DQWALCnvRV0
+11-05 18:06:12
+Invalid YouTube URL: https://www.youtube.com/shorts/Hn_VzmCbknU
+11-05 18:06:12
+Invalid YouTube URL: https://www.youtube.com/shorts/qMHwhWkaIlQ
+11-05 18:06:12
+Invalid YouTube URL: https://www.youtube.com/shorts/bNUbJ1JriSc
+11-05 18:06:15
+Invalid YouTube URL: https://www.youtube.com/shorts/LuxHOmknbh4
+11-05 18:06:15
+Invalid YouTube URL: https://www.youtube.com/shorts/8W0Roy6Y510
+11-05 18:06:22
+Error fetching YouTube transcript for https://www.youtube.com/watch?v=euNliPIJ7Kc: YoutubeTranscriptDisabledError: [YoutubeTranscript] 🚨 Transcript is disabled on this video (euNliPIJ7Kc)
+11-05 18:06:22
+at YoutubeTranscript. (/home/runner/workspace/node_modules/youtube-transcript/dist/youtube-transcript.common.js:82:23)
+11-05 18:06:22
+at Generator.next ()
+11-05 18:06:22
+at fulfilled (/home/runner/workspace/node_modules/youtube-transcript/dist/youtube-transcript.common.js:19:58)
+11-05 18:06:22
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5
