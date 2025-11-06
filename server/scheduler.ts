@@ -56,9 +56,27 @@ export function initializeScheduler() {
     }
   });
 
+  // Weekly feed health retry - every Sunday at 4 AM UTC
+  // Automatically retries degraded feeds to give them a chance to recover
+  cron.schedule("0 4 * * 0", async () => {
+    console.log("🏥 Running weekly feed health retry...");
+    try {
+      const { retryDegradedFeeds } = await import("./services/feed-health");
+      const result = await retryDegradedFeeds();
+      
+      console.log("✅ Weekly feed health retry completed:");
+      console.log(`   🔄 Retried: ${result.retried} feeds`);
+      console.log(`   ✅ Recovered: ${result.recovered} feeds`);
+      console.log(`   ⚠️  Still failing: ${result.stillFailing} feeds`);
+    } catch (error) {
+      console.error("Scheduled feed health retry failed:", error);
+    }
+  });
+
   console.log("Scheduler initialized");
   console.log("- Daily ingestion: Every day at midnight UTC");
   console.log("- Weekly digest: Every Monday at 06:00 CST (12:00 UTC)");
   console.log("- Feed request processing: Every day at 2 AM UTC");
   console.log("- Topic migration cleanup: Every day at 3 AM UTC");
+  console.log("- Weekly feed health retry: Every Sunday at 4 AM UTC");
 }
