@@ -114,44 +114,46 @@ After deployment, monitor:
 
 ## Topic Migration (Production Database Update)
 
-### 🤖 Automatic Nightly Cleanup
+### 🎉 Fully Automatic - Just Republish!
 
-**Good news!** The app now automatically fixes invalid topics every night at 3 AM UTC. This runs as a scheduled job that:
+**The migration is now completely automatic!** When you republish, the app will:
+
+1. **On Startup** - Automatically fix any invalid topics when the app starts
+2. **Nightly Cleanup** - Keep everything in sync at 3 AM UTC every night
+
+**You don't need to do anything manually!** Just click "Publish" and the app will:
+- Detect the 373 feeds with invalid topics in production
+- Update them automatically during startup
+- Log the results: `🔄 Startup migration: Updated 373 feeds with corrected topics`
+- Continue with nightly cleanup to prevent future issues
+
+### What Happens Behind the Scenes
+
+**On Every Startup:**
 - Compares database feed topics with the corrected catalog
-- Updates any feeds with invalid topics
+- Updates any feeds that have invalid topics
 - Only logs when it actually fixes something (silent otherwise)
 - Safe to run repeatedly (idempotent)
 
-**This means:**
-- Manual additions with wrong topics get auto-fixed within 24 hours
-- Catalog updates automatically sync to database
-- Database stays clean without manual intervention
+**Every Night at 3 AM UTC:**
+- Same cleanup runs automatically
+- Catches manual additions with wrong topics
+- Keeps database in sync with catalog updates
 
-### Manual Migration (First-Time Setup)
+### Optional: Manual Migration Endpoint
 
-If your production database already has feeds with **invalid topics**, you need to run a **one-time** migration to update them. After this, the nightly cleanup keeps everything in sync.
+The manual migration endpoint is still available if you want to manually trigger the fix or verify it worked. **But you don't need to use it** - the startup migration handles everything automatically.
 
-### When You Need Manual Migration
-You need to run the manual migration if:
-- You're seeing errors like "Feed 'Nature' has invalid topic: scientific-research"
-- Your production database was seeded **before** the topic fixes were made
-- Digest generation is failing due to invalid topics
-- You can't wait 24 hours for the automatic nightly cleanup
+#### If You Want to Manually Verify
 
-### Migration Steps
+First, make sure you're logged in to production as admin at www.getkucidfeed.com
 
-#### Step 1: Deploy Latest Code
-1. Click **Deploy** button in Replit
-2. Wait for deployment to complete
-3. Verify app is running at www.getkucidfeed.com
+#### Run Migration Endpoint Manually
 
-#### Step 2: Run Migration Endpoint
-
-**Option A - Using Browser Console (Easiest)**
-1. Log in to **www.getkucidfeed.com** as an admin
-2. Open browser DevTools (F12)
-3. Go to Console tab
-4. Paste and run:
+**Using Browser Console:**
+1. Open browser DevTools (F12)
+2. Go to Console tab
+3. Paste and run:
 ```javascript
 fetch('/admin/run/migrate-topics', {
   method: 'POST',

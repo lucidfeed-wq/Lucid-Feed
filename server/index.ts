@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeScheduler } from "./scheduler";
 import { autoSeedFeedCatalog } from "./core/auto-seed";
+import { migrateFeedTopics } from "./services/migrate-topics";
 import publicHealth from "./routes/publicHealth";
 
 const app = express();
@@ -65,6 +66,12 @@ app.use((req, res, next) => {
 
   // Auto-seed feed catalog if empty (for production deployments)
   await autoSeedFeedCatalog();
+  
+  // Auto-migrate feed topics on startup (fixes invalid topics from old catalog)
+  const migrationResult = await migrateFeedTopics();
+  if (migrationResult.updated > 0) {
+    console.log(`🔄 Startup migration: Updated ${migrationResult.updated} feeds with corrected topics`);
+  }
 
   // List all registered routes for diagnostics
   const routes = (app as any)._router?.stack
