@@ -322,8 +322,8 @@ export class DiscoveryJobProcessor {
     console.log(`🎯 High confidence match found for ${feed.name}: ${candidate.url}`);
 
     try {
-      // First, check if the alternative feed exists in our catalog
-      const allFeeds = await storage.getFeedCatalog();
+      // First, check if the alternative feed exists in our catalog (using cached version)
+      const allFeeds = await this.finder.getCachedFeedCatalog();
       let alternativeFeed = allFeeds.find(f => f.url === candidate.url);
       
       if (!alternativeFeed) {
@@ -402,8 +402,8 @@ export class DiscoveryJobProcessor {
     console.log(`💡 Medium confidence match found for ${feed.name}: ${candidate.url}`);
 
     try {
-      // First, check if the alternative feed exists in our catalog
-      const allFeeds = await storage.getFeedCatalog();
+      // First, check if the alternative feed exists in our catalog (using cached version)
+      const allFeeds = await this.finder.getCachedFeedCatalog();
       let alternativeFeed = allFeeds.find(f => f.url === candidate.url);
       
       if (!alternativeFeed) {

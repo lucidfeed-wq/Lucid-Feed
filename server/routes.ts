@@ -48,12 +48,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check database connection
       try {
-        // Try a simple database query
-        await storage.getFeedCatalog();
+        // Try a simple database query - just check if we can get a user (lightweight)
+        // This avoids loading the entire feed catalog (500+ feeds)
+        await storage.getUser('health-check-user');
+        // If no error is thrown, the database is accessible
       } catch (dbError) {
-        console.error('Health check: Database connection error:', dbError);
-        healthStatus.databaseConnection = 'error';
-        healthStatus.healingSystemStatus = 'error';
+        // It's expected to not find a health-check-user
+        // Only mark as error if it's a database connection error
+        const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
+        if (errorMessage.includes('connect') || errorMessage.includes('database') || errorMessage.includes('ECONNREFUSED')) {
+          console.error('Health check: Database connection error:', dbError);
+          healthStatus.databaseConnection = 'error';
+          healthStatus.healingSystemStatus = 'error';
+        }
+        // If it's just "user not found", that's fine - database is working
       }
 
       // Check healing system status

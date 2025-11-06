@@ -33,6 +33,8 @@ const parser = new Parser({
 
 export class AlternativeFinder {
   private strategies: DiscoveryStrategy[];
+  private feedCatalogCache: { data: FeedCatalog[] | null; timestamp: number } = { data: null, timestamp: 0 };
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
   constructor() {
     // Initialize discovery strategies
@@ -43,6 +45,32 @@ export class AlternativeFinder {
       new SearchEngineDiscovery(),
       new WaybackMachineDiscovery(),
     ];
+  }
+
+  /**
+   * Get cached feed catalog or fetch fresh if expired
+   */
+  async getCachedFeedCatalog(): Promise<FeedCatalog[]> {
+    const now = Date.now();
+    
+    // Check if cache is valid
+    if (this.feedCatalogCache.data && (now - this.feedCatalogCache.timestamp) < this.CACHE_TTL) {
+      console.log(`📦 Using cached feed catalog (${this.feedCatalogCache.data.length} feeds)`);
+      return this.feedCatalogCache.data;
+    }
+    
+    // Fetch fresh catalog
+    console.log('📡 Fetching fresh feed catalog...');
+    const catalog = await storage.getFeedCatalog();
+    
+    // Update cache
+    this.feedCatalogCache = {
+      data: catalog,
+      timestamp: now
+    };
+    
+    console.log(`📦 Cached ${catalog.length} feeds`);
+    return catalog;
   }
 
   /**
