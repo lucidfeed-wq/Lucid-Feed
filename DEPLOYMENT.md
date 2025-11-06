@@ -107,20 +107,36 @@ After deployment, monitor:
 - Feed ingestion job (runs daily at midnight UTC)
 - Digest generation (Monday 12 PM UTC)  
 - Feed request processing (daily 2 AM UTC)
+- Topic migration cleanup (daily 3 AM UTC) - **auto-fixes invalid topics**
 - OpenAI token spend (check admin dashboard)
 
 ---
 
 ## Topic Migration (Production Database Update)
 
-### Overview
-If your production database already has feeds with **invalid topics**, you need to run a migration to update them with corrected topics. This is separate from auto-seeding (which only runs on empty databases).
+### 🤖 Automatic Nightly Cleanup
 
-### When You Need This
-You need to run the topic migration if:
+**Good news!** The app now automatically fixes invalid topics every night at 3 AM UTC. This runs as a scheduled job that:
+- Compares database feed topics with the corrected catalog
+- Updates any feeds with invalid topics
+- Only logs when it actually fixes something (silent otherwise)
+- Safe to run repeatedly (idempotent)
+
+**This means:**
+- Manual additions with wrong topics get auto-fixed within 24 hours
+- Catalog updates automatically sync to database
+- Database stays clean without manual intervention
+
+### Manual Migration (First-Time Setup)
+
+If your production database already has feeds with **invalid topics**, you need to run a **one-time** migration to update them. After this, the nightly cleanup keeps everything in sync.
+
+### When You Need Manual Migration
+You need to run the manual migration if:
 - You're seeing errors like "Feed 'Nature' has invalid topic: scientific-research"
 - Your production database was seeded **before** the topic fixes were made
 - Digest generation is failing due to invalid topics
+- You can't wait 24 hours for the automatic nightly cleanup
 
 ### Migration Steps
 

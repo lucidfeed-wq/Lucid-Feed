@@ -25,7 +25,7 @@ Lucid Feed is a full-stack TypeScript project with React for the frontend and Ex
 - **Quality Scoring**: Transparent, multi-signal assessment based on citation metrics, author credibility, methodology quality, community verification, and recency, including content quality filtering.
 - **Multi-Tenant SaaS**: Supports user-level feed subscriptions and personalized digests.
 - **Subscription Tiers**: Free, Premium, and Pro tiers with enforced usage limits for feed subscriptions, chat messages, and digest frequency. Integrated with Stripe for payment processing.
-- **Automated Scheduling**: `node-cron` manages daily ingestion and digest generation.
+- **Automated Scheduling**: `node-cron` manages daily ingestion, digest generation, and nightly topic validation cleanup.
 - **Feed Discovery**: A browsable directory with filters and user submission for admin approval.
 - **Job Management**: Lightweight PostgreSQL job queue with retry logic and dead-letter queue.
 - **Admin Features**: Job observability, token cost tracking, bulk enrichment, and test account management.
