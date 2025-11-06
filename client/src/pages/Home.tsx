@@ -101,11 +101,15 @@ export default function Home() {
           title: "Upgrade Required",
           description: errorData.error,
           variant: "destructive",
-          action: {
-            altText: "View Plans",
-            label: "View Plans",
-            onClick: () => navigate("/pricing"),
-          },
+          action: (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/pricing")}
+            >
+              View Plans
+            </Button>
+          ),
         });
       } else if (errorData?.limit !== undefined) {
         toast({
