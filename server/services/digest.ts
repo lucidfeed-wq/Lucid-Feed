@@ -9,8 +9,10 @@ import { fetchRedditFeeds } from "../sources/reddit";
 import { fetchSubstackFeeds } from "../sources/substack";
 import { fetchYouTubeFeeds } from "../sources/youtube";
 import { fetchPodcastFeeds } from "../sources/podcasts";
-import type { InsertDigest, DigestSectionItem, Item, Summary, CategorySummary, InsertItem, Topic } from "@shared/schema";
+import { HealingOrchestrator } from "./healing/healing-orchestrator";
+import type { InsertDigest, DigestSectionItem, Item, Summary, CategorySummary, InsertItem, Topic, FeedCatalog } from "@shared/schema";
 import { topics } from "@shared/schema";
+import type { IStorage } from "../storage";
 
 interface DigestGenerationOptions {
   itemCounts?: {
@@ -19,6 +21,84 @@ interface DigestGenerationOptions {
     expert?: number;
   };
   windowDays?: number;
+}
+
+interface FeedContentResult {
+  items: Item[];
+  wasHealed: boolean;
+  usedFallback: boolean;
+}
+
+interface DigestMetadata {
+  healedFeeds?: string[];
+  fallbackFeeds?: string[];
+  healingMessages?: string[];
+}
+
+/**
+ * Helper function to fetch feed content with healing capability
+ * Attempts to heal failing feeds and falls back to cached content when necessary
+ */
+async function fetchFeedContentWithHealing(
+  feed: FeedCatalog,
+  orchestrator: HealingOrchestrator,
+  windowStart: Date,
+  windowEnd: Date
+): Promise<FeedContentResult> {
+  const result: FeedContentResult = {
+    items: [],
+    wasHealed: false,
+    usedFallback: false,
+  };
+
+  // Check if feed is failing
+  const needsHealing = feed.consecutiveFailures > 0 || 
+                       (feed.lastFetchStatus && feed.lastFetchStatus !== 'success');
+
+  if (needsHealing) {
+    console.log(`🔧 Feed "${feed.name}" needs healing (failures: ${feed.consecutiveFailures})`);
+    
+    try {
+      // Attempt to heal with 2-second timeout
+      const healingResult = await orchestrator.healFeed(feed, 2000);
+      
+      if (healingResult.success) {
+        result.wasHealed = true;
+        console.log(`✅ Feed "${feed.name}" healed successfully`);
+        
+        // After healing, try to fetch fresh content
+        const freshItems = await storage.getItemsByFeedUrl(feed.url, 20);
+        
+        // Filter by date window
+        result.items = freshItems.filter(item => {
+          const pubDate = new Date(item.publishedAt);
+          return pubDate >= windowStart && pubDate <= windowEnd;
+        });
+        
+        if (result.items.length === 0) {
+          // No recent items even after healing, use fallback
+          result.usedFallback = true;
+          console.log(`⚠️ No recent items for healed feed "${feed.name}", using cached content`);
+          const cachedItems = await storage.getItemsByFeedUrl(feed.url, 10);
+          result.items = cachedItems;
+        }
+      } else {
+        // Healing failed, use cached content
+        result.usedFallback = true;
+        console.log(`❌ Healing failed for feed "${feed.name}", using cached content`);
+        const cachedItems = await storage.getItemsByFeedUrl(feed.url, 10);
+        result.items = cachedItems;
+      }
+    } catch (error) {
+      // Healing error, use cached content
+      result.usedFallback = true;
+      console.error(`💥 Healing error for feed "${feed.name}":`, error);
+      const cachedItems = await storage.getItemsByFeedUrl(feed.url, 10);
+      result.items = cachedItems;
+    }
+  }
+
+  return result;
 }
 
 export async function generateWeeklyDigest(options: DigestGenerationOptions = {}): Promise<{ id: string; slug: string }> {
@@ -227,7 +307,7 @@ export async function generateWeeklyDigest(options: DigestGenerationOptions = {}
  * Generate a personalized digest for a specific user with immediate enrichment
  * This allows on-demand digest creation (e.g., after onboarding) without waiting for cron
  */
-export async function generatePersonalizedDigest(userId: string, options: DigestGenerationOptions = {}): Promise<{ id: string; slug: string }> {
+export async function generatePersonalizedDigest(userId: string, options: DigestGenerationOptions = {}): Promise<{ id: string; slug: string; metadata?: DigestMetadata }> {
   console.log(`Starting personalized digest generation for user ${userId}...`);
 
   // Default item counts (smaller for personalized)
@@ -238,6 +318,11 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
   };
 
   let totalTokenSpend = 0;
+  const metadata: DigestMetadata = {
+    healedFeeds: [],
+    fallbackFeeds: [],
+    healingMessages: []
+  };
 
   try {
     // Get user's topic preferences for filtering
@@ -260,6 +345,44 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
     const windowDays = options.windowDays ?? 7;
     const windowEnd = new Date();
     const windowStart = subDays(windowEnd, windowDays);
+
+    // Initialize healing orchestrator
+    const healingOrchestrator = new HealingOrchestrator();
+    
+    // Detect failing feeds and attempt healing
+    const failingFeeds = userFeeds.filter(feed => 
+      feed.consecutiveFailures > 0 || 
+      (feed.lastFetchStatus && feed.lastFetchStatus !== 'success')
+    );
+    
+    if (failingFeeds.length > 0) {
+      console.log(`🏥 Detected ${failingFeeds.length} failing feeds, attempting healing...`);
+      
+      // Heal feeds in bulk (max 3 concurrent)
+      const healingResults = await healingOrchestrator.healFeedsBulk(failingFeeds, 3);
+      
+      // Track healing results in metadata
+      healingResults.forEach((result, feedId) => {
+        const feed = failingFeeds.find(f => f.id === feedId);
+        if (feed) {
+          if (result.success) {
+            metadata.healedFeeds!.push(feed.name);
+            console.log(`✅ Healed feed: ${feed.name}`);
+          } else {
+            metadata.fallbackFeeds!.push(feed.name);
+            console.log(`⚠️ Will use cached content for: ${feed.name}`);
+          }
+        }
+      });
+      
+      // Add healing status message
+      if (metadata.healedFeeds!.length > 0) {
+        metadata.healingMessages!.push(`${metadata.healedFeeds!.length} feeds were automatically recovered`);
+      }
+      if (metadata.fallbackFeeds!.length > 0) {
+        metadata.healingMessages!.push(`Using cached content for ${metadata.fallbackFeeds!.length} temporarily unavailable feeds`);
+      }
+    }
 
     console.log('Fetching fresh RSS items from subscribed feeds...');
     
@@ -488,7 +611,7 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
     totalTokenSpend = (itemsNeedingSummaries.length * 500) + 
                       ([resSummary, commSummary, expSummary].filter(Boolean).length * 300);
 
-    return { id: created.id, slug };
+    return { id: created.id, slug, metadata };
   } catch (error) {
     console.error(`Error generating personalized digest for user ${userId}:`, error);
     throw error;

@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions, dailyUsage, folders, itemFolders, chatConversations, chatSettings, feedRequests, feedHealthAttempts, feedHealingProfiles } from "@shared/schema";
-import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription, DailyUsage, InsertDailyUsage, Folder, InsertFolder, ItemFolder, InsertItemFolder, ChatConversation, InsertChatConversation, ChatSettings, InsertChatSettings, FeedRequest, InsertFeedRequest, FeedHealthAttempt, InsertFeedHealthAttempt, FeedHealingProfile, InsertFeedHealingProfile } from "@shared/schema";
+import { items, summaries, digests, users, userPreferences, savedItems, readItems, feedCatalog, userFeedSubmissions, jobRuns, relatedRefs, userRatings, userFeedSubscriptions, userSubscriptions, dailyUsage, folders, itemFolders, chatConversations, chatSettings, feedRequests, feedHealthAttempts, feedHealingProfiles, feedNotifications } from "@shared/schema";
+import type { Item, InsertItem, Summary, InsertSummary, Digest, InsertDigest, User, UpsertUser, UserPreferences, InsertUserPreferences, SavedItem, InsertSavedItem, ReadItem, InsertReadItem, FeedCatalog, InsertFeedCatalog, UserFeedSubmission, InsertUserFeedSubmission, JobRun, InsertJobRun, RelatedRef, InsertRelatedRef, UserRating, InsertUserRating, UserFeedSubscription, InsertUserFeedSubscription, UserSubscription, InsertUserSubscription, DailyUsage, InsertDailyUsage, Folder, InsertFolder, ItemFolder, InsertItemFolder, ChatConversation, InsertChatConversation, ChatSettings, InsertChatSettings, FeedRequest, InsertFeedRequest, FeedHealthAttempt, InsertFeedHealthAttempt, FeedHealingProfile, InsertFeedHealingProfile, FeedNotification, InsertFeedNotification } from "@shared/schema";
 import { eq, and, gte, lte, desc, inArray, or, like, sql, avg, count } from "drizzle-orm";
 
 export interface IStorage {
@@ -120,6 +120,14 @@ export interface IStorage {
   getHealingProfile(feedId: string): Promise<FeedHealingProfile | undefined>;
   recordHealingOutcome(feedId: string, success: boolean, tactic: string): Promise<void>;
   getFeedsByHealingStatus(status: string): Promise<FeedCatalog[]>;
+  
+  // Feed Notifications
+  saveFeedNotification(notification: InsertFeedNotification): Promise<FeedNotification>;
+  getUnreadNotifications(userId: string): Promise<FeedNotification[]>;
+  markNotificationsRead(userId: string, notificationIds: string[]): Promise<void>;
+  getRecentNotificationForFeed(userId: string, feedId: string, hours?: number): Promise<FeedNotification | undefined>;
+  getUserNotifications(userId: string, limit?: number): Promise<FeedNotification[]>;
+  markNotificationAsNotified(notificationId: string): Promise<void>;
 }
 
 export class PostgresStorage implements IStorage {
@@ -1481,6 +1489,82 @@ export class PostgresStorage implements IStorage {
       .select()
       .from(feedCatalog)
       .where(eq(feedCatalog.healingStatus, status));
+  }
+  
+  // Feed Notifications
+  async saveFeedNotification(notification: InsertFeedNotification): Promise<FeedNotification> {
+    const id = nanoid();
+    const [feedNotification] = await db
+      .insert(feedNotifications)
+      .values({
+        ...notification,
+        id,
+      })
+      .returning();
+    return feedNotification;
+  }
+
+  async getUnreadNotifications(userId: string): Promise<FeedNotification[]> {
+    return await db
+      .select()
+      .from(feedNotifications)
+      .where(
+        and(
+          eq(feedNotifications.userId, userId),
+          eq(feedNotifications.isRead, false)
+        )
+      )
+      .orderBy(desc(feedNotifications.createdAt));
+  }
+
+  async markNotificationsRead(userId: string, notificationIds: string[]): Promise<void> {
+    if (notificationIds.length === 0) return;
+    await db
+      .update(feedNotifications)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(feedNotifications.userId, userId),
+          inArray(feedNotifications.id, notificationIds)
+        )
+      );
+  }
+
+  async getRecentNotificationForFeed(
+    userId: string, 
+    feedId: string, 
+    hours: number = 24
+  ): Promise<FeedNotification | undefined> {
+    const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000);
+    const [notification] = await db
+      .select()
+      .from(feedNotifications)
+      .where(
+        and(
+          eq(feedNotifications.userId, userId),
+          eq(feedNotifications.feedId, feedId),
+          gte(feedNotifications.createdAt, cutoffTime)
+        )
+      )
+      .orderBy(desc(feedNotifications.createdAt))
+      .limit(1);
+    return notification;
+  }
+
+  async getUserNotifications(userId: string, limit: number = 50): Promise<FeedNotification[]> {
+    return await db
+      .select()
+      .from(feedNotifications)
+      .where(eq(feedNotifications.userId, userId))
+      .orderBy(desc(feedNotifications.createdAt))
+      .limit(limit);
+  }
+
+  async markNotificationAsNotified(notificationId: string): Promise<void> {
+    await db
+      .update(feedNotifications)
+      .set({ lastNotifiedAt: new Date() })
+      .where(eq(feedNotifications.id, notificationId));
   }
 }
 

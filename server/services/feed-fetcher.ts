@@ -4,6 +4,7 @@ import { topics } from "@shared/schema";
 import { tagTopics } from "../core/topics";
 import { generateHashDedupe, extractDOI } from "../core/dedupe";
 import { storage } from "../storage";
+import { FeedHealthNotifier } from "./notifications/feed-health-notifier";
 
 const parser = new Parser({
   customFields: {
@@ -302,13 +303,34 @@ export async function fetchFeedItems(feeds: FeedCatalog[]): Promise<InsertItem[]
       });
     }
     
-    // Send email alert for deactivated feeds
+    // Send notifications for deactivated feeds
     if (deactivatedFeeds.length > 0) {
       console.log(`\n🚨 ${deactivatedFeeds.length} feed(s) were auto-deactivated`);
+      
+      const notifier = new FeedHealthNotifier();
+      for (const failedFeed of deactivatedFeeds) {
+        if (failedFeed.feedId) {
+          const feed = feeds.find(f => f.id === failedFeed.feedId);
+          if (feed) {
+            // Get subscribers and notify them
+            const subscribers = await storage.getSubscribersByFeed(feed.id);
+            for (const sub of subscribers) {
+              await notifier.notifyFeedRemoval(
+                sub.userId, 
+                feed, 
+                "This source has been discontinued after multiple failed attempts to connect.",
+                false
+              );
+            }
+          }
+        }
+      }
+      
+      // Also send admin alert email
       try {
         const { sendFeedHealthAlert } = await import('../lib/resend');
         await sendFeedHealthAlert(deactivatedFeeds);
-        console.log('✉️  Feed health alert email sent');
+        console.log('✉️  Admin feed health alert email sent');
       } catch (error) {
         console.error('Failed to send feed health alert email:', error);
         // Don't fail the whole job if email fails

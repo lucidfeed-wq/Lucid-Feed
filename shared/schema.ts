@@ -528,6 +528,41 @@ export const insertFeedHealingProfileSchema = createInsertSchema(feedHealingProf
 export type FeedHealingProfile = typeof feedHealingProfiles.$inferSelect;
 export type InsertFeedHealingProfile = z.infer<typeof insertFeedHealingProfileSchema>;
 
+// Feed notifications table for user-facing feed health messages
+export const feedNotifications = pgTable("feed_notifications", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  feedId: varchar("feed_id", { length: 255 }).references(() => feedCatalog.id, { onDelete: 'cascade' }),
+  severity: varchar("severity", { length: 20 }).notNull(), // 'warning', 'error', 'info'
+  message: text("message").notNull(),
+  technicalDetails: text("technical_details"), // Store the original error for debugging
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  lastNotifiedAt: timestamp("last_notified_at"), // For throttling
+}, (table) => ({
+  userIdIdx: index("feed_notifications_user_id_idx").on(table.userId),
+  feedIdIdx: index("feed_notifications_feed_id_idx").on(table.feedId),
+  createdAtIdx: index("feed_notifications_created_at_idx").on(table.createdAt),
+  userUnreadIdx: index("feed_notifications_user_unread_idx").on(table.userId, table.isRead),
+}));
+
+export const feedNotificationSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  feedId: z.string().nullable(),
+  severity: z.enum(['warning', 'error', 'info']),
+  message: z.string(),
+  technicalDetails: z.string().nullable().optional(),
+  isRead: z.boolean(),
+  createdAt: z.date(),
+  lastNotifiedAt: z.date().nullable().optional(),
+});
+
+export const insertFeedNotificationSchema = createInsertSchema(feedNotifications).omit({ id: true, createdAt: true });
+
+export type FeedNotification = typeof feedNotifications.$inferSelect;
+export type InsertFeedNotification = z.infer<typeof insertFeedNotificationSchema>;
+
 // User feed submissions - pending approval
 export const userFeedSubmissions = pgTable("user_feed_submissions", {
   id: varchar("id", { length: 255 }).primaryKey(),

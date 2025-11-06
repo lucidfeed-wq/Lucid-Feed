@@ -124,6 +124,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Feed notifications endpoints (protected)
+  app.get('/api/notifications/unread', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const notifications = await storage.getUnreadNotifications(userId);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching unread notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const notifications = await storage.getUserNotifications(userId, limit);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.post('/api/notifications/mark-read', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { notificationIds } = req.body;
+      
+      if (!notificationIds || !Array.isArray(notificationIds)) {
+        return res.status(400).json({ message: "notificationIds must be an array" });
+      }
+      
+      await storage.markNotificationsRead(userId, notificationIds);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark notifications as read" });
+    }
+  });
+
   app.delete('/api/saved-items/:itemId', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -1047,7 +1088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Refresh digest - run ingestion and digest generation
+  // Refresh digest - run ingestion and digest generation with healing
   app.post("/api/digest/refresh", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -1096,6 +1137,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // 5a. Initialize healing metadata tracking
+      const healingMetadata = {
+        healedFeeds: [] as string[],
+        fallbackFeeds: [] as string[],
+        healingMessages: [] as string[]
+      };
+
+      // 5b. Detect and heal failing feeds before ingestion
+      const { HealingOrchestrator } = await import('./services/healing/healing-orchestrator');
+      const healingOrchestrator = new HealingOrchestrator();
+      
+      // Get user's subscribed feeds
+      const userFeedSubscriptions = await storage.getUserFeedSubscriptions(userId);
+      const userFeeds = userFeedSubscriptions.map(sub => sub.feed);
+      
+      // Detect failing feeds
+      const failingFeeds = userFeeds.filter(feed => 
+        feed.consecutiveFailures > 0 || 
+        (feed.lastFetchStatus && feed.lastFetchStatus !== 'success')
+      );
+      
+      if (failingFeeds.length > 0) {
+        console.log(`🏥 [POST /api/digest/refresh] Detected ${failingFeeds.length} failing feeds, attempting healing...`);
+        
+        try {
+          // Heal feeds in bulk with 2-second timeout per feed
+          const healingResults = await healingOrchestrator.healFeedsBulk(failingFeeds, 3);
+          
+          // Track healing results
+          healingResults.forEach((result, feedId) => {
+            const feed = failingFeeds.find(f => f.id === feedId);
+            if (feed) {
+              if (result.success) {
+                healingMetadata.healedFeeds.push(feed.name);
+                console.log(`✅ Healed feed: ${feed.name}`);
+              } else {
+                healingMetadata.fallbackFeeds.push(feed.name);
+                console.log(`⚠️ Will use cached content for: ${feed.name}`);
+              }
+            }
+          });
+          
+          // Add healing status messages
+          if (healingMetadata.healedFeeds.length > 0) {
+            healingMetadata.healingMessages.push(`${healingMetadata.healedFeeds.length} feeds were automatically recovered`);
+          }
+          if (healingMetadata.fallbackFeeds.length > 0) {
+            healingMetadata.healingMessages.push(`Using cached content for ${healingMetadata.fallbackFeeds.length} temporarily unavailable feeds`);
+          }
+        } catch (healingError) {
+          console.error(`❌ [POST /api/digest/refresh] Healing error:`, healingError);
+          // Continue without healing - ingestion will use existing feeds
+        }
+      }
+
       // 6. Run ingestion (with error handling)
       let ingestionSuccess = false;
       let ingestionError: string | null = null;
@@ -1115,11 +1211,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let id: string;
       let slug: string;
       let digest: any;
+      let digestMetadata: any;
       try {
-        console.log(`[POST /api/digest/refresh] Generating weekly digest...`);
-        const result = await generateWeeklyDigest();
+        console.log(`[POST /api/digest/refresh] Generating personalized digest...`);
+        const result = await generatePersonalizedDigest(userId);
         id = result.id;
         slug = result.slug;
+        digestMetadata = result.metadata;
         console.log(`[POST /api/digest/refresh] Digest generated successfully: ${slug}`);
         
         // Fetch the digest immediately to ensure we have content
@@ -1143,9 +1241,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             digest: fallbackDigest,
             message: 'Using previous digest (refresh failed)',
             warnings: [
+              ...healingMetadata.healingMessages,
               ingestionError ? `Ingestion: ${ingestionError}` : undefined,
               `Digest generation: ${digestError}`
             ].filter(Boolean),
+            healingMetadata,
             usage: {
               used: refreshCount,
               limit: limits[tier],
@@ -1159,7 +1259,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           error: 'Failed to generate digest and no fallback available',
           details: digestError,
           ingestionSuccess,
-          ingestionError
+          ingestionError,
+          healingMetadata
         });
       }
 
@@ -1171,8 +1272,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Non-critical error, continue
       }
 
-      // 9. Return the digest
-      const warnings = ingestionError ? [`Ingestion: ${ingestionError}`] : [];
+      // 9. Return the digest with metadata
+      const warnings = [
+        ...healingMetadata.healingMessages,
+        ingestionError ? `Ingestion: ${ingestionError}` : undefined
+      ].filter(Boolean);
+      
+      // Merge healing metadata
+      const finalHealingMetadata = {
+        ...healingMetadata,
+        ...(digestMetadata || {})
+      };
       
       res.json({ 
         success: true,
@@ -1183,6 +1293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? 'Digest refreshed successfully' 
           : 'Digest created with existing content (ingestion failed)',
         warnings: warnings.length > 0 ? warnings : undefined,
+        healingMetadata: finalHealingMetadata,
         usage: {
           used: refreshCount + 1,
           limit: limits[tier],
