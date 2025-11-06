@@ -1,0 +1,64 @@
+11-05 20:40:45
+Feed "Nature" has invalid topic "biochemistry" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "climate_science" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "evolution" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "biochemistry" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "climate_science" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "evolution" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "biochemistry" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "climate_science" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "evolution" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "climate_science" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "biochemistry" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "climate_science" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "evolution" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "biochemistry" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "climate_science" - filtering out
+11-05 20:40:45
+Feed "Nature" has invalid topic "climate_science" - filtering out
+11-05 20:40:45
+✓ Successfully fetched 8 items from Nature Medicine
+11-05 20:40:45
+Feed "Ali Abdaal" has invalid topic "entrepreneurship-startups" - filtering out
+11-05 20:40:45
+Feed "Ali Abdaal" has invalid topic "productivity-habits" - filtering out
+11-05 20:40:45
+Feed "Ali Abdaal" has invalid topic "productivity-habits" - filtering out
+11-05 20:40:45
+Feed "Ali Abdaal" has invalid topic "productivity-habits" - filtering out
+11-05 20:40:45
+Feed "Ali Abdaal" has invalid topic "productivity-habits" - filtering out
+11-05 20:40:45
+Feed "Huberman Lab Podcast" has invalid topic "sleep_science" - filtering out
+11-05 20:40:45
+Feed "Huberman Lab Podcast" has invalid topic "exercise_science" - filtering out
+11-05 20:40:47
+Retrying in 4s (attempt 3/4)...
+11-05 20:40:47
+Retrying in 4s (attempt 3/4)...
+11-05 20:40:47
+Retrying in 4s (attempt 3/4)...
+11-05 20:40:47
+Retrying in 4s (attempt 3/4)...
+11-05 20:40:47
+Retrying in 4s (attempt 3/4)...
+11-05 20:40:51
+Retrying in 8s (attempt 4/4)...
+11-05 20:40:51
+Retrying in 8s (attempt 4/4)...
+11-05 20:40:52
+Retrying in 8s (attempt 4/4)...
