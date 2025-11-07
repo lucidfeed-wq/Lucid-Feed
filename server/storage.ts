@@ -1856,6 +1856,72 @@ export class PostgresStorage implements IStorage {
     
     return subscribedCount;
   }
+
+  async getFeedHealthStats(): Promise<{
+    total: number;
+    healthy: number;
+    warning: number;
+    failed: number;
+    lastCheck: Date | null;
+  }> {
+    try {
+      // Get total feeds count
+      const totalResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(feedCatalog);
+      const total = totalResult[0]?.count || 0;
+
+      // Get health status counts from feed_health_attempts
+      const healthCounts = await db
+        .select({
+          status: feedHealthAttempts.healthStatus,
+          count: sql<number>`count(distinct ${feedHealthAttempts.feedId})`
+        })
+        .from(feedHealthAttempts)
+        .where(
+          sql`${feedHealthAttempts.attemptedAt} = (
+            SELECT MAX(attempted_at) 
+            FROM feed_health_attempts AS fha2 
+            WHERE fha2.feed_id = ${feedHealthAttempts.feedId}
+          )`
+        )
+        .groupBy(feedHealthAttempts.healthStatus);
+
+      // Initialize counts
+      const stats = {
+        total,
+        healthy: 0,
+        warning: 0,
+        failed: 0,
+        lastCheck: null as Date | null
+      };
+
+      // Map health statuses to counts
+      for (const row of healthCounts) {
+        if (row.status === 'healthy') stats.healthy = row.count;
+        else if (row.status === 'warning') stats.warning = row.count;
+        else if (row.status === 'failed') stats.failed = row.count;
+      }
+
+      // Get last check time
+      const lastCheckResult = await db
+        .select({ lastCheck: sql<Date>`MAX(${feedHealthAttempts.attemptedAt})` })
+        .from(feedHealthAttempts);
+      
+      stats.lastCheck = lastCheckResult[0]?.lastCheck || null;
+
+      return stats;
+    } catch (error) {
+      console.error('Error getting feed health stats:', error);
+      return {
+        total: 0,
+        healthy: 0,
+        warning: 0,
+        failed: 0,
+        lastCheck: null
+      };
+    }
+  }
 }
 
 export const storage = new PostgresStorage();

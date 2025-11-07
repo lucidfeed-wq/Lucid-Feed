@@ -907,44 +907,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Manual feed submission endpoint
-  app.post('/api/feeds/submit', isAuthenticated, async (req: any, res) => {
-    try {
-      const { url, name, topics } = req.body;
-      const userId = req.user.claims.sub;
-
-      // Import the unified pipeline
-      const { ingestFeed } = await import('./services/feed-ingestion/unified-pipeline');
-      
-      // Ingest the feed
-      const result = await ingestFeed(url, {
-        source: 'manual',
-        userId,
-        autoApprove: false,
-        overrideName: name,
-        overrideTopics: topics
-      });
-
-      if (result.success) {
-        res.json({
-          success: true,
-          feedId: result.feedId,
-          validation: result.validation,
-          enrichment: result.enrichment
-        });
-      } else {
-        res.status(400).json({
-          success: false,
-          error: result.error,
-          validation: result.validation
-        });
-      }
-    } catch (error: any) {
-      console.error('Error submitting feed:', error);
-      res.status(500).json({ error: error.message || 'Failed to submit feed' });
-    }
-  });
-
   // OPML import endpoint
   app.post('/api/feeds/import-opml', isAuthenticated, async (req: any, res) => {
     try {
@@ -1023,6 +985,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error checking feed health:', error);
       res.status(500).json({ error: error.message || 'Failed to check feed health' });
+    }
+  });
+
+  // Feed health monitoring endpoint - get overall system health
+  app.get('/api/feeds/health', async (req, res) => {
+    try {
+      // Get health stats from storage
+      const healthStats = await storage.getFeedHealthStats();
+      
+      res.json({
+        status: 'active',
+        monitoring: {
+          enabled: true,
+          checkInterval: '5 minutes',
+          healingEnabled: true
+        },
+        stats: {
+          total_feeds: healthStats.total || 0,
+          healthy_feeds: healthStats.healthy || 0,
+          warning_feeds: healthStats.warning || 0,
+          failed_feeds: healthStats.failed || 0,
+          last_check: healthStats.lastCheck || new Date()
+        }
+      });
+    } catch (error: any) {
+      console.error('Error getting feed health:', error);
+      res.status(500).json({ error: error.message || 'Failed to get feed health' });
+    }
+  });
+
+  // Feed discovery endpoint - discover alternatives for failing feeds
+  app.post('/api/feeds/discover', async (req, res) => {
+    try {
+      const { url, name } = req.body;
+
+      if (!url || !name) {
+        return res.status(400).json({ error: 'URL and name are required' });
+      }
+
+      // Import discovery engine
+      const { FeedDiscoveryEngine } = await import('./services/feed-discovery/discovery-engine');
+      const discoveryEngine = new FeedDiscoveryEngine();
+
+      // Create temporary feed object for discovery
+      const tempFeed = {
+        id: 'temp-' + Date.now(),
+        url,
+        name,
+        sourceType: 'unknown',
+        category: 'unknown',
+        domain: 'health'
+      };
+
+      // Attempt discovery
+      const result = await discoveryEngine.discoverAlternative(tempFeed as any);
+
+      res.json({
+        success: result !== null,
+        discovered: result || null,
+        message: result ? 'Alternative feed found' : 'No alternatives found',
+        attempts: 1
+      });
+    } catch (error: any) {
+      console.error('Error discovering feeds:', error);
+      res.status(500).json({ error: error.message || 'Failed to discover feeds' });
     }
   });
 
