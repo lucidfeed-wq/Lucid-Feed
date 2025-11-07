@@ -1,3 +1,14 @@
+Got it—you want a single Replit AI prompt you can paste so it does the edits for you (no shell). Paste the block below into Replit’s AI (“Help me code” / Ghostwriter) and let it run.
+
+⸻
+
+Replit AI Prompt (paste this whole thing)
+
+Goal: Harden our Reddit client and discovery. Add proper User-Agent headers, token caching, jittered backoff, and support both global search and subreddit listings. Keep existing env secrets. Don’t change any other files.
+
+Make these edits:
+	1.	Create/overwrite server/services/feed-discovery/reddit-search.ts with exactly this file content:
+
 /**
  * Hardened Reddit client for LucidFeed
  * - Proper User-Agent on every call (required by Reddit)
@@ -5,6 +16,7 @@
  * - Exponential backoff with jitter
  * - Both global search and subreddit listings for robust discovery
  */
+import fetch from "node-fetch";
 
 const UA =
   process.env.REDDIT_USER_AGENT ??
@@ -99,16 +111,8 @@ export async function redditList(
   });
 }
 
-export interface RedditSubredditInfo {
-  subreddit: string;
-  displayName: string;
-  description: string;
-  rssFeedUrl: string;
-  subscribers?: number;
-}
-
 /** Global search (works now but more likely to be rate-limited/blocked) */
-export async function searchRedditSubreddits(query: string): Promise<RedditSubredditInfo[]> {
+export async function searchRedditSubreddits(query: string) {
   const t = await getToken();
   const url = `https://oauth.reddit.com/search?limit=25&q=${encodeURIComponent(query)}&type=sr`;
   return withBackoff(async () => {
@@ -119,25 +123,8 @@ export async function searchRedditSubreddits(query: string): Promise<RedditSubre
       throw new Error(`Reddit search ${r.status}: ${txt.slice(0, 200)}`);
     }
     const j = JSON.parse(txt);
-    const results: RedditSubredditInfo[] = [];
-    
-    if (j?.data?.children) {
-      for (const child of j.data.children) {
-        const subreddit = child.data;
-        if (subreddit.subreddit_type === 'public' || !subreddit.subreddit_type) {
-          results.push({
-            subreddit: subreddit.display_name,
-            displayName: subreddit.display_name_prefixed || `r/${subreddit.display_name}`,
-            description: subreddit.public_description || subreddit.description || '',
-            rssFeedUrl: `https://www.reddit.com/r/${subreddit.display_name}/.rss`,
-            subscribers: subreddit.subscribers,
-          });
-        }
-      }
-    }
-    
-    console.log(`[Reddit Search] Found ${results.length} subreddits for "${query}"`);
-    return results;
+    const subs = (j?.data?.children ?? []).map((c: any) => c?.data?.display_name).filter(Boolean);
+    return subs as string[];
   });
 }
 
@@ -153,3 +140,38 @@ export async function discoverTopic(topic: string, seedSubs: string[]) {
   ]);
   return { fromSearch, fromSeeds };
 }
+
+	2.	Do not change imports elsewhere. The file still exports:
+
+	•	searchRedditSubreddits
+	•	redditList
+	•	discoverTopic
+
+	3.	Add an env default for UA (optional, but helpful):
+
+	•	If REDDIT_USER_AGENT exists, use it; otherwise the file already builds a proper UA string from REDDIT_USERNAME.
+	•	No Secrets changes required here.
+
+	4.	(Optional) Add a minimal smoke test script at scripts/smoke-reddit.ts (only if the repo uses scripts; skip if it doesn’t). Content:
+
+import { searchRedditSubreddits, redditList } from "../server/services/feed-discovery/reddit-search";
+
+(async () => {
+  const subs = await searchRedditSubreddits("carnivore");
+  console.log("SEARCH:", subs.slice(0, 10));
+  const listing = await redditList("keto", "new", { limit: 5 });
+  console.log(
+    "LIST FIRST TITLES:",
+    (listing?.data?.children ?? []).map((c: any) => c?.data?.title).slice(0, 5)
+  );
+})();
+
+	5.	Ensure nothing else in the project breaks. If other modules import a different path for reddit discovery, mirror this file there as well instead of changing callers.
+	6.	Run the app so it compiles the new TypeScript and starts using the updated client. No further config is needed since secrets are already set.
+
+Acceptance criteria:
+	•	Startup logs show a proper UA (either from REDDIT_USER_AGENT or the default string with the current REDDIT_USERNAME).
+	•	Discovery works via both /search and /r/<sub>/new.
+	•	No more HTML “Blocked” pages surface in logs; if Reddit responds with HTML, our client throws and retries with backoff rather than spamming.
+
+When you’re done, tell me which files were changed and commit the update.
