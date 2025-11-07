@@ -1889,9 +1889,10 @@ export class PostgresStorage implements IStorage {
       const total = totalResult[0]?.count || 0;
 
       // Get health status counts from feed_health_attempts
+      // We derive status from tactic_succeeded: true = healthy, false = failed
       const healthCounts = await db
         .select({
-          status: feedHealthAttempts.healthStatus,
+          succeeded: feedHealthAttempts.tacticSucceeded,
           count: sql<number>`count(distinct ${feedHealthAttempts.feedId})`
         })
         .from(feedHealthAttempts)
@@ -1902,7 +1903,7 @@ export class PostgresStorage implements IStorage {
             WHERE fha2.feed_id = ${feedHealthAttempts.feedId}
           )`
         )
-        .groupBy(feedHealthAttempts.healthStatus);
+        .groupBy(feedHealthAttempts.tacticSucceeded);
 
       // Initialize counts
       const stats = {
@@ -1914,10 +1915,13 @@ export class PostgresStorage implements IStorage {
       };
 
       // Map health statuses to counts
+      // succeeded = true means healthy, succeeded = false means failed
       for (const row of healthCounts) {
-        if (row.status === 'healthy') stats.healthy = row.count;
-        else if (row.status === 'warning') stats.warning = row.count;
-        else if (row.status === 'failed') stats.failed = row.count;
+        if (row.succeeded === true) {
+          stats.healthy = row.count;
+        } else if (row.succeeded === false) {
+          stats.failed = row.count;
+        }
       }
 
       // Get last check time
