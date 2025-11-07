@@ -64,6 +64,22 @@ app.use((req, res, next) => {
     throw err;
   });
 
+  // API Key Configuration Check
+  const apiKeys = {
+    'YOUTUBE_API_KEY': !!process.env.YOUTUBE_API_KEY,
+    'REDDIT_CLIENT_ID': !!process.env.REDDIT_CLIENT_ID,
+    'REDDIT_SECRET': !!process.env.REDDIT_SECRET,
+    'REDDIT_USERNAME': !!process.env.REDDIT_USERNAME,
+    'REDDIT_PASSWORD': !!process.env.REDDIT_PASSWORD,
+    'OPENAI_API_KEY': !!process.env.OPENAI_API_KEY,
+    'RESEND_USER_API_KEY': !!process.env.RESEND_USER_API_KEY
+  };
+  
+  console.log('🔑 API Key Configuration:');
+  Object.entries(apiKeys).forEach(([key, present]) => {
+    console.log(`  ${present ? '✓' : '✗'} ${key}`);
+  });
+
   // Auto-seed feed catalog if empty (for production deployments)
   await autoSeedFeedCatalog();
   

@@ -3,6 +3,8 @@
  * Discovers Reddit RSS feeds through search
  */
 
+const USER_AGENT = 'LucidFeedBot/1.0 by u/lucid_feed_bot';
+
 export interface RedditSubredditInfo {
   subreddit: string;
   displayName: string;
@@ -11,23 +13,100 @@ export interface RedditSubredditInfo {
   subscribers?: number;
 }
 
+let cachedToken: { token: string; expiresAt: number } | null = null;
+
+/**
+ * Get Reddit OAuth access token
+ */
+async function getRedditAccessToken(): Promise<string | null> {
+  try {
+    // Check if we have a valid cached token
+    if (cachedToken && cachedToken.expiresAt > Date.now()) {
+      return cachedToken.token;
+    }
+
+    const clientId = process.env.REDDIT_CLIENT_ID;
+    const clientSecret = process.env.REDDIT_SECRET;
+    const username = process.env.REDDIT_USERNAME;
+    const password = process.env.REDDIT_PASSWORD;
+
+    if (!clientId || !clientSecret || !username || !password) {
+      console.log('[Reddit Auth] Missing credentials, falling back to unauthenticated search');
+      return null;
+    }
+
+    const authString = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+    
+    const response = await fetch('https://www.reddit.com/api/v1/access_token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${authString}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': USER_AGENT,
+      },
+      body: new URLSearchParams({
+        grant_type: 'password',
+        username,
+        password,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[Reddit Auth] Failed to get token (${response.status}):`, errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    
+    // Cache token (Reddit tokens expire in 1 hour)
+    cachedToken = {
+      token: data.access_token,
+      expiresAt: Date.now() + (data.expires_in * 1000) - 60000, // Subtract 1 minute for safety
+    };
+
+    console.log('[Reddit Auth] Successfully obtained access token');
+    return data.access_token;
+  } catch (error) {
+    console.error('[Reddit Auth] Error getting access token:', error);
+    return null;
+  }
+}
+
 /**
  * Search for relevant subreddits
  * Reddit provides RSS feeds at: https://www.reddit.com/r/{subreddit}/.rss
  */
 export async function searchRedditSubreddits(query: string): Promise<RedditSubredditInfo[]> {
   try {
-    // Reddit's search API is public and doesn't require authentication for basic searches
-    const searchUrl = `https://www.reddit.com/subreddits/search.json?q=${encodeURIComponent(query)}&limit=10`;
+    // Try to get OAuth token first
+    const token = await getRedditAccessToken();
     
-    const response = await fetch(searchUrl, {
-      headers: {
-        'User-Agent': 'LucidFeed/1.0 (Feed Discovery Bot)',
-      },
-    });
+    let searchUrl: string;
+    let headers: Record<string, string>;
+    
+    if (token) {
+      // Use OAuth endpoint
+      searchUrl = `https://oauth.reddit.com/subreddits/search?q=${encodeURIComponent(query)}&limit=10`;
+      headers = {
+        'Authorization': `Bearer ${token}`,
+        'User-Agent': USER_AGENT,
+      };
+    } else {
+      // Fallback to public endpoint (may return 403)
+      searchUrl = `https://www.reddit.com/subreddits/search.json?q=${encodeURIComponent(query)}&limit=10`;
+      headers = {
+        'User-Agent': USER_AGENT,
+      };
+    }
+    
+    const response = await fetch(searchUrl, { headers });
     
     if (!response.ok) {
-      console.error(`Reddit search failed: ${response.status}`);
+      console.error(`[Reddit Search] Search failed: ${response.status}`);
+      if (response.status === 403) {
+        console.error('[Reddit Search] 403 Forbidden - OAuth credentials may be required or invalid');
+      }
       return getFallbackSubreddits(query);
     }
     
@@ -52,9 +131,10 @@ export async function searchRedditSubreddits(query: string): Promise<RedditSubre
     // Sort by subscriber count (popularity)
     results.sort((a, b) => (b.subscribers || 0) - (a.subscribers || 0));
     
+    console.log(`[Reddit Search] Found ${results.length} subreddits for "${query}"`);
     return results.slice(0, 5);
   } catch (error) {
-    console.error('Error searching Reddit:', error);
+    console.error('[Reddit Search] Error searching Reddit:', error);
     return getFallbackSubreddits(query);
   }
 }
@@ -145,11 +225,26 @@ function getFallbackSubreddits(query: string): RedditSubredditInfo[] {
  */
 export async function verifySubredditExists(subreddit: string): Promise<boolean> {
   try {
-    const response = await fetch(`https://www.reddit.com/r/${subreddit}/about.json`, {
-      headers: {
-        'User-Agent': 'LucidFeed/1.0 (Feed Discovery Bot)',
-      },
-    });
+    // Try to get OAuth token for authenticated request
+    const token = await getRedditAccessToken();
+    
+    let aboutUrl: string;
+    let headers: Record<string, string>;
+    
+    if (token) {
+      aboutUrl = `https://oauth.reddit.com/r/${subreddit}/about`;
+      headers = {
+        'Authorization': `Bearer ${token}`,
+        'User-Agent': USER_AGENT,
+      };
+    } else {
+      aboutUrl = `https://www.reddit.com/r/${subreddit}/about.json`;
+      headers = {
+        'User-Agent': USER_AGENT,
+      };
+    }
+    
+    const response = await fetch(aboutUrl, { headers });
     
     if (response.ok) {
       const data = await response.json();

@@ -84,9 +84,21 @@ export class RealTimeFeedMonitor {
   }
 
   /**
-   * Single monitoring cycle
+   * Single monitoring cycle with distributed locking
    */
   private async monitorCycle() {
+    // Acquire distributed lock to prevent multiple monitor instances
+    const { db } = await import('../../db');
+    const { sql } = await import('drizzle-orm');
+    
+    const lockResult = await db.execute(sql`SELECT pg_try_advisory_lock(987654321)`);
+    const lockAcquired = lockResult.rows?.[0]?.pg_try_advisory_lock;
+    
+    if (!lockAcquired) {
+      // Another monitor instance is already running, skip this cycle
+      return;
+    }
+
     try {
       // Get feeds that need checking
       const feedsToCheck = await this.selectFeedsForCheck();
@@ -113,6 +125,9 @@ export class RealTimeFeedMonitor {
 
     } catch (error) {
       console.error('Monitor cycle error:', error);
+    } finally {
+      // Always release the lock
+      await db.execute(sql`SELECT pg_advisory_unlock(987654321)`);
     }
   }
 
@@ -249,12 +264,26 @@ export class RealTimeFeedMonitor {
    * Update feed health in database
    */
   private async updateFeedHealthInDB(feedId: string, status: FeedHealthStatus) {
-    await storage.updateFeedHealth(feedId, {
-      lastHealthCheck: status.lastCheck,
-      consecutiveFailures: status.consecutiveFailures,
-      healthStatus: status.status,
-      lastErrorMessage: status.lastError
-    });
+    try {
+      await storage.updateFeedHealth(feedId, {
+        lastHealthCheck: status.lastCheck,
+        consecutiveFailures: status.consecutiveFailures,
+        healthStatus: status.status,
+        lastErrorMessage: status.lastError
+      });
+    } catch (err: any) {
+      console.error('[DB] updateFeedHealth failed', {
+        feedId,
+        message: err?.message,
+        code: err?.code,
+        detail: err?.detail,
+        schema: err?.schema,
+        table: err?.table,
+        constraint: err?.constraint,
+        stack: err?.stack
+      });
+      throw err;
+    }
   }
 
   /**
