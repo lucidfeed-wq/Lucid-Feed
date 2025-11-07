@@ -64,7 +64,43 @@ export async function searchYouTubeChannels(query: string): Promise<YouTubeChann
       console.log('[YouTube Search] No API key found, using fallback list');
     }
     
-    // Fallback: Use curated list when API unavailable
+    // First try learning catalog for enhanced fallback
+    try {
+      const { db } = await import('../../db');
+      const { learningCatalog } = await import('../../../shared/schema');
+      const { eq, and, ilike, desc } = await import('drizzle-orm');
+      
+      const learnedChannels = await db.select()
+        .from(learningCatalog)
+        .where(
+          and(
+            eq(learningCatalog.sourceType, 'youtube'),
+            ilike(learningCatalog.sourceName, `%${query}%`)
+          )
+        )
+        .orderBy(desc(learningCatalog.successCount))
+        .limit(5);
+      
+      if (learnedChannels.length > 0) {
+        console.log(`[YouTube Search] Found ${learnedChannels.length} channels from learning catalog`);
+        
+        const results: YouTubeChannelInfo[] = [];
+        for (const channel of learnedChannels) {
+          results.push({
+            channelId: channel.sourceId,
+            channelName: channel.sourceName,
+            rssFeedUrl: channel.feedUrl,
+            channelUrl: channel.sourceUrl || `https://www.youtube.com/channel/${channel.sourceId}`,
+          });
+        }
+        
+        return results;
+      }
+    } catch (catalogError) {
+      console.log('[YouTube Search] Learning catalog unavailable:', catalogError);
+    }
+    
+    // Fallback: Use curated list when API and learning catalog unavailable
     const knownChannels: Record<string, { id: string; name: string }[]> = {
       'health': [
         { id: 'UC2D2CMWXMOVWx7giW1n3LIg', name: 'Andrew Huberman' },

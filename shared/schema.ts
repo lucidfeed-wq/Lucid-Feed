@@ -577,6 +577,39 @@ export const insertFeedNotificationSchema = createInsertSchema(feedNotifications
 export type FeedNotification = typeof feedNotifications.$inferSelect;
 export type InsertFeedNotification = z.infer<typeof insertFeedNotificationSchema>;
 
+// Learning catalog - stores discovered channels/feeds for improved fallbacks
+export const learningCatalog = pgTable("learning_catalog", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  sourceType: varchar("source_type", { length: 50 }).notNull(), // youtube, reddit, substack, podcast
+  sourceId: varchar("source_id", { length: 255 }).notNull(), // channel_id, subreddit, etc
+  sourceName: varchar("source_name", { length: 255 }).notNull(),
+  feedUrl: text("feed_url").notNull(),
+  sourceUrl: text("source_url"),
+  category: varchar("category", { length: 100 }),
+  metadata: text("metadata"), // JSON string with additional info
+  discoveredVia: varchar("discovered_via", { length: 50 }), // api, user_submission, import
+  successCount: integer("success_count").default(0).notNull(), // Times successfully used
+  failureCount: integer("failure_count").default(0).notNull(), // Times failed
+  lastVerified: timestamp("last_verified"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+}, (table) => ({
+  uniqueSourceIdx: index("idx_learning_catalog_source").on(table.sourceType, table.sourceId),
+  categoryIdx: index("idx_learning_catalog_category").on(table.category),
+  successIdx: index("idx_learning_catalog_success").on(table.successCount)
+}));
+
+export const insertLearningCatalogSchema = createInsertSchema(learningCatalog).omit({ 
+  id: true, 
+  createdAt: true,
+  updatedAt: true,
+  successCount: true,
+  failureCount: true
+});
+
+export type LearningCatalogEntry = typeof learningCatalog.$inferSelect;
+export type InsertLearningCatalogEntry = z.infer<typeof insertLearningCatalogSchema>;
+
 // User feed submissions - pending approval
 export const userFeedSubmissions = pgTable("user_feed_submissions", {
   id: varchar("id", { length: 255 }).primaryKey(),

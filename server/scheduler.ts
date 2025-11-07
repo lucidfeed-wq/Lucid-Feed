@@ -83,6 +83,15 @@ export function initializeScheduler() {
     console.error("Failed to start discovery job processor:", error);
   });
 
+  // Start proactive discovery crawler for autonomous catalog building
+  console.log("🤖 Starting proactive discovery crawler...");
+  import("./services/feed-discovery/proactive-crawler").then(({ proactiveCrawler }) => {
+    proactiveCrawler.start();
+    console.log("✅ Proactive crawler started - building catalog 24/7 (100 feeds per topic max)");
+  }).catch(error => {
+    console.error("Failed to start proactive crawler:", error);
+  });
+
   // Process discovery queue every hour
   // This is a safety net in case the processor's own interval misses something
   cron.schedule("0 * * * *", async () => {
@@ -105,4 +114,5 @@ export function initializeScheduler() {
   console.log("- Topic migration cleanup: Every day at 3 AM UTC");
   console.log("- Weekly feed health retry: Every Sunday at 4 AM UTC");
   console.log("- Discovery processor: Running continuously (checks every 30s)");
+  console.log("- Proactive crawler: Building catalog 24/7 (100 feeds/topic limit, 30min cycles)");
 }
