@@ -6,6 +6,9 @@
 import type { FeedCatalog } from '@shared/schema';
 import { validateFeed, ingestFeed } from '../feed-ingestion/unified-pipeline';
 import type { FeedValidationResult } from '../feed-ingestion/unified-pipeline';
+import { searchYouTubeChannels } from './youtube-search';
+import { searchRedditSubreddits } from './reddit-search';
+import { searchSubstackNewsletters } from './substack-search';
 
 export interface DiscoveryResult {
   url: string;
@@ -67,26 +70,21 @@ export class FeedDiscoveryEngine {
     const alternatives: DiscoveryResult[] = [];
     const channelName = feed.name;
     
-    // Strategy 1: Search by channel name (would use YouTube API in production)
-    // For now, we'll use known working channels as examples
-    const knownWorkingChannels = {
-      'Andrew Huberman': 'UC2D2CMWXMOVWx7giW1n3LIg',
-      'Thomas DeLauer': 'UC70SrI3VkT1MXALRtf0pcHg',
-      'FoundMyFitness': 'UCWF8SqJVNlx-ctXbLswcTcA',
-      'Ben Greenfield': 'UCbf7EccRGBLwbKmWgJ9FYHw'
-    };
-    
-    // Check if we have a known working channel ID
-    for (const [name, channelId] of Object.entries(knownWorkingChannels)) {
-      if (feed.name.toLowerCase().includes(name.toLowerCase()) || 
-          name.toLowerCase().includes(feed.name.toLowerCase())) {
+    // Strategy 1: Search using real YouTube API
+    try {
+      const searchQuery = channelName.replace(/[-_]/g, ' ').trim();
+      const channels = await searchYouTubeChannels(searchQuery);
+      
+      for (const channel of channels) {
         alternatives.push({
-          url: `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`,
-          name: name,
-          confidence: 0.9,
-          method: 'known_mapping'
+          url: channel.rssFeedUrl,
+          name: channel.channelName,
+          confidence: 0.85,
+          method: 'youtube_api_search'
         });
       }
+    } catch (error) {
+      console.error('Error searching YouTube channels:', error);
     }
     
     // Strategy 2: Try extracting from current URL and fixing it
@@ -98,13 +96,20 @@ export class FeedDiscoveryEngine {
       alternatives.push({
         url: `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`,
         name: channelName,
-        confidence: 0.7,
+        confidence: 0.95,
         method: 'url_reconstruction'
+      });
+      
+      // Try playlist format
+      alternatives.push({
+        url: `https://www.youtube.com/feeds/videos.xml?playlist_id=UU${channelId.substring(2)}`,
+        name: channelName,
+        confidence: 0.8,
+        method: 'playlist_conversion'
       });
     }
     
-    // Strategy 3: Search by channel handle (in production, would use YouTube API)
-    // Example: Convert "Dr. Mark Hyman" to potential handles
+    // Strategy 3: Search by channel handle
     const potentialHandles = [
       channelName.replace(/\s+/g, ''),
       channelName.replace(/\s+/g, '_'),
@@ -115,9 +120,29 @@ export class FeedDiscoveryEngine {
       alternatives.push({
         url: `https://www.youtube.com/@${handle}`,
         name: channelName,
-        confidence: 0.5,
+        confidence: 0.6,
         method: 'handle_guess'
       });
+    }
+    
+    // Strategy 4: Fallback to known working channels if name matches
+    const knownWorkingChannels = {
+      'Andrew Huberman': 'UC2D2CMWXMOVWx7giW1n3LIg',
+      'Thomas DeLauer': 'UC70SrI3VkT1MXALRtf0pcHg',
+      'FoundMyFitness': 'UCWF8SqJVNlx-ctXbLswcTcA',
+      'Ben Greenfield': 'UCbf7EccRGBLwbKmWgJ9FYHw'
+    };
+    
+    for (const [name, channelId] of Object.entries(knownWorkingChannels)) {
+      if (feed.name.toLowerCase().includes(name.toLowerCase()) || 
+          name.toLowerCase().includes(feed.name.toLowerCase())) {
+        alternatives.push({
+          url: `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`,
+          name: name,
+          confidence: 0.9,
+          method: 'known_mapping'
+        });
+      }
     }
     
     return alternatives;
@@ -267,31 +292,49 @@ export class FeedDiscoveryEngine {
   private async discoverRedditAlternatives(feed: FeedCatalog): Promise<DiscoveryResult[]> {
     const alternatives: DiscoveryResult[] = [];
     
-    // Extract subreddit name
+    // Extract subreddit name from existing URL
     const subredditMatch = feed.url.match(/\/r\/([^\/\.]+)/);
-    if (!subredditMatch) return alternatives;
-    
-    const subreddit = subredditMatch[1];
-    
-    // Reddit RSS feed patterns
-    const sortOptions = ['hot', 'new', 'top', 'rising'];
-    
-    for (const sort of sortOptions) {
+    if (subredditMatch) {
+      const subreddit = subredditMatch[1];
+      
+      // Try different sort options
+      const sortOptions = ['hot', 'new', 'top', 'rising'];
+      
+      for (const sort of sortOptions) {
+        alternatives.push({
+          url: `https://www.reddit.com/r/${subreddit}/${sort}.rss`,
+          name: `r/${subreddit} (${sort})`,
+          confidence: 0.9,
+          method: 'reddit_sort'
+        });
+      }
+      
+      // Also try without sort
       alternatives.push({
-        url: `https://www.reddit.com/r/${subreddit}/${sort}.rss`,
-        name: `r/${subreddit} (${sort})`,
-        confidence: 0.9,
-        method: 'reddit_sort'
+        url: `https://www.reddit.com/r/${subreddit}.rss`,
+        name: `r/${subreddit}`,
+        confidence: 0.95,
+        method: 'reddit_standard'
       });
     }
     
-    // Also try without sort
-    alternatives.push({
-      url: `https://www.reddit.com/r/${subreddit}.rss`,
-      name: `r/${subreddit}`,
-      confidence: 0.95,
-      method: 'reddit_standard'
-    });
+    // Search for related subreddits using real Reddit API
+    try {
+      // Extract keywords from feed name and topics
+      const searchQuery = feed.name.replace(/r\//, '').replace(/[-_]/g, ' ').trim();
+      const subreddits = await searchRedditSubreddits(searchQuery);
+      
+      for (const subreddit of subreddits) {
+        alternatives.push({
+          url: subreddit.rssFeedUrl,
+          name: subreddit.displayName,
+          confidence: 0.8,
+          method: 'reddit_api_search'
+        });
+      }
+    } catch (error) {
+      console.error('Error searching Reddit subreddits:', error);
+    }
     
     return alternatives;
   }
@@ -304,31 +347,48 @@ export class FeedDiscoveryEngine {
     
     // Extract publication name from URL
     const urlMatch = feed.url.match(/https?:\/\/([^\.]+)\.substack\.com/);
-    if (!urlMatch) return alternatives;
+    if (urlMatch) {
+      const publication = urlMatch[1];
+      
+      // Try different Substack RSS patterns
+      alternatives.push(
+        {
+          url: `https://${publication}.substack.com/feed`,
+          name: feed.name,
+          confidence: 0.95,
+          method: 'substack_feed'
+        },
+        {
+          url: `https://${publication}.substack.com/rss`,
+          name: feed.name,
+          confidence: 0.9,
+          method: 'substack_rss'
+        },
+        {
+          url: `https://www.${publication}.substack.com/feed`,
+          name: feed.name,
+          confidence: 0.8,
+          method: 'substack_www'
+        }
+      );
+    }
     
-    const publication = urlMatch[1];
-    
-    // Substack RSS patterns
-    alternatives.push(
-      {
-        url: `https://${publication}.substack.com/feed`,
-        name: feed.name,
-        confidence: 0.95,
-        method: 'substack_feed'
-      },
-      {
-        url: `https://${publication}.substack.com/rss`,
-        name: feed.name,
-        confidence: 0.9,
-        method: 'substack_rss'
-      },
-      {
-        url: `https://www.${publication}.substack.com/feed`,
-        name: feed.name,
-        confidence: 0.8,
-        method: 'substack_www'
+    // Search for related newsletters using real Substack API
+    try {
+      const searchQuery = feed.name.replace(/[-_]/g, ' ').trim();
+      const newsletters = await searchSubstackNewsletters(searchQuery);
+      
+      for (const newsletter of newsletters) {
+        alternatives.push({
+          url: newsletter.rssFeedUrl,
+          name: newsletter.name,
+          confidence: 0.75,
+          method: 'substack_api_search'
+        });
       }
-    );
+    } catch (error) {
+      console.error('Error searching Substack newsletters:', error);
+    }
     
     return alternatives;
   }
