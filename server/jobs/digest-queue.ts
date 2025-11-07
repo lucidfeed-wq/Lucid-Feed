@@ -152,9 +152,14 @@ export function startDigestRunner() {
       };
 
       try {
+        // Validate userId exists
+        if (!job.userId) {
+          throw new Error('Job missing userId - cannot generate personalized digest');
+        }
+
         // Generate the digest with progress updates
         const result = await generatePersonalizedDigest(
-          job.userId || undefined,
+          job.userId,
           { onProgress }
         );
 

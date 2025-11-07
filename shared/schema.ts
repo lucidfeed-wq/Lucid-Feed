@@ -1145,7 +1145,7 @@ export type InsertDiscoveryAttempt = z.infer<typeof insertDiscoveryAttemptSchema
 
 // Digest jobs table - async background digest generation
 export const digestJobs = pgTable("digest_jobs", {
-  id: varchar("id", { length: 255 }).primaryKey().$defaultFn(() => nanoid()),
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   topic: text("topic"),
