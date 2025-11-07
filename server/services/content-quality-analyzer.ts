@@ -26,17 +26,16 @@ export interface ContentQualityAssessment {
 }
 
 /**
- * Analyze content quality using AI
+ * Analyze content quality using AI with retry logic for rate limits
  */
 export async function analyzeContentQuality(
   content: string,
-  sourceType: string
+  sourceType: string,
+  retries: number = 2
 ): Promise<ContentQualityAssessment> {
-  try {
-    // Truncate to 5000 chars for cost efficiency
-    const truncatedContent = content.substring(0, 5000);
-    
-    const prompt = `You are a functional medicine research quality analyst. Assess this ${sourceType} content on 4 dimensions (0-10 each):
+  const truncatedContent = content.substring(0, 5000);
+  
+  const prompt = `You are a functional medicine research quality analyst. Assess this ${sourceType} content on 4 dimensions (0-10 each):
 
 1. Evidence Quality (0-10):
    - Are claims backed by citations, data, or studies?
@@ -70,70 +69,86 @@ Respond ONLY with valid JSON in this format:
   "reasoning": "<brief 1-2 sentence explanation>"
 }`;
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a functional medicine research quality analyst. Respond only with valid JSON.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.3,
-      max_tokens: 300,
-    });
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a functional medicine research quality analyst. Respond only with valid JSON.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 300,
+      });
 
-    const result = response.choices[0].message.content?.trim();
-    if (!result) {
-      throw new Error('Empty response from OpenAI');
+      const result = response.choices[0].message.content?.trim();
+      if (!result) {
+        throw new Error('Empty response from OpenAI');
+      }
+
+      // Parse JSON response
+      const parsed = JSON.parse(result);
+      
+      // Calculate total score (0-40)
+      const score = Math.round(
+        (parsed.evidenceQuality + 
+         parsed.clinicalValue + 
+         parsed.clarityStructure + 
+         parsed.practicalApplicability)
+      );
+
+      return {
+        score,
+        evidenceQuality: parsed.evidenceQuality,
+        clinicalValue: parsed.clinicalValue,
+        clarityStructure: parsed.clarityStructure,
+        practicalApplicability: parsed.practicalApplicability,
+        reasoning: parsed.reasoning,
+      };
+      
+    } catch (error: any) {
+      // Check if it's a rate limit error (429) and we have retries left
+      if (error.status === 429 && attempt < retries) {
+        const waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff: 1s, 2s, 4s
+        console.log(`⚠️ Rate limit hit, retrying in ${waitTime}ms (attempt ${attempt + 1}/${retries + 1})`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+      
+      // If final attempt or non-rate-limit error, use fallback
+      console.error('Error analyzing content quality:', error.message || error);
+      
+      // Fallback: baseline score based on source type and content length
+      const baselineScores = {
+        journal: 25,
+        substack: 22,
+        youtube: 20,
+        reddit: 18,
+      };
+      
+      const baseline = baselineScores[sourceType as keyof typeof baselineScores] || 20;
+      
+      // Adjust based on content length (longer = likely more detailed)
+      const lengthBonus = Math.min(content.length / 1000, 5);
+      const score = Math.min(40, baseline + lengthBonus);
+      
+      return {
+        score: Math.round(score),
+        evidenceQuality: Math.round(score / 4),
+        clinicalValue: Math.round(score / 4),
+        clarityStructure: Math.round(score / 4),
+        practicalApplicability: Math.round(score / 4),
+        reasoning: 'AI analysis unavailable, using baseline assessment',
+      };
     }
-
-    // Parse JSON response
-    const parsed = JSON.parse(result);
-    
-    // Calculate total score (0-40)
-    const score = Math.round(
-      (parsed.evidenceQuality + 
-       parsed.clinicalValue + 
-       parsed.clarityStructure + 
-       parsed.practicalApplicability)
-    );
-
-    return {
-      score,
-      evidenceQuality: parsed.evidenceQuality,
-      clinicalValue: parsed.clinicalValue,
-      clarityStructure: parsed.clarityStructure,
-      practicalApplicability: parsed.practicalApplicability,
-      reasoning: parsed.reasoning,
-    };
-  } catch (error) {
-    console.error('Error analyzing content quality:', error);
-    
-    // Fallback: baseline score based on source type and content length
-    const baselineScores = {
-      journal: 25,
-      substack: 22,
-      youtube: 20,
-      reddit: 18,
-    };
-    
-    const baseline = baselineScores[sourceType as keyof typeof baselineScores] || 20;
-    
-    // Adjust based on content length (longer = likely more detailed)
-    const lengthBonus = Math.min(content.length / 1000, 5);
-    const score = Math.min(40, baseline + lengthBonus);
-    
-    return {
-      score: Math.round(score),
-      evidenceQuality: Math.round(score / 4),
-      clinicalValue: Math.round(score / 4),
-      clarityStructure: Math.round(score / 4),
-      practicalApplicability: Math.round(score / 4),
-      reasoning: 'AI analysis unavailable, using baseline assessment',
-    };
   }
+  
+  // This should never be reached due to fallback in catch block
+  throw new Error('Failed to analyze content quality after retries');
 }

@@ -165,29 +165,54 @@ export async function enrichItem(item: InsertItem): Promise<EnrichedItem> {
  */
 export async function enrichContentBatch(
   items: InsertItem[],
-  concurrency: number = 8
+  concurrency: number = 3  // Reduced from 8 to prevent rate limits
 ): Promise<EnrichedItem[]> {
   console.log(`📊 Enriching ${items.length} items (concurrency: ${concurrency})...`);
   
   const results: EnrichedItem[] = [];
+  let successCount = 0;
+  let failureCount = 0;
   
   for (let i = 0; i < items.length; i += concurrency) {
     const batch = items.slice(i, i + concurrency);
     const batchResults = await Promise.all(
-      batch.map((item) => enrichItem(item).catch((err) => {
-        console.error(`Error enriching ${item.title}:`, err);
-        return item; // Return original if enrichment fails
-      }))
+      batch.map(async (item) => {
+        try {
+          const enriched = await enrichItem(item);
+          successCount++;
+          return enriched;
+        } catch (err) {
+          console.error(`❌ Error enriching ${item.title}:`, (err as Error).message);
+          failureCount++;
+          
+          // Return item with fallback scores marked explicitly
+          return {
+            ...item,
+            score: 50,
+            scoreBreakdown: {
+              contentQuality: 20,
+              engagementSignals: 15,
+              sourceCredibility: 15,
+              totalScore: 50
+            },
+            qualityMetrics: {},
+            fallback: true  // Explicit flag to identify fallback items
+          } as EnrichedItem & { fallback: boolean };
+        }
+      })
     );
     
     results.push(...batchResults);
     
-    // Progress indicator
-    if ((i + concurrency) % 50 === 0 || i + concurrency >= items.length) {
-      console.log(`Progress: ${Math.min(i + concurrency, items.length)}/${items.length}`);
+    // Progress indicator with success/failure counts
+    console.log(`Progress: ${Math.min(i + concurrency, items.length)}/${items.length} (✓ ${successCount} | ✗ ${failureCount})`);
+    
+    // Add small delay between batches to avoid rate limits
+    if (i + concurrency < items.length) {
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
   
-  console.log(`✓ Enrichment complete: ${items.length} items processed`);
+  console.log(`✅ Enrichment complete: ${successCount} succeeded, ${failureCount} failed`);
   return results;
 }

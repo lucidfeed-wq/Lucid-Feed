@@ -353,6 +353,45 @@ async function fetchSingleFeed(feed: FeedCatalog): Promise<InsertItem[]> {
     throw new Error(`URL validation failed: ${validation.error}`);
   }
 
+  // Quick HEAD request to check if feed exists (5 second timeout) - Skip 404s early
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const headResponse = await fetch(feed.url, { 
+      method: 'HEAD',
+      signal: controller.signal
+    }).catch((err: any) => ({ ok: false, status: err.name === 'AbortError' ? 408 : 500 } as any));
+    
+    clearTimeout(timeoutId);
+    
+    if ((headResponse as any).status === 404) {
+      console.log(`⚠️ Feed "${feed.name}" returned 404, marking as inactive and skipping`);
+      
+      // Mark feed as permanently failed in database
+      await storage.updateFeedHealth(feed.id, {
+        lastFetchStatus: 'permanent_error',
+        lastErrorMessage: '404 Not Found',
+        consecutiveFailures: (feed.consecutiveFailures || 0) + 1,
+      });
+      
+      // Deactivate feed immediately for 404s
+      await storage.deactivateFeed(feed.id);
+      
+      // Throw 404 error so caller knows it's permanent
+      const error: any = new Error('404 Not Found');
+      error.statusCode = 404;
+      throw error;
+    }
+  } catch (error: any) {
+    // If it's a 404, rethrow it
+    if (error.statusCode === 404 || error.message === '404 Not Found') {
+      throw error;
+    }
+    // For other HEAD request errors, continue to full fetch (might still work)
+    console.log(`⚠️ HEAD request failed for "${feed.name}", continuing to full fetch...`);
+  }
+
   try {
     // Wrap the RSS parser call with retry logic and timeout
     const rssFeed = await retryWithBackoff(

@@ -1368,9 +1368,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Refresh digest - run ingestion and digest generation with healing
   app.post("/api/digest/refresh", isAuthenticated, async (req: any, res) => {
+    const startTime = Date.now();
+    
     try {
       const userId = req.user.claims.sub;
-      console.log(`[POST /api/digest/refresh] Starting digest refresh for user ${userId}`);
+      console.log(`🔄 Starting digest generation for user: ${userId}`);
 
       // 1. Get user and check if test account
       const user = await storage.getUser(userId);
@@ -1562,11 +1564,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...(digestMetadata || {})
       };
       
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`✅ Digest generated successfully: ${slug} (${duration}s)`);
+      
       res.json({ 
         success: true,
         digestId: id,
         slug,
         digest,
+        duration: duration,
         message: ingestionSuccess 
           ? 'Digest refreshed successfully' 
           : 'Digest created with existing content (ingestion failed)',
@@ -1579,9 +1585,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error) {
-      console.error("❌ Unexpected error in digest refresh:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to refresh digest';
-      res.status(500).json({ error: errorMessage });
+      console.error('❌ Digest generation failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate digest';
+      res.status(500).json({ 
+        success: false, 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
+      });
     }
   });
 

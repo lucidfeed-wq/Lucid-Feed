@@ -71,11 +71,11 @@ export default function Home() {
 
   const readItemIds = new Set((readStatusData as { readIds?: string[] })?.readIds || []);
 
-  // Refresh digest mutation with 10-minute timeout
+  // Refresh digest mutation with 5-minute timeout
   const refreshMutation = useMutation({
     mutationFn: async () => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 min timeout
+      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min timeout
       
       try {
         const response = await fetch('/api/digest/refresh', {
@@ -106,7 +106,7 @@ export default function Home() {
       } catch (error: any) {
         clearTimeout(timeoutId);
         if (error.name === 'AbortError') {
-          throw new Error('Digest generation is taking longer than expected (>10 min). Please check back in a few minutes or contact support.');
+          throw new Error('Digest generation timed out. Please try again in a few minutes.');
         }
         throw error;
       }
