@@ -605,7 +605,7 @@ export class PostgresStorage implements IStorage {
   async createFeed(feed: InsertFeedCatalog): Promise<FeedCatalog> {
     const [created] = await db
       .insert(feedCatalog)
-      .values(feed)
+      .values([feed])
       .returning();
     
     return created;
@@ -1882,54 +1882,61 @@ export class PostgresStorage implements IStorage {
     lastCheck: Date | null;
   }> {
     try {
-      // Get total feeds count
-      const totalResult = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(feedCatalog);
-      const total = totalResult[0]?.count || 0;
-
-      // Get health status counts from feed_health_attempts
-      // We derive status from tactic_succeeded: true = healthy, false = failed
-      const healthCounts = await db
+      // Get all feeds with their current health status from feed_catalog
+      const feeds = await db
         .select({
-          succeeded: feedHealthAttempts.tacticSucceeded,
-          count: sql<number>`count(distinct ${feedHealthAttempts.feedId})`
+          lastFetchStatus: feedCatalog.lastFetchStatus,
+          healingStatus: feedCatalog.healingStatus,
+          consecutiveFailures: feedCatalog.consecutiveFailures,
+          lastFetchedAt: feedCatalog.lastFetchedAt,
         })
-        .from(feedHealthAttempts)
-        .where(
-          sql`${feedHealthAttempts.attemptedAt} = (
-            SELECT MAX(attempted_at) 
-            FROM feed_health_attempts AS fha2 
-            WHERE fha2.feed_id = ${feedHealthAttempts.feedId}
-          )`
-        )
-        .groupBy(feedHealthAttempts.tacticSucceeded);
+        .from(feedCatalog)
+        .where(eq(feedCatalog.isActive, true));
 
       // Initialize counts
       const stats = {
-        total,
+        total: feeds.length,
         healthy: 0,
         warning: 0,
         failed: 0,
         lastCheck: null as Date | null
       };
 
-      // Map health statuses to counts
-      // succeeded = true means healthy, succeeded = false means failed
-      for (const row of healthCounts) {
-        if (row.succeeded === true) {
-          stats.healthy = row.count;
-        } else if (row.succeeded === false) {
-          stats.failed = row.count;
+      // Categorize feeds based on their current state
+      // Priority order: healingStatus > lastFetchStatus > consecutiveFailures
+      // Healthy: healingStatus === 'healthy' OR (lastFetchStatus === 'success' AND consecutiveFailures === 0)
+      // Warning: healingStatus === 'degraded' OR 'healing' OR (transient_error AND consecutiveFailures 1-2)
+      // Failed: healingStatus === 'failed' OR lastFetchStatus === 'permanent_error' OR consecutiveFailures >= 3
+      for (const feed of feeds) {
+        // Check healingStatus first (most authoritative)
+        if (feed.healingStatus === 'failed') {
+          stats.failed++;
+        } else if (feed.healingStatus === 'degraded' || feed.healingStatus === 'healing') {
+          stats.warning++;
+        } else if (feed.healingStatus === 'healthy') {
+          stats.healthy++;
+        } 
+        // Fall back to lastFetchStatus if no healingStatus
+        else if (feed.lastFetchStatus === 'permanent_error' || 
+                 (feed.consecutiveFailures && feed.consecutiveFailures >= 3)) {
+          stats.failed++;
+        } else if (feed.lastFetchStatus === 'transient_error' || 
+                   (feed.consecutiveFailures && feed.consecutiveFailures > 0 && feed.consecutiveFailures < 3)) {
+          stats.warning++;
+        } else if (feed.lastFetchStatus === 'success') {
+          stats.healthy++;
+        } else {
+          // No status info - feed hasn't been checked yet, count as warning
+          stats.warning++;
+        }
+
+        // Track most recent check (with null guard)
+        if (feed.lastFetchedAt && feed.lastFetchedAt instanceof Date) {
+          if (!stats.lastCheck || feed.lastFetchedAt > stats.lastCheck) {
+            stats.lastCheck = feed.lastFetchedAt;
+          }
         }
       }
-
-      // Get last check time
-      const lastCheckResult = await db
-        .select({ lastCheck: sql<Date>`MAX(${feedHealthAttempts.attemptedAt})` })
-        .from(feedHealthAttempts);
-      
-      stats.lastCheck = lastCheckResult[0]?.lastCheck || null;
 
       return stats;
     } catch (error) {

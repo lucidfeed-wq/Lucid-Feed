@@ -95,8 +95,30 @@ export default function Home() {
     },
     onError: (error: any) => {
       const errorData = error?.response?.data;
+      const errorMessage = error?.message || "";
       
-      if (errorData?.upgradeRequired) {
+      // Parse status code from error message (format: "401: Unauthorized")
+      const statusMatch = errorMessage.match(/^(\d{3}):/);
+      const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : null;
+      
+      // Check for authentication failure (401)
+      if (statusCode === 401) {
+        toast({
+          title: "Session Expired",
+          description: "Your session has expired. Please log out and log back in to refresh your digest.",
+          variant: "destructive",
+          action: (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.href = "/api/logout"}
+              data-testid="button-logout"
+            >
+              Log Out
+            </Button>
+          ),
+        });
+      } else if (errorData?.upgradeRequired) {
         toast({
           title: "Upgrade Required",
           description: errorData.error,

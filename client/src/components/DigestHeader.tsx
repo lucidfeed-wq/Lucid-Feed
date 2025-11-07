@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { Calendar, Clock, FileText, Users, Video } from "lucide-react";
 
 interface DigestHeaderProps {
@@ -32,9 +32,9 @@ export function DigestHeader({ windowStart, windowEnd, generatedAt, itemCounts }
             <Calendar className="w-3.5 h-3.5 mr-1.5" />
             {startDate} – {endDate}
           </Badge>
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs" data-testid="badge-last-updated">
             <Clock className="w-3 h-3 mr-1" />
-            Generated {format(new Date(generatedAt), "MMM d, h:mm a")}
+            Last updated {formatDistanceToNow(new Date(generatedAt), { addSuffix: true })}
           </Badge>
         </div>
 

@@ -32,10 +32,12 @@ export function getSession() {
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
+    rolling: true, // Refresh session expiry on each request to keep active users logged in
     cookie: {
       httpOnly: true,
       secure: true,
       maxAge: sessionTtl,
+      sameSite: 'lax', // Prevent CSRF while allowing navigation from external links
     },
   });
 }
@@ -154,8 +156,10 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     const config = await getOidcConfig();
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
     updateUserSession(user, tokenResponse);
+    console.log(`[Auth] Successfully refreshed token for user ${user.claims?.sub}`);
     return next();
   } catch (error) {
+    console.error('[Auth] Token refresh failed:', error instanceof Error ? error.message : 'Unknown error');
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
