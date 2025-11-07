@@ -4,7 +4,13 @@ import { tagTopics } from "../core/topics";
 import { generateHashDedupe } from "../core/dedupe";
 import { redditFeeds } from "./config";
 
-const parser = new Parser();
+const parser = new Parser({
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+  },
+  timeout: 10000
+});
 
 export async function fetchRedditFeeds(): Promise<InsertItem[]> {
   const items: InsertItem[] = [];
