@@ -22,6 +22,14 @@ Lucid Feed is a full-stack TypeScript project with React for the frontend and Ex
 - **Hybrid RAG Chat System**: An intelligent chat architecture with digest-aware context, supporting RAG (similarity > 0.7), Hybrid (0.4-0.7), and General (< 0.4) modes with explicit citations and disclaimers. Features multi-scope search (current digest, all digests, saved items, folders) and tier-based access.
 - **Personalization**: Users receive personalized digests based on selected topics, bookmarked items, and subscribed feeds. Two-dimensional filtering architecture: (1) Feed subscriptions define trusted sources, (2) Topic preferences (favoriteTopics) filter ingested content. Per-category topic filtering with intelligent fallbacks ensures all digest sections remain populated even when topic matches are sparse in specific categories (journals/YouTube/community).
 - **Digest Generation**: Weekly or daily personalized digests, with historical archives.
+- **Async Digest Generation**: Production-grade job queue system eliminates 300-second timeout issues. Features include:
+  - **Postgres Job Queue**: Lightweight queue using row-level locking (FOR UPDATE SKIP LOCKED) for reliable job processing without Redis dependency
+  - **Background Worker**: Continuous job processor starts on server boot, polls every 30 seconds for new jobs
+  - **Progress Tracking**: 6-stage progress reporting (10% → 30% → 50% → 60% → 80% → 100%) with real-time updates
+  - **Async API**: POST /api/digest/refresh enqueues job and returns 202 immediately, GET /api/digest/job-status polls for status
+  - **Frontend Polling**: React component polls every 30 seconds, displays progress bar, and invalidates cache on completion
+  - **Job Persistence**: 7-day retention in digest_jobs table with automatic cleanup
+  - **Robust Error Handling**: Failed jobs tracked with error messages, retry logic, and graceful fallbacks
 - **Quality Scoring**: Transparent, multi-signal assessment based on citation metrics, author credibility, methodology quality, community verification, and recency, including content quality filtering.
 - **Multi-Tenant SaaS**: Supports user-level feed subscriptions and personalized digests.
 - **Subscription Tiers**: Free, Premium, and Pro tiers with enforced usage limits for feed subscriptions, chat messages, and digest frequency. Integrated with Stripe for payment processing.
