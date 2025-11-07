@@ -71,60 +71,44 @@ export default function Home() {
 
   const readItemIds = new Set((readStatusData as { readIds?: string[] })?.readIds || []);
 
-  // Refresh digest mutation with 5-minute timeout
+  // Async digest refresh with polling
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobProgress, setJobProgress] = useState<number>(0);
+  const [jobStatus, setJobStatus] = useState<string>('');
+
+  // Enqueue digest refresh job
   const refreshMutation = useMutation({
     mutationFn: async () => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min timeout
+      const response = await fetch('/api/digest/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
       
-      try {
-        const response = await fetch('/api/digest/refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          // Try to parse JSON error response for upgrade/limit messages
-          let errorData;
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            errorData = await response.json();
-          } else {
-            errorData = { message: await response.text() || response.statusText };
-          }
-          
-          // Throw with both status code and parsed data
-          const error: any = new Error(`${response.status}: ${errorData.error || errorData.message || response.statusText}`);
-          error.response = { data: errorData };
-          throw error;
+      if (!response.ok) {
+        // Try to parse JSON error response for upgrade/limit messages
+        let errorData;
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await response.json();
+        } else {
+          errorData = { message: await response.text() || response.statusText };
         }
         
-        return await response.json();
-      } catch (error: any) {
-        clearTimeout(timeoutId);
-        if (error.name === 'AbortError') {
-          throw new Error('Digest generation timed out. Please try again in a few minutes.');
-        }
+        // Throw with both status code and parsed data
+        const error: any = new Error(`${response.status}: ${errorData.error || errorData.message || response.statusText}`);
+        error.response = { data: errorData };
         throw error;
       }
+      
+      return await response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/digest/latest'] });
-      
-      // Show warnings if ingestion failed but digest succeeded
-      if (data?.warnings && Array.isArray(data.warnings) && data.warnings.length > 0) {
-        toast({
-          title: "Digest Created with Warnings",
-          description: "Your digest was created, but some content sources had errors. The digest may not include the very latest items.",
-        });
-      } else {
-        toast({
-          title: "Digest Refreshed",
-          description: "Your digest has been updated with the latest content.",
-        });
+      // Job enqueued successfully - start polling
+      if (data.jobId) {
+        setJobId(data.jobId);
+        setJobProgress(0);
+        setJobStatus('pending');
       }
     },
     onError: (error: any) => {
@@ -182,6 +166,86 @@ export default function Home() {
       }
     },
   });
+
+  // Poll job status when jobId is set
+  useEffect(() => {
+    if (!jobId) return;
+
+    let intervalId: NodeJS.Timeout;
+    let isActive = true;
+
+    const pollJobStatus = async () => {
+      if (!isActive) return;
+
+      try {
+        const response = await fetch(`/api/digest/job-status?jobId=${encodeURIComponent(jobId)}`, {
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch job status');
+        }
+
+        const status = await response.json();
+        setJobProgress(status.progress || 0);
+        setJobStatus(status.status);
+
+        if (status.status === 'completed') {
+          // Job completed successfully
+          queryClient.invalidateQueries({ queryKey: ['/api/digest/latest'] });
+          
+          // Show warnings if any
+          if (status.result?.warnings && Array.isArray(status.result.warnings) && status.result.warnings.length > 0) {
+            toast({
+              title: "Digest Created with Warnings",
+              description: "Your digest was created, but some content sources had errors.",
+            });
+          } else {
+            toast({
+              title: "Digest Refreshed",
+              description: "Your digest has been updated with the latest content.",
+            });
+          }
+
+          // Clear job state
+          setJobId(null);
+          setJobProgress(0);
+          setJobStatus('');
+          isActive = false;
+          clearInterval(intervalId);
+        } else if (status.status === 'failed') {
+          // Job failed
+          toast({
+            title: "Refresh Failed",
+            description: status.error || "Failed to generate digest. Please try again.",
+            variant: "destructive",
+          });
+
+          // Clear job state
+          setJobId(null);
+          setJobProgress(0);
+          setJobStatus('');
+          isActive = false;
+          clearInterval(intervalId);
+        }
+      } catch (error) {
+        console.error('Error polling job status:', error);
+        // Continue polling - job might be processing
+      }
+    };
+
+    // Poll immediately, then every 30 seconds
+    pollJobStatus();
+    intervalId = setInterval(pollJobStatus, 30000);
+
+    return () => {
+      isActive = false;
+      clearInterval(intervalId);
+    };
+  }, [jobId, queryClient, toast]);
+
+  // Compute loading state
+  const isRefreshing = refreshMutation.isPending || (jobId !== null && jobStatus !== 'completed' && jobStatus !== 'failed');
 
   // Redirect to onboarding if user has no topics selected
   useEffect(() => {
@@ -414,17 +478,33 @@ export default function Home() {
             <div className="mb-6">
               <Button
                 onClick={() => refreshMutation.mutate()}
-                disabled={refreshMutation.isPending}
+                disabled={isRefreshing}
                 data-testid="button-refresh-digest"
                 className="w-full"
               >
-                <RefreshCw className={`w-4 h-4 mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
-                {refreshMutation.isPending ? "Generating Fresh Digest..." : "Refresh My Digest"}
+                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? "Generating Fresh Digest..." : "Refresh My Digest"}
               </Button>
-              {refreshMutation.isPending && (
-                <p className="text-sm text-muted-foreground text-center mt-2">
-                  This usually takes 1-3 minutes while we analyze your feeds
-                </p>
+              {isRefreshing && (
+                <div className="mt-2 space-y-2">
+                  <p className="text-sm text-muted-foreground text-center">
+                    This usually takes 1-3 minutes while we analyze your feeds
+                  </p>
+                  {jobProgress > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Progress</span>
+                        <span>{jobProgress}%</span>
+                      </div>
+                      <div className="w-full bg-secondary rounded-full h-2">
+                        <div 
+                          className="bg-primary h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${jobProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
