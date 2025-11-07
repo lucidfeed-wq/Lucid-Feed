@@ -427,13 +427,23 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
 
     console.log('Fetching fresh RSS items from subscribed feeds...');
     
-    // Fetch from all sources
+    // Fetch from all sources with error recovery
+    const fetchWithFallback = async (fetchFn: () => Promise<InsertItem[]>, name: string): Promise<InsertItem[]> => {
+      try {
+        return await fetchFn();
+      } catch (error) {
+        console.error(`Failed to fetch ${name} feeds:`, error);
+        metadata.healingMessages!.push(`Some ${name} feeds were unavailable`);
+        return [];
+      }
+    };
+    
     const [journals, reddit, substack, youtube, podcasts] = await Promise.all([
-      fetchJournalFeeds(),
-      fetchRedditFeeds(),
-      fetchSubstackFeeds(),
-      fetchYouTubeFeeds(),
-      fetchPodcastFeeds(),
+      fetchWithFallback(fetchJournalFeeds, 'journal'),
+      fetchWithFallback(fetchRedditFeeds, 'Reddit'),
+      fetchWithFallback(fetchSubstackFeeds, 'Substack'),
+      fetchWithFallback(fetchYouTubeFeeds, 'YouTube'),
+      fetchWithFallback(fetchPodcastFeeds, 'podcast'),
     ]);
 
     let allFreshItems: InsertItem[] = [...journals, ...reddit, ...substack, ...youtube, ...podcasts];
