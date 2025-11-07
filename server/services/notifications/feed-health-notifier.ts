@@ -123,6 +123,37 @@ export class FeedHealthNotifier {
   }
 
   /**
+   * Notify about successful feed healing or substitution
+   */
+  async notifyFeedHealing(
+    userId: string,
+    feedId: string,
+    feedName: string,
+    action: 'healed' | 'substituted',
+    details?: string
+  ): Promise<void> {
+    let message: string;
+    
+    if (action === 'healed') {
+      message = `Good news! ${feedName} is working again. We've automatically restored it to your digest.`;
+    } else {
+      message = `We found a replacement for ${feedName}. ${details || 'Your digest will continue with similar content.'}`;
+    }
+
+    const notification: InsertFeedNotification = {
+      userId,
+      feedId,
+      severity: 'info',
+      message,
+      technicalDetails: `Feed ${action} successfully`,
+      isRead: false,
+    };
+
+    await storage.saveFeedNotification(notification);
+    console.log(`[FeedHealthNotifier] Notified user ${userId} about ${action} feed ${feedId}`);
+  }
+
+  /**
    * Get consolidated notifications for a user
    */
   async getConsolidatedNotifications(userId: string): Promise<FeedNotification[]> {

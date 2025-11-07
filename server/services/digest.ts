@@ -10,6 +10,7 @@ import { fetchSubstackFeeds } from "../sources/substack";
 import { fetchYouTubeFeeds } from "../sources/youtube";
 import { fetchPodcastFeeds } from "../sources/podcasts";
 import { HealingOrchestrator } from "./healing/healing-orchestrator";
+import { FeedHealthNotifier } from "./notifications/feed-health-notifier";
 import type { InsertDigest, DigestSectionItem, Item, Summary, CategorySummary, InsertItem, Topic, FeedCatalog } from "@shared/schema";
 import { topics } from "@shared/schema";
 import type { IStorage } from "../storage";
@@ -33,6 +34,8 @@ interface DigestMetadata {
   healedFeeds?: string[];
   fallbackFeeds?: string[];
   healingMessages?: string[];
+  usedFallback?: boolean;
+  fallbackReason?: string;
 }
 
 /**
@@ -346,8 +349,9 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
     const windowEnd = new Date();
     const windowStart = subDays(windowEnd, windowDays);
 
-    // Initialize healing orchestrator
+    // Initialize healing orchestrator and notifier
     const healingOrchestrator = new HealingOrchestrator();
+    const feedNotifier = new FeedHealthNotifier();
     
     // Detect failing feeds and attempt healing
     const failingFeeds = userFeeds.filter(feed => 
@@ -361,19 +365,38 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
       // Heal feeds in bulk (max 3 concurrent)
       const healingResults = await healingOrchestrator.healFeedsBulk(failingFeeds, 3);
       
-      // Track healing results in metadata
-      healingResults.forEach((result, feedId) => {
+      // Track healing results in metadata and notify users
+      for (const [feedId, result] of healingResults.entries()) {
         const feed = failingFeeds.find(f => f.id === feedId);
         if (feed) {
           if (result.success) {
             metadata.healedFeeds!.push(feed.name);
             console.log(`✅ Healed feed: ${feed.name}`);
+            
+            // Notify user about successful healing
+            await feedNotifier.notifyFeedHealing(
+              userId,
+              feed.id,
+              feed.name,
+              'healed'
+            );
           } else {
             metadata.fallbackFeeds!.push(feed.name);
             console.log(`⚠️ Will use cached content for: ${feed.name}`);
+            
+            // Notify user about persistent issues (only if many failures)
+            if (feed.consecutiveFailures >= 5) {
+              await feedNotifier.notifyFeedIssue(
+                userId,
+                feed.id,
+                feed.name,
+                feed.lastErrorMessage || 'Feed temporarily unavailable',
+                'warning'
+              );
+            }
           }
         }
-      });
+      }
       
       // Add healing status message
       if (metadata.healedFeeds!.length > 0) {
@@ -397,23 +420,52 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
 
     let allFreshItems: InsertItem[] = [...journals, ...reddit, ...substack, ...youtube, ...podcasts];
     
-    // Filter to only items from user's subscribed feeds
-    const userFeedIds = new Set(userFeeds.map(f => f.id));
+    // Filter to only items from user's subscribed feeds - improved matching logic
+    const userFeedsByUrl = new Map(userFeeds.map(f => [f.url, f]));
+    const userFeedsByName = new Map(userFeeds.map(f => [f.name.toLowerCase(), f]));
+    
     allFreshItems = allFreshItems.filter(item => {
-      // Match by sourceType and domain/name
-      return userFeeds.some(feed => {
-        if (feed.sourceType !== item.sourceType) return false;
-        // For journals, match by domain
-        if (feed.sourceType === 'journal' && item.journalName) {
-          return feed.name.toLowerCase().includes(item.journalName.toLowerCase()) ||
-                 item.journalName.toLowerCase().includes(feed.name.toLowerCase());
-        }
-        // For other types, match by author/channel
-        if (item.authorOrChannel) {
-          return feed.name.toLowerCase() === item.authorOrChannel.toLowerCase();
-        }
-        return false;
-      });
+      // Match by sourceType first
+      const feedsOfType = userFeeds.filter(f => f.sourceType === item.sourceType);
+      if (feedsOfType.length === 0) return false;
+      
+      // More flexible matching for each source type
+      if (item.sourceType === 'journal' && item.journalName) {
+        // For journals: check if any subscribed feed name matches the journal name (case-insensitive, partial match)
+        return feedsOfType.some(feed => {
+          const feedName = feed.name.toLowerCase();
+          const journalName = item.journalName!.toLowerCase();
+          return feedName.includes(journalName) || 
+                 journalName.includes(feedName) ||
+                 // Also check for common journal name variations
+                 feedName.replace(/[^a-z0-9]/g, '') === journalName.replace(/[^a-z0-9]/g, '');
+        });
+      }
+      
+      if (item.sourceType === 'reddit' && item.authorOrChannel) {
+        // For Reddit: match subreddit names more flexibly
+        return feedsOfType.some(feed => {
+          const feedName = feed.name.toLowerCase().replace('r/', '');
+          const subreddit = item.authorOrChannel!.toLowerCase().replace('r/', '');
+          return feedName === subreddit || feed.name.toLowerCase() === item.authorOrChannel!.toLowerCase();
+        });
+      }
+      
+      if ((item.sourceType === 'youtube' || item.sourceType === 'podcast' || item.sourceType === 'substack') && item.authorOrChannel) {
+        // For YouTube/Podcast/Substack: match channel/author names
+        return feedsOfType.some(feed => {
+          const feedName = feed.name.toLowerCase();
+          const channel = item.authorOrChannel!.toLowerCase();
+          // More flexible matching - handle variations
+          return feedName === channel || 
+                 feedName.includes(channel) || 
+                 channel.includes(feedName) ||
+                 // Remove common suffixes/prefixes for matching
+                 feedName.replace(/ podcast| show| channel/gi, '') === channel.replace(/ podcast| show| channel/gi, '');
+        });
+      }
+      
+      return false;
     });
 
     // Filter by date window
@@ -425,7 +477,35 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
     console.log(`Found ${allFreshItems.length} fresh items from user's feeds`);
 
     if (allFreshItems.length === 0) {
-      throw new Error('No recent items found from subscribed feeds. Try subscribing to more active feeds.');
+      console.log('No items matched from user feeds - falling back to featured feeds');
+      
+      // Fallback: Get items from featured/high-quality feeds in the catalog
+      const featuredFeeds = await storage.getFeaturedFeeds();
+      if (featuredFeeds.length === 0) {
+        throw new Error('No recent items found from subscribed feeds and no featured feeds available. Please check your feed subscriptions.');
+      }
+      
+      // Fetch items from featured feeds
+      const [featuredJournals, featuredReddit, featuredYoutube] = await Promise.all([
+        fetchJournalFeeds(),
+        fetchRedditFeeds(),
+        fetchYouTubeFeeds(),
+      ]);
+      
+      allFreshItems = [...featuredJournals, ...featuredReddit, ...featuredYoutube];
+      
+      // Filter by date window
+      allFreshItems = allFreshItems.filter(item => {
+        const pubDate = new Date(item.publishedAt);
+        return pubDate >= windowStart && pubDate <= windowEnd;
+      });
+      
+      if (allFreshItems.length === 0) {
+        throw new Error('No recent content available. Our team has been notified and is working on it.');
+      }
+      
+      metadata.usedFallback = true;
+      metadata.fallbackReason = 'No items matched from subscribed feeds';
     }
 
     // IMMEDIATE ENRICHMENT: Enrich all items right now (don't wait for cron)

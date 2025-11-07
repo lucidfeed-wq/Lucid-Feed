@@ -60,6 +60,7 @@ export interface IStorage {
   getFeedById(feedId: string): Promise<FeedCatalog | undefined>;
   getItemsByFeedUrl(feedUrl: string, limit?: number): Promise<Item[]>;
   getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string; featured?: boolean }): Promise<FeedCatalog[]>;
+  getFeaturedFeeds(): Promise<FeedCatalog[]>;
   getSuggestedFeeds(topics: string[], sourceTypes: string[], limit?: number): Promise<FeedCatalog[]>;
   submitFeed(submission: InsertUserFeedSubmission): Promise<UserFeedSubmission>;
   getUserFeedSubmissions(userId: string): Promise<UserFeedSubmission[]>;
@@ -621,6 +622,23 @@ export class PostgresStorage implements IStorage {
       : await query.orderBy(feedCatalog.name);
     
     console.log(`[Storage] getFeedCatalog returned ${results.length} feeds`);
+    return results;
+  }
+
+  async getFeaturedFeeds(): Promise<FeedCatalog[]> {
+    const results = await db
+      .select()
+      .from(feedCatalog)
+      .where(
+        and(
+          eq(feedCatalog.isApproved, true),
+          eq(feedCatalog.isActive, true),
+          eq(feedCatalog.featured, true)
+        )
+      )
+      .orderBy(feedCatalog.starterRank, feedCatalog.name);
+    
+    console.log(`[Storage] getFeaturedFeeds returned ${results.length} featured feeds`);
     return results;
   }
 

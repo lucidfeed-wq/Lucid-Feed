@@ -1,0 +1,66 @@
+11-06 17:36:35
+✓ Content quality: 17/40 - The content lacks citations and scientific rigor, making the evidence quality low. However, it raises a common clinical issue related to the ketogenic diet, providing some actionable insights, though not well-supported or structured.
+11-06 17:36:35
+✓ Unified Score: 62/100 (Content: 17, Engagement: 20, Credibility: 10)
+11-06 17:36:35
+Enriching reddit: Monthly: Less than 7 weeks? Comment here instead of making a new post.
+11-06 17:36:35
+Enriching reddit: Candida
+11-06 17:36:35
+Enriching reddit: Healing
+11-06 17:36:37
+✓ Content quality: 17/40 - The content lacks scientific citations and credible sources to support claims, limiting its evidence quality. While it provides personal insights that could be useful for practitioners, the anecdotal nature and lack of structured data reduce its overall clinical and practical applicability.
+11-06 17:36:37
+✓ Unified Score: 59/100 (Content: 17, Engagement: 17.2, Credibility: 10)
+11-06 17:36:37
+✓ Content quality: 14/40 - The content lacks scientific citations and credible sources to support the claims about the carnivore diet and its effects on candida. While it raises a relevant question, it does not provide actionable insights or structured information for practitioners.
+11-06 17:36:37
+✓ Unified Score: 59/100 (Content: 14, Engagement: 20, Credibility: 10)
+11-06 17:36:37
+✓ Content quality: 17/40 - The content lacks scientific citations and credible sources, limiting its evidence quality. While it provides a supportive community space for individuals adapting to a carnivore diet, it does not offer actionable clinical insights or rigorous scientific backing, making its overall clinical value moderate.
+11-06 17:36:37
+✓ Unified Score: 57/100 (Content: 17, Engagement: 15.1, Credibility: 10)
+11-06 17:36:37
+Enriching reddit: Guys I found the best carni snack
+11-06 17:36:37
+Enriching reddit: redditor question - how to tell fat:protein ratio?
+11-06 17:36:37
+Enriching reddit: What makes me cheat on carnivore?
+11-06 17:36:40
+✓ Content quality: 14/40 - The content lacks credible citations or scientific rigor, making it difficult to assess its evidence quality. While it poses a relevant question, the response does not provide actionable insights or clear guidance for practitioners.
+11-06 17:36:40
+✓ Unified Score: 59/100 (Content: 14, Engagement: 20, Credibility: 10)
+11-06 17:36:40
+✓ Content quality: 14/40 - The content lacks scientific evidence and credible sources to support claims, making it difficult to assess its validity. While it presents a personal experience that may resonate with others, it does not offer actionable insights or structured guidance for practitioners.
+11-06 17:36:40
+✓ Unified Score: 59/100 (Content: 14, Engagement: 20, Credibility: 10)
+11-06 17:36:41
+✓ Content quality: 16/40 - The content lacks scientific citations and rigor, making it difficult to assess its evidence quality. While it provides a simple cooking method, it does not offer substantial clinical insights or actionable recommendations for practitioners.
+11-06 17:36:41
+✓ Unified Score: 61/100 (Content: 16, Engagement: 20, Credibility: 10)
+11-06 17:36:41
+Progress: 27/27
+11-06 17:36:41
+✓ Enrichment complete: 27 items processed
+11-06 17:36:43
+Saved/retrieved 27 enriched items
+11-06 17:36:43
+Quality filtered: 27 items (from 27)
+11-06 17:36:43
+Topic matches - Journals: 0/0, YouTube: 0/0, Community: 25/27
+11-06 17:36:43
+⚠ Too few journal matches (0), using all quality journals
+11-06 17:36:43
+⚠ Too few YouTube matches (0), using all quality videos
+11-06 17:36:43
+✓ Using topic-filtered community (25 items)
+11-06 17:36:43
+Final source breakdown: 0 journals, 0 youtube, 25 community
+11-06 17:36:43
+Final selection: 10 items (0 research, 10 community, 0 expert)
+11-06 17:36:46
+Personalized digest created: 8r4xc0DYfZwhgFaempFXX (personal-41556120-1762472205)
+11-06 17:36:46
+[POST /api/digest/refresh] Digest generated successfully: personal-41556120-1762472205
+11-06 17:36:46
+11:36:46 PM [express] POST /api/digest/refresh 200 in 219113ms :: {"success":true,"digestId":"8r4xc0D…
