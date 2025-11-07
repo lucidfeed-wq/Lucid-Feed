@@ -337,12 +337,30 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
     const userFeedSubscriptions = await storage.getUserFeedSubscriptions(userId);
     console.log(`User has ${userFeedSubscriptions.length} subscribed feeds`);
 
-    if (userFeedSubscriptions.length === 0) {
-      throw new Error('User has no subscribed feeds. Cannot generate personalized digest.');
-    }
+    let userFeeds;
+    let usingStarterFeeds = false;
 
-    // Extract feed info from subscriptions
-    const userFeeds = userFeedSubscriptions.map(sub => sub.feed);
+    if (userFeedSubscriptions.length === 0) {
+      // If user has no subscribed feeds, use high-quality starter feeds based on their topics
+      console.log('User has no subscribed feeds. Using starter feeds based on topics...');
+      
+      const starterFeeds = await storage.getFeaturedFeeds();
+      
+      if (starterFeeds.length === 0) {
+        // Last resort: Get ANY active feeds
+        const allActiveFeeds = await storage.getActiveFeeds();
+        userFeeds = allActiveFeeds.slice(0, 20); // Limit to 20 feeds
+      } else {
+        userFeeds = starterFeeds.slice(0, 30); // Use up to 30 starter feeds
+      }
+      
+      usingStarterFeeds = true;
+      metadata.healingMessages!.push('Using curated content since you have no subscribed feeds yet');
+      console.log(`Using ${userFeeds.length} starter feeds for digest generation`);
+    } else {
+      // Extract feed info from subscriptions
+      userFeeds = userFeedSubscriptions.map(sub => sub.feed);
+    }
 
     // Fetch fresh items from RSS for user's feeds (last 7 days)
     const windowDays = options.windowDays ?? 7;
@@ -366,7 +384,7 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
       const healingResults = await healingOrchestrator.healFeedsBulk(failingFeeds, 3);
       
       // Track healing results in metadata and notify users
-      for (const [feedId, result] of healingResults.entries()) {
+      for (const [feedId, result] of Array.from(healingResults.entries())) {
         const feed = failingFeeds.find(f => f.id === feedId);
         if (feed) {
           if (result.success) {

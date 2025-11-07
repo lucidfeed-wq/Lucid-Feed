@@ -1,0 +1,75 @@
+Perfect — here’s a competitor-by-competitor matrix so you can see where LucidFeed can win and where you’ll need to defend. I’m framing it from a user’s lens (the same busy, data-hungry professional) — what each platform does well, what’s missing, and how LucidFeed can occupy a sharper lane.
+
+⸻
+
+🧩 Competitive Matrix: “Second-Brain” / “Feed Intelligence” Space
+
+Category	LucidFeed (Vision)	Feedly Pro+ (Leo AI)	Readwise Reader	Mem / Notion / Capacities	Refind / Glasp / Matter
+Core Promise	Clarity + synthesis across disciplines	AI-filtered RSS, B2B news alerts	Read-later + AI summary + spaced review	Personal knowledge base	Social curation & reading queue
+AI Approach	Multi-source semantic graph → context + “why it matters” summaries	Keyword + ML filters (“Leo”)	GPT-based summaries of saved items	None native; manual AI workflows	Simple summarization or quotes
+Cross-Domain Insight	✅ Deep: links medicine ↔ tech ↔ policy ↔ culture	❌ Mostly topical filters	❌ Only per-article	❌ Manual tagging	❌ None
+Source Provenance / DOI / Citation	✅ Inline DOI + confidence level	⚠️ Source only	⚠️ Source only	❌	❌
+Human-in-Loop QA	✅ Expert verification tier (Pro/Research)	❌	❌	❌	❌
+Personalization Model	✅ Behavioral learning + attention heatmap	⚠️ Manual training (“Mute / Prioritize”)	⚠️ Reading stats	⚠️ Manual	⚠️ Likes/bookmarks only
+Time-to-Insight	✅ <5-min digests w/ synthesis paragraphs	❌ Too many articles	❌ Still needs manual reading	❌ Manual tagging	❌ Scroll feed
+Output / Export	✅ Notion / Obsidian / Readwise / Markdown / Zotero	⚠️ RSS export	✅ Readwise	✅ Native workspace	⚠️ Limited
+Collaboration / Sharing	✅ Curate shared digests, publish to team / Substack / LinkedIn	⚠️ Shared feeds	❌	✅ Shared docs	✅ Social
+Trust Layer	✅ Verified sources, transparent model notes	❌	❌	⚠️ (user-verified)	❌
+Interface / UX	✅ Minimal, calm, research-grade aesthetic	❌ Enterprise UI	✅ Polished	⚠️ Workspace-heavy	✅ Simple
+Pricing	$12–15 Pro / $25–35 Research	$6–12 Pro+	$8–12	$10–15	Free–$5
+Ideal User	Knowledge worker, researcher, functional-medicine pro, analyst	Business intelligence pros	Info hoarders / readers	Productivity nerds	Casual readers
+
+
+⸻
+
+🏁 Positioning summary
+
+LucidFeed Strength	How to Frame It vs. Others
+Cross-disciplinary synthesis	“Not just AI summaries — LucidFeed connects dots between domains.”
+Credibility + citations	“Every insight is source-linked and traceable.”
+Human + AI blend	“AI for speed, humans for judgment.”
+Beautiful calm UX	“A reading experience that reduces cognitive load.”
+Plug-and-play integrations	“Works with your existing brain — Notion, Obsidian, Readwise.”
+
+
+⸻
+
+🎯 Positioning “white space” opportunity
+
+LucidFeed’s moat: trusted cross-disciplinary synthesis.
+
+Most competitors either:
+	•	Aggregate (Feedly) but don’t synthesize.
+	•	Summarize (Reader) but don’t connect context.
+	•	Store (Notion/Mem) but don’t discover.
+	•	Share (Glasp/Refind) but don’t verify.
+
+→ LucidFeed = “The bridge between discovery and understanding.”
+
+⸻
+
+🔑 Feature priorities to outpace them
+
+Tier	Must-Build First	Why It Wins
+MVP	RSS ingestion + semantic tagging + multi-source summary engine	Core differentiation: clarity + speed
+Phase 2	Cross-domain linking graph (topic ontology)	Creates “Aha” synthesis nobody else offers
+Phase 2	Notion/Readwise/Obsidian export	Makes it a daily driver for second-brain users
+Phase 3	DOI + source verification badges	Builds institutional trust; unique among AI tools
+Phase 3	Team / shared digests	Expands market to research groups & clinics
+Phase 4	API / developer mode	Locks in ecosystem stickiness
+
+
+⸻
+
+🧠 Messaging DNA for Landing Page
+	•	Headline: “Clarity across disciplines.”
+	•	Subhead: “LucidFeed distills thousands of sources into verifiable insights that connect science, tech, and policy — in minutes, not hours.”
+	•	Proof Points:
+	•	⏱ “Save 5 hours a week of reading time.”
+	•	🔗 “Cross-domain synthesis you can’t get from Feedly or Reader.”
+	•	📚 “Every summary links to original research or transcript.”
+	•	🧠 “Works with your Notion, Readwise, and Obsidian knowledge base.”
+
+⸻
+
+Would you like me to build a competitor-specific differentiation script (i.e., one-liner comparisons for your marketing site like “LucidFeed vs Feedly”, “LucidFeed vs Readwise Reader”, etc.) next?
