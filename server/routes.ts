@@ -907,6 +907,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual feed submission endpoint
+  app.post('/api/feeds/submit', isAuthenticated, async (req: any, res) => {
+    try {
+      const { url, name, topics } = req.body;
+      const userId = req.user.claims.sub;
+
+      // Import the unified pipeline
+      const { ingestFeed } = await import('./services/feed-ingestion/unified-pipeline');
+      
+      // Ingest the feed
+      const result = await ingestFeed(url, {
+        source: 'manual',
+        userId,
+        autoApprove: false,
+        overrideName: name,
+        overrideTopics: topics
+      });
+
+      if (result.success) {
+        res.json({
+          success: true,
+          feedId: result.feedId,
+          validation: result.validation,
+          enrichment: result.enrichment
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error,
+          validation: result.validation
+        });
+      }
+    } catch (error: any) {
+      console.error('Error submitting feed:', error);
+      res.status(500).json({ error: error.message || 'Failed to submit feed' });
+    }
+  });
+
+  // OPML import endpoint
+  app.post('/api/feeds/import-opml', isAuthenticated, async (req: any, res) => {
+    try {
+      const { opmlContent } = req.body;
+      const userId = req.user.claims.sub;
+
+      if (!opmlContent) {
+        return res.status(400).json({ error: 'OPML content is required' });
+      }
+
+      // Import the unified pipeline
+      const { importOPML } = await import('./services/feed-ingestion/unified-pipeline');
+      
+      // Import feeds from OPML
+      const result = await importOPML(opmlContent, userId);
+
+      res.json({
+        success: true,
+        total: result.total,
+        imported: result.success,
+        failed: result.failed,
+        results: result.results
+      });
+    } catch (error: any) {
+      console.error('Error importing OPML:', error);
+      res.status(500).json({ error: error.message || 'Failed to import OPML' });
+    }
+  });
+
+  // Feed discovery/search endpoint  
+  app.get('/api/feeds/search', isAuthenticated, async (req: any, res) => {
+    try {
+      const { query, sourceType } = req.query;
+
+      if (!query) {
+        return res.status(400).json({ error: 'Search query is required' });
+      }
+
+      // Import the discovery engine
+      const { FeedDiscoveryEngine } = await import('./services/feed-discovery/discovery-engine');
+      const discoveryEngine = new FeedDiscoveryEngine();
+      
+      // Search for feeds
+      const results = await discoveryEngine.searchFeeds(query as string, sourceType as string);
+
+      res.json({
+        success: true,
+        results
+      });
+    } catch (error: any) {
+      console.error('Error searching feeds:', error);
+      res.status(500).json({ error: error.message || 'Failed to search feeds' });
+    }
+  });
+
+  // Feed health check endpoint (force check a specific feed)
+  app.post('/api/feeds/:id/check-health', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Import the monitor
+      const { getMonitor } = await import('./services/feed-monitoring/real-time-monitor');
+      const monitor = getMonitor();
+      
+      // Force check the feed
+      const status = await monitor.checkFeedNow(id);
+      
+      if (status) {
+        res.json({
+          success: true,
+          status
+        });
+      } else {
+        res.status(404).json({ error: 'Feed not found' });
+      }
+    } catch (error: any) {
+      console.error('Error checking feed health:', error);
+      res.status(500).json({ error: error.message || 'Failed to check feed health' });
+    }
+  });
+
   // Feed preview endpoints (protected)
   app.get('/api/feeds/:id', isAuthenticated, async (req: any, res) => {
     try {
