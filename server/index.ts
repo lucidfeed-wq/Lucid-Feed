@@ -113,6 +113,13 @@ app.use((req, res, next) => {
     // Initialize cron scheduler
     initializeScheduler();
     
+    // Initialize real-time feed monitoring
+    import('./services/feed-monitoring/real-time-monitor').then(({ startGlobalMonitoring }) => {
+      startGlobalMonitoring()
+        .then(() => console.log("✅ Real-time feed monitoring started"))
+        .catch(err => console.error("❌ Failed to start feed monitoring:", err));
+    });
+    
     // Marketing jobs route info
     console.log("Marketing jobs route active: /jobs/build-weekly-digest");
     console.log("[READY] Resend weekly digest emailer wired. Test with: POST /admin/run/email-digest?token=...");

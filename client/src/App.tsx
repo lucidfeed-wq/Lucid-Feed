@@ -21,6 +21,7 @@ import Onboarding from "@/pages/Onboarding";
 import Admin from "@/pages/Admin";
 import Pricing from "@/pages/Pricing";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
+import FeedManager from "@/pages/FeedManager";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/folders" component={Folders} />
       <Route path="/folders/:folderId" component={FolderView} />
       <Route path="/feeds" component={FeedCatalog} />
+      <Route path="/feeds/manage" component={FeedManager} />
       <Route path="/feeds/:id" component={FeedDetail} />
       <Route path="/discover" component={Discover} />
       <Route path="/onboarding" component={Onboarding} />
