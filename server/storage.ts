@@ -12,6 +12,7 @@ export interface IStorage {
   mergeItemEngagement(itemId: string, engagement: { comments: number; upvotes: number; views: number }): Promise<void>;
   getItemsWithoutQualityScores(limit: number): Promise<Item[]>;
   updateItem(itemId: string, updates: Partial<Item>): Promise<void>;
+  getRecentItems(limit: number): Promise<Item[]>;
   
   // Summaries
   createSummary(summary: InsertSummary): Promise<Summary>;
@@ -208,6 +209,13 @@ export class PostgresStorage implements IStorage {
 
   async updateItem(itemId: string, updates: Partial<Item>): Promise<void> {
     await db.update(items).set(updates).where(eq(items.id, itemId));
+  }
+
+  async getRecentItems(limit: number): Promise<Item[]> {
+    return await db.select()
+      .from(items)
+      .orderBy(desc(items.publishedAt))
+      .limit(limit);
   }
 
   // Summaries

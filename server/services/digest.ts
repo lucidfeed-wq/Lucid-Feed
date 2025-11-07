@@ -510,45 +510,77 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
       // Fallback: Get items from featured/high-quality feeds in the catalog
       const featuredFeeds = await storage.getFeaturedFeeds();
       if (featuredFeeds.length === 0) {
-        throw new Error('No recent items found from subscribed feeds and no featured feeds available. Please check your feed subscriptions.');
+        // Try to get ANY active feeds from the catalog
+        const allActiveFeeds = await storage.getActiveFeeds();
+        if (allActiveFeeds.length === 0) {
+          // Last resort: Get cached items from the database  
+          const recentCachedItems = await storage.getRecentItems(30); // Get last 30 items
+          if (recentCachedItems.length > 0) {
+            console.log(`Using ${recentCachedItems.length} cached items for digest`);
+            savedItems.push(...recentCachedItems);
+            metadata.usedFallback = true;
+            metadata.fallbackReason = 'Using cached content due to feed availability issues';
+            metadata.healingMessages!.push('Using previously fetched content for your digest');
+          } else {
+            throw new Error('Unable to generate digest at this time. Please try again in a few minutes.');
+          }
+        }
       }
       
-      // Fetch items from featured feeds
-      const [featuredJournals, featuredReddit, featuredYoutube] = await Promise.all([
-        fetchJournalFeeds(),
-        fetchRedditFeeds(),
-        fetchYouTubeFeeds(),
-      ]);
-      
-      allFreshItems = [...featuredJournals, ...featuredReddit, ...featuredYoutube];
-      
-      // Filter by date window
-      allFreshItems = allFreshItems.filter(item => {
-        const pubDate = new Date(item.publishedAt);
-        return pubDate >= windowStart && pubDate <= windowEnd;
-      });
-      
-      if (allFreshItems.length === 0) {
-        throw new Error('No recent content available. Our team has been notified and is working on it.');
+      // Only fetch new items if we have feeds to fetch from
+      if (featuredFeeds.length > 0 && savedItems.length === 0) {
+        // Fetch items from featured feeds with error handling
+        const [featuredJournals, featuredReddit, featuredYoutube] = await Promise.all([
+          fetchWithFallback(fetchJournalFeeds, 'journal'),
+          fetchWithFallback(fetchRedditFeeds, 'Reddit'),
+          fetchWithFallback(fetchYouTubeFeeds, 'YouTube'),
+        ]);
+        
+        allFreshItems = [...featuredJournals, ...featuredReddit, ...featuredYoutube];
+        
+        // Try wider date window if no recent items
+        if (allFreshItems.length === 0) {
+          const widerWindowStart = subDays(windowEnd, 14); // Try 14 days instead of 7
+          allFreshItems = allFreshItems.filter(item => {
+            const pubDate = new Date(item.publishedAt);
+            return pubDate >= widerWindowStart && pubDate <= windowEnd;
+          });
+        }
+        
+        if (allFreshItems.length === 0) {
+          // Use cached items as last resort
+          const recentCachedItems = await storage.getRecentItems(30);
+          if (recentCachedItems.length > 0) {
+            savedItems.push(...recentCachedItems);
+            metadata.usedFallback = true;
+            metadata.fallbackReason = 'Using cached content due to no recent feed updates';
+            metadata.healingMessages!.push('Using previously fetched content for your digest');
+          } else {
+            throw new Error('Unable to generate digest. Please check your internet connection and try again.');
+          }
+        } else {
+          metadata.usedFallback = true;
+          metadata.fallbackReason = 'No items matched from subscribed feeds';
+        }
       }
-      
-      metadata.usedFallback = true;
-      metadata.fallbackReason = 'No items matched from subscribed feeds';
     }
 
-    // IMMEDIATE ENRICHMENT: Enrich all items right now (don't wait for cron)
-    console.log('Enriching items with full content and quality scoring...');
-    const enrichedItems = await enrichContentBatch(allFreshItems);
+    // Initialize savedItems array early for fallback scenarios
+    let savedItems: Item[] = [];
     
-    // Save enriched items to database
-    const savedItems: Item[] = [];
-    for (const item of enrichedItems) {
-      const existing = await storage.getItemByHash(item.hashDedupe);
-      if (!existing) {
-        const saved = await storage.createItem(item);
-        savedItems.push(saved);
-      } else {
-        savedItems.push(existing);
+    // IMMEDIATE ENRICHMENT: Enrich all items right now (don't wait for cron)
+    if (allFreshItems.length > 0) {
+      console.log('Enriching items with full content and quality scoring...');
+      const enrichedItems = await enrichContentBatch(allFreshItems);
+      
+      for (const item of enrichedItems) {
+        const existing = await storage.getItemByHash(item.hashDedupe);
+        if (!existing) {
+          const saved = await storage.createItem(item);
+          savedItems.push(saved);
+        } else {
+          savedItems.push(existing);
+        }
       }
     }
 
