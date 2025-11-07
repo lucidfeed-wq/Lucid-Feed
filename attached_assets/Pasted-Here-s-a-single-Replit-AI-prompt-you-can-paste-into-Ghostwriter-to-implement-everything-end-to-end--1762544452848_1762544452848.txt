@@ -1,0 +1,335 @@
+Here’s a single Replit AI prompt you can paste into Ghostwriter to implement everything end-to-end (async digest jobs + performance wins), without you touching the shell.
+
+⸻
+
+Replit AI Prompt — Make Digest Generation Async, Fast, and Reliable
+
+Goal:
+Eliminate 300-second frontend timeouts by converting digest generation to an async background job with a small, durable queue. Keep existing digest logic, but move it behind the queue. Also add performance wins: bounded concurrency, early discard of low-value items, caching (summaries/embeddings), YouTube ingest via RSS, and journal-first priority. Do not remove any existing features.
+
+⸻
+
+1) Database migration (durable job state)
+
+Create a migration and run it to add a digest_jobs table:
+
+-- migrations/20251107_add_digest_jobs.sql
+create extension if not exists pgcrypto; -- for gen_random_uuid (if using pg ≥13 may be builtin)
+
+create table if not exists digest_jobs (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  topic text,
+  user_id text,
+  status text not null check (status in ('queued','running','done','error')),
+  progress int not null default 0,
+  total int not null default 0,
+  digest_id text,
+  error text
+);
+
+create index if not exists idx_digest_jobs_status on digest_jobs(status);
+
+If the app has a migration runner, register this file; otherwise apply it in the app’s startup.
+
+⸻
+
+2) Lightweight job queue
+
+Create a minimal queue using Postgres row-locking. Use the existing DB client (whatever the codebase uses).
+
+File: server/jobs/digest-queue.ts
+
+import { sql } from "../db"; // adjust import to your DB helper
+import { generateDigest } from "../services/digest/generate"; // your existing build function
+
+type EnqueueArgs = { topic?: string; userId?: string };
+
+export async function enqueueDigest(args: EnqueueArgs) {
+  const { rows } = await sql`
+    insert into digest_jobs (topic, user_id, status)
+    values (${args.topic ?? null}, ${args.userId ?? null}, 'queued')
+    returning id
+  `;
+  return rows[0].id as string;
+}
+
+let runnerStarted = false;
+
+export function startDigestRunner() {
+  if (runnerStarted) return;
+  runnerStarted = true;
+
+  // simple forever loop with small idle sleep
+  (async function loop() {
+    // pace: don’t hammer DB
+    await new Promise(r => setTimeout(r, 500));
+
+    // pick one queued job
+    const lock = await sql.begin(async trx => {
+      const r = await trx`
+        select id, topic, user_id
+        from digest_jobs
+        where status='queued'
+        order by created_at
+        limit 1
+        for update skip locked
+      `;
+      if (r.count === 0) return null;
+
+      const job = r[0];
+      await trx`update digest_jobs set status='running', updated_at=now() where id=${job.id}`;
+      return job;
+    });
+
+    if (!lock) return loop();
+
+    const jobId = lock.id as string;
+
+    // progress callback from generateDigest
+    const onProgress = async (done: number, total: number) => {
+      await sql`update digest_jobs set progress=${done}, total=${total}, updated_at=now() where id=${jobId}`;
+    };
+
+    try {
+      const digestId = await generateDigest({
+        topic: lock.topic ?? undefined,
+        userId: lock.user_id ?? undefined,
+        onProgress
+      });
+      await sql`
+        update digest_jobs
+        set status='done', digest_id=${digestId}, updated_at=now()
+        where id=${jobId}
+      `;
+    } catch (e: any) {
+      await sql`
+        update digest_jobs
+        set status='error', error=${String(e?.message ?? e)}, updated_at=now()
+        where id=${jobId}
+      `;
+    } finally {
+      setImmediate(loop);
+    }
+  })();
+}
+
+Call startDigestRunner() once during server boot (see §4).
+
+⸻
+
+3) API routes (return immediately; front end polls)
+
+File: server/routes/digest.ts (or wherever API routes live)
+
+import { Router } from "express"; // or the framework you use
+import { enqueueDigest } from "../jobs/digest-queue";
+import { sql } from "../db";
+
+export const digestRouter = Router();
+
+digestRouter.post("/refresh", async (req, res) => {
+  const { topic, userId } = req.body ?? {};
+  const jobId = await enqueueDigest({ topic, userId });
+  res.status(202).json({ jobId });
+});
+
+digestRouter.get("/status", async (req, res) => {
+  const { jobId } = req.query;
+  if (!jobId) return res.status(400).json({ error: "jobId required" });
+
+  const { rows } = await sql`select status, progress, total, digest_id, error from digest_jobs where id=${jobId}`;
+  if (rows.length === 0) return res.status(404).json({ error: "job not found" });
+
+  const j = rows[0];
+  res.json({
+    status: j.status,
+    progress: j.progress,
+    total: j.total,
+    digestId: j.digest_id,
+    error: j.error
+  });
+});
+
+Mount the router at /api/digest (see §4).
+
+⸻
+
+4) Server boot: start the runner + mount routes
+
+In your main server entry (e.g., server/index.ts or server/app.ts):
+
+import express from "express";
+import { startDigestRunner } from "./jobs/digest-queue";
+import { digestRouter } from "./routes/digest";
+
+const app = express();
+app.use(express.json());
+
+app.use("/api/digest", digestRouter);
+
+// start background runner once
+startDigestRunner();
+
+export default app;
+
+
+⸻
+
+5) Wire the UI (polling + progress)
+
+Update the client so it does not wait on the long request. Instead:
+	•	POST /api/digest/refresh → { jobId }
+	•	Poll /api/digest/status?jobId=... every 3–5s.
+	•	Stop when status: 'done' or 'error'.
+
+React-ish pseudo:
+
+const startBuild = async (topic?: string) => {
+  const r = await fetch("/api/digest/refresh", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ topic })});
+  const { jobId } = await r.json();
+  poll(jobId);
+};
+
+const poll = async (jobId: string) => {
+  const r = await fetch(`/api/digest/status?jobId=${jobId}`);
+  const s = await r.json();
+  setProgress({ done: s.progress, total: s.total });
+
+  if (s.status === "done") return showDigest(s.digestId);
+  if (s.status === "error") return showError(s.error);
+
+  setTimeout(() => poll(jobId), 3000);
+};
+
+
+⸻
+
+6) Performance wins inside generateDigest
+
+Open your current generateDigest (e.g., server/services/digest/generate.ts) and add:
+
+6.1 Concurrency limit (safe parallelism 4–6)
+
+function pLimit(n: number) {
+  const q: (() => void)[] = [];
+  let a = 0;
+  return <T>(fn: () => Promise<T>) => new Promise<T>((res, rej) => {
+    const run = () => { a++; fn().then(res, rej).finally(() => { a--; q.shift()?.(); }); };
+    a < n ? run() : q.push(run);
+  });
+}
+const limit = pLimit(Number(process.env.ENRICH_CONCURRENCY ?? 6));
+
+Use it for any network/LLM work:
+
+const enriched = await Promise.all(items.map(it => limit(() => enrichItem(it, onProgress))));
+
+6.2 Early discard (score first; skip low value)
+
+If you have a quick scorer (content/engagement/credibility), run it before heavy enrichment:
+
+const preScored = await Promise.all(items.map(scoreLightweight)); // cheap
+const highValue = preScored.filter(s => s.total >= 50); // keep threshold configurable
+// Only enrich high-value
+const enriched = await Promise.all(highValue.map(it => limit(() => enrichItem(it, onProgress))));
+
+6.3 Cache summaries/embeddings by URL hash
+
+Inject a simple KV in Postgres or Redis. Here’s a Postgres version:
+
+Create a table:
+
+create table if not exists content_cache (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz not null default now()
+);
+create index if not exists idx_content_cache_updated on content_cache(updated_at);
+
+Helpers:
+
+import { sql } from "../../db";
+import crypto from "crypto";
+
+const cacheKey = (url: string, which: string) =>
+  `${which}:${crypto.createHash("sha256").update(url).digest("hex")}`;
+
+export async function cacheGet(url: string, which: "summary"|"embedding") {
+  const k = cacheKey(url, which);
+  const { rows } = await sql`select value from content_cache where key=${k}`;
+  return rows[0]?.value ?? null;
+}
+
+export async function cachePut(url: string, which: "summary"|"embedding", value: any) {
+  const k = cacheKey(url, which);
+  await sql`
+    insert into content_cache(key, value) values (${k}, ${value})
+    on conflict (key) do update set value=excluded.value, updated_at=now()
+  `;
+}
+
+Use in enrichItem:
+
+const cached = await cacheGet(item.url, "summary");
+if (cached) return cached;
+
+const summary = await callLLMToSummarize(item); // heavy work
+await cachePut(item.url, "summary", summary);
+return summary;
+
+6.4 YouTube ingest via RSS after discovery
+
+Wherever you ingest YouTube, switch to RSS URLs once you know a channel ID to avoid quota burns:
+
+const ytRSS = (channelId: string) =>
+  `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+
+// For ingestion, parse the RSS instead of calling search repeatedly.
+
+6.5 Journal-first priority
+
+Kick journals first; wait up to ~60–90s before proceeding with other sources:
+
+const journalDone = await Promise.race([
+  runJournalsPhase(onProgress),
+  new Promise(r => setTimeout(r, 90000)) // proceed if journals stall
+]);
+// Then proceed with community/podcasts/youtube
+
+6.6 Progress reporting
+
+Where you log Progress: X/28, also call the onProgress(done, total) callback so the /status endpoint can display a percentage.
+
+⸻
+
+7) Security for admin/job endpoints (quick wins)
+	•	Switch any token-in-query endpoints to header auth:
+	•	Authorization: Bearer <ADMIN_JOB_TOKEN>
+	•	Rate-limit admin routes.
+	•	(Optional) allowlist source IPs via env ALLOW_JOBS_FROM_IPS.
+
+⸻
+
+8) Acceptance criteria
+	•	POST /api/digest/refresh returns { jobId } in < 300 ms (HTTP 202).
+	•	GET /api/digest/status returns { status, progress, total, digestId }.
+	•	A full digest run completes without blocking the original HTTP request.
+	•	Runs are faster thanks to concurrency + early discard + caching.
+	•	If a job exceeds 5 minutes, the UI continues polling and completes successfully.
+	•	YouTube ingestion uses RSS where possible.
+	•	Journals get first crack; pipeline doesn’t stall waiting forever.
+
+⸻
+
+9) Nice to have (if trivial)
+	•	Add a small jobs admin page listing last 20 jobs with status and elapsed time.
+	•	Add metrics counters (jobs started/done/error; avg duration).
+
+⸻
+
+Please implement everything above. Keep all existing functionality intact, but route the digest generation through the async queue with progress. If anything in file paths differs in this repo, adapt paths accordingly rather than changing callers. After you’re done, run the app and confirm:
+	1.	the new routes work,
+	2.	a digest completes end-to-end without a 300-second timeout,
+	3.	progress updates appear during the run.

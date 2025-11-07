@@ -1143,6 +1143,42 @@ export const insertDiscoveryAttemptSchema = createInsertSchema(discoveryAttempts
 export type DiscoveryAttempt = typeof discoveryAttempts.$inferSelect;
 export type InsertDiscoveryAttempt = z.infer<typeof insertDiscoveryAttemptSchema>;
 
+// Digest jobs table - async background digest generation
+export const digestJobs = pgTable("digest_jobs", {
+  id: varchar("id", { length: 255 }).primaryKey().$defaultFn(() => nanoid()),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  topic: text("topic"),
+  userId: text("user_id"),
+  status: varchar("status", { length: 20 }).notNull().$type<'queued' | 'running' | 'done' | 'error'>(),
+  progress: integer("progress").notNull().default(0),
+  total: integer("total").notNull().default(0),
+  digestId: text("digest_id"),
+  error: text("error"),
+}, (table) => ({
+  statusIdx: index("digest_jobs_status_idx").on(table.status),
+  userIdIdx: index("digest_jobs_user_id_idx").on(table.userId),
+  createdAtIdx: index("digest_jobs_created_at_idx").on(table.createdAt),
+}));
+
+export const digestJobSchema = z.object({
+  id: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  topic: z.string().nullable().optional(),
+  userId: z.string().nullable().optional(),
+  status: z.enum(['queued', 'running', 'done', 'error']),
+  progress: z.number(),
+  total: z.number(),
+  digestId: z.string().nullable().optional(),
+  error: z.string().nullable().optional(),
+});
+
+export const insertDigestJobSchema = createInsertSchema(digestJobs).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type DigestJob = typeof digestJobs.$inferSelect;
+export type InsertDigestJob = z.infer<typeof insertDigestJobSchema>;
+
 // Feed candidate type for discovery
 export interface FeedCandidate {
   url: string;

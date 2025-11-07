@@ -22,6 +22,7 @@ interface DigestGenerationOptions {
     expert?: number;
   };
   windowDays?: number;
+  onProgress?: (done: number, total: number) => Promise<void>;
 }
 
 interface FeedContentResult {
@@ -313,6 +314,15 @@ export async function generateWeeklyDigest(options: DigestGenerationOptions = {}
 export async function generatePersonalizedDigest(userId: string, options: DigestGenerationOptions = {}): Promise<{ id: string; slug: string; metadata?: DigestMetadata }> {
   console.log(`Starting personalized digest generation for user ${userId}...`);
 
+  // Progress callback helper
+  const reportProgress = async (done: number, total = 100) => {
+    if (options.onProgress) {
+      await options.onProgress(done, total).catch(err => 
+        console.error('[Progress] Failed to report progress:', err)
+      );
+    }
+  };
+
   // Default item counts (smaller for personalized)
   const itemCounts = {
     research: options.itemCounts?.research ?? 10,
@@ -328,10 +338,15 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
   };
 
   try {
+    // Stage 1: Initial setup (0-10%)
+    await reportProgress(5);
+    
     // Get user's topic preferences for filtering
     const userPreferences = await storage.getUserPreferences(userId);
     const favoriteTopics = userPreferences?.favoriteTopics || [];
     console.log(`User has ${favoriteTopics.length} favorite topics:`, favoriteTopics);
+    
+    await reportProgress(10);
 
     // Get user's subscribed feeds
     const userFeedSubscriptions = await storage.getUserFeedSubscriptions(userId);
@@ -445,6 +460,9 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
       fetchWithFallback(fetchYouTubeFeeds, 'YouTube'),
       fetchWithFallback(fetchPodcastFeeds, 'podcast'),
     ]);
+    
+    // Stage 2: Feed fetching complete (10-30%)
+    await reportProgress(30);
 
     let allFreshItems: InsertItem[] = [...journals, ...reddit, ...substack, ...youtube, ...podcasts];
     
@@ -585,6 +603,9 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
     }
 
     console.log(`Saved/retrieved ${savedItems.length} enriched items`);
+    
+    // Stage 3: Enrichment complete (30-50%)
+    await reportProgress(50);
 
     // Rank items
     const rankedItems = rankItems(savedItems);
@@ -672,6 +693,9 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
     }
 
     console.log(`Final selection: ${allTopItems.length} items (${topJournals.length} research, ${topCommunity.length} community, ${topExperts.length} expert)`);
+    
+    // Stage 4: Filtering complete (50-60%)
+    await reportProgress(60);
 
     // Generate AI summaries
     const allItemIds = allTopItems.map(i => i.id);
@@ -685,6 +709,9 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
       await storage.createBatchSummaries(newSummaries);
       newSummaries.forEach(s => existingSummaryMap.set(s.itemId, s));
     }
+    
+    // Stage 5: Summaries complete (60-80%)
+    await reportProgress(80);
 
     // Build digest sections
     const researchHighlights: DigestSectionItem[] = topJournals.map(item =>
@@ -750,6 +777,9 @@ export async function generatePersonalizedDigest(userId: string, options: Digest
     // Estimate token spend
     totalTokenSpend = (itemsNeedingSummaries.length * 500) + 
                       ([resSummary, commSummary, expSummary].filter(Boolean).length * 300);
+
+    // Stage 6: Digest creation complete (80-100%)
+    await reportProgress(100);
 
     return { id: created.id, slug, metadata };
   } catch (error) {
