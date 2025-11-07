@@ -1,0 +1,60 @@
+11-07 06:08:18
+✓ Content quality: 17/40 - The content lacks scientific citations and credible sources, making the evidence quality low. While it provides some personal insights that could be useful for practitioners, it does not offer actionable clinical guidance or address specific patient outcomes effectively.
+11-07 06:08:18
+✓ Unified Score: 62/100 (Content: 17, Engagement: 20, Credibility: 10)
+11-07 06:08:18
+Enriching reddit: Guys I found the best carni snack
+11-07 06:08:18
+Enriching reddit: redditor question - how to tell fat:protein ratio?
+11-07 06:08:18
+Enriching podcast: Essentials: Erasing Fears & Traumas Using Modern Neuroscience
+11-07 06:08:20
+✓ Content quality: 32/40 - The podcast presents evidence-based approaches and discusses credible therapies, providing actionable insights for practitioners, though some concepts may require further clarification for accessibility.
+11-07 06:08:20
+✓ Unified Score: 63/100 (Content: 32, Engagement: 6, Credibility: 10)
+11-07 06:08:20
+✓ Content quality: 15/40 - The content lacks scientific citations and credible sources to support claims, making it low in evidence quality. While it raises a relevant clinical question, it does not provide actionable insights or clear guidelines for practitioners.
+11-07 06:08:20
+✓ Unified Score: 60/100 (Content: 15, Engagement: 20, Credibility: 10)
+11-07 06:08:21
+✓ Content quality: 16/40 - The content lacks scientific citations and rigorous evidence to support health claims, but it provides a simple cooking method that could be useful for practitioners looking for easy meal options. However, it does not offer substantial clinical insights or actionable recommendations.
+11-07 06:08:21
+✓ Unified Score: 61/100 (Content: 16, Engagement: 20, Credibility: 10)
+11-07 06:08:21
+Enriching podcast: Using Existing Drugs in New Ways to Treat & Cure Diseases of Brain & Body | Dr. David Fajgenbaum
+11-07 06:08:23
+✓ Content quality: 32/40 - The podcast features a credible expert discussing repurposed medications with potential clinical implications, though specific studies or citations are not detailed. The content is well-structured and provides actionable insights for practitioners, making it relevant for improving patient outcomes.
+11-07 06:08:23
+✓ Unified Score: 63/100 (Content: 32, Engagement: 6, Credibility: 10)
+11-07 06:08:23
+Progress: 28/28
+11-07 06:08:23
+✓ Enrichment complete: 28 items processed
+11-07 06:08:24
+Saved/retrieved 28 enriched items
+11-07 06:08:24
+Quality filtered: 28 items (from 28)
+11-07 06:08:24
+Topic matches - Journals: 0/0, YouTube: 0/0, Community: 28/28
+11-07 06:08:24
+⚠ Too few journal matches (0), using all quality journals
+11-07 06:08:24
+⚠ Too few YouTube matches (0), using all quality videos
+11-07 06:08:24
+✓ Using topic-filtered community (28 items)
+11-07 06:08:24
+Final source breakdown: 0 journals, 0 youtube, 28 community
+11-07 06:08:24
+Final selection: 10 items (0 research, 10 community, 0 expert)
+11-07 06:08:30
+Personalized digest created: QMDicXUR7hHkBL7hxCo9z (personal-41556120-1762517310)
+11-07 06:08:30
+[POST /api/digest/refresh] Digest generated successfully: personal-41556120-1762517310
+11-07 06:08:30
+12:08:30 PM [express] POST /api/digest/refresh 200 in 268250ms :: {"success":true,"digestId":"QMDicXU…
+11-07 06:08:52
+🔍 Checking 10 feeds
+11-07 06:14:04
+🔍 Checking 10 feeds
+11-07 06:19:03
+🔍 Checking 10 feeds
