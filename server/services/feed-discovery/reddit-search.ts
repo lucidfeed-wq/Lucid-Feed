@@ -48,6 +48,7 @@ async function getRedditAccessToken(): Promise<string | null> {
         grant_type: 'password',
         username,
         password,
+        scope: 'read', // Request read scope for API access
       }),
     });
 
@@ -103,7 +104,9 @@ export async function searchRedditSubreddits(query: string): Promise<RedditSubre
     const response = await fetch(searchUrl, { headers });
     
     if (!response.ok) {
+      const errorText = await response.text();
       console.error(`[Reddit Search] Search failed: ${response.status}`);
+      console.error(`[Reddit Search] Error details: ${errorText}`);
       if (response.status === 403) {
         console.error('[Reddit Search] 403 Forbidden - OAuth credentials may be required or invalid');
       }
