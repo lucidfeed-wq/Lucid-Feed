@@ -71,11 +71,45 @@ export default function Home() {
 
   const readItemIds = new Set((readStatusData as { readIds?: string[] })?.readIds || []);
 
-  // Refresh digest mutation
+  // Refresh digest mutation with 10-minute timeout
   const refreshMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/digest/refresh');
-      return await response.json();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 min timeout
+      
+      try {
+        const response = await fetch('/api/digest/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          // Try to parse JSON error response for upgrade/limit messages
+          let errorData;
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            errorData = await response.json();
+          } else {
+            errorData = { message: await response.text() || response.statusText };
+          }
+          
+          // Throw with both status code and parsed data
+          const error: any = new Error(`${response.status}: ${errorData.error || errorData.message || response.statusText}`);
+          error.response = { data: errorData };
+          throw error;
+        }
+        
+        return await response.json();
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Digest generation is taking longer than expected (>10 min). Please check back in a few minutes or contact support.');
+        }
+        throw error;
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/digest/latest'] });
@@ -385,8 +419,13 @@ export default function Home() {
                 className="w-full"
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
-                {refreshMutation.isPending ? "Fetching Fresh Content..." : "Refresh My Digest"}
+                {refreshMutation.isPending ? "Generating Fresh Digest..." : "Refresh My Digest"}
               </Button>
+              {refreshMutation.isPending && (
+                <p className="text-sm text-muted-foreground text-center mt-2">
+                  This usually takes 1-3 minutes while we analyze your feeds
+                </p>
+              )}
             </div>
 
             {/* Sort Controls */}

@@ -165,7 +165,7 @@ export async function enrichItem(item: InsertItem): Promise<EnrichedItem> {
  */
 export async function enrichContentBatch(
   items: InsertItem[],
-  concurrency: number = 3
+  concurrency: number = 8
 ): Promise<EnrichedItem[]> {
   console.log(`📊 Enriching ${items.length} items (concurrency: ${concurrency})...`);
   
