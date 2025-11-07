@@ -6,3 +6,4 @@ dist
 .cache
 .upm
 tmp/
+attached_assets/*.zip
