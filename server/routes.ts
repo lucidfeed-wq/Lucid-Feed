@@ -1646,6 +1646,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/admin/test-reddit", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { searchRedditSubreddits } = await import('./services/feed-discovery/reddit-search');
+      
+      // Test with a simple query
+      const testQuery = req.query.query as string || 'science';
+      
+      console.log(`[Reddit Test] Testing Reddit API with query: "${testQuery}"`);
+      const results = await searchRedditSubreddits(testQuery);
+      
+      res.json({ 
+        success: true,
+        message: `Reddit API test completed successfully for query: "${testQuery}"`,
+        resultsCount: results.length,
+        results: results.slice(0, 3), // Return first 3 results
+        note: 'Check server logs for detailed OAuth and API call information'
+      });
+    } catch (error) {
+      console.error("[Reddit Test] Error testing Reddit API:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Reddit API test failed", 
+        error: String(error) 
+      });
+    }
+  });
+
   app.post("/admin/run/ingest", isAuthenticated, isAdmin, async (req, res) => {
     try {
       // Validate request body with Zod
