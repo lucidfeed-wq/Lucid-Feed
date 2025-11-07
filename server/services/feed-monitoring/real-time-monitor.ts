@@ -306,12 +306,16 @@ export class RealTimeFeedMonitor {
     const notifications = await storage.getAcceptedNotifications();
     
     for (const notification of notifications) {
-      if (notification.actionData?.alternativeUrl) {
-        const feedId = notification.actionData.feedId;
-        const newUrl = notification.actionData.alternativeUrl;
+      if (notification.alternativeFeedId && notification.feedId) {
+        const feedId = notification.feedId;
+        const alternativeFeedId = notification.alternativeFeedId;
+        
+        // Get the alternative feed's URL
+        const alternativeFeed = await storage.getFeedById(alternativeFeedId);
+        if (!alternativeFeed) continue;
         
         // Update feed URL
-        await storage.updateFeedUrl(feedId, newUrl);
+        await storage.updateFeedUrl(feedId, alternativeFeed.url);
         
         // Reset health status
         this.healthCache.set(feedId, {
@@ -321,7 +325,7 @@ export class RealTimeFeedMonitor {
           consecutiveFailures: 0
         });
         
-        console.log(`🔄 Updated feed ${feedId} with new URL: ${newUrl}`);
+        console.log(`🔄 Updated feed ${feedId} with new URL from ${alternativeFeedId}: ${alternativeFeed.url}`);
       }
     }
   }

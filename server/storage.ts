@@ -142,6 +142,7 @@ export interface IStorage {
   getNotificationById(notificationId: string): Promise<FeedNotification | undefined>;
   handleNotificationAction(notificationId: string, userId: string, action: 'accepted' | 'declined'): Promise<void>;
   getActionRequiredNotifications(userId: string): Promise<FeedNotification[]>;
+  getAcceptedNotifications(): Promise<FeedNotification[]>;
   
   // Discovery Attempts
   saveDiscoveryAttempt(attempt: InsertDiscoveryAttempt): Promise<DiscoveryAttempt>;
@@ -613,8 +614,9 @@ export class PostgresStorage implements IStorage {
       .update(feedCatalog)
       .set({ 
         url: newUrl,
-        lastSuccessfulFetch: new Date(),
-        consecutiveFailures: 0
+        lastFetchedAt: new Date(),
+        consecutiveFailures: 0,
+        lastFetchStatus: 'success'
       })
       .where(eq(feedCatalog.id, feedId));
   }
@@ -1727,6 +1729,14 @@ export class PostgresStorage implements IStorage {
           )
         )
       )
+      .orderBy(desc(feedNotifications.createdAt));
+  }
+
+  async getAcceptedNotifications(): Promise<FeedNotification[]> {
+    return await db
+      .select()
+      .from(feedNotifications)
+      .where(eq(feedNotifications.userAction, 'accepted'))
       .orderBy(desc(feedNotifications.createdAt));
   }
 
