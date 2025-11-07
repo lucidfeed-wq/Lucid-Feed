@@ -8,7 +8,7 @@ import { storage } from '../../storage';
 import type { InsertFeedCatalog, FeedCatalog } from '@shared/schema';
 import { fetchYouTubeTranscript } from '../youtube-transcript';
 import { fetchOpenAccessPDF, extractPDFText } from '../unpaywall';
-import { extractDOI } from '../crossref';
+import { extractDOI } from '../../utils/doi';
 
 const parser = new RSSParser({
   timeout: 10000,
