@@ -144,6 +144,7 @@ export interface IStorage {
   handleNotificationAction(notificationId: string, userId: string, action: 'accepted' | 'declined'): Promise<void>;
   getActionRequiredNotifications(userId: string): Promise<FeedNotification[]>;
   getAcceptedNotifications(): Promise<FeedNotification[]>;
+  deleteOldNotifications(hoursOld: number): Promise<number>;
   
   // Discovery Attempts
   saveDiscoveryAttempt(attempt: InsertDiscoveryAttempt): Promise<DiscoveryAttempt>;
@@ -1746,6 +1747,14 @@ export class PostgresStorage implements IStorage {
       .from(feedNotifications)
       .where(eq(feedNotifications.userAction, 'accepted'))
       .orderBy(desc(feedNotifications.createdAt));
+  }
+
+  async deleteOldNotifications(hoursOld: number): Promise<number> {
+    const cutoffDate = new Date(Date.now() - hoursOld * 60 * 60 * 1000);
+    const result = await db
+      .delete(feedNotifications)
+      .where(lte(feedNotifications.createdAt, cutoffDate));
+    return result.rowCount || 0;
   }
 
   // Discovery Attempts

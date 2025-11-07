@@ -73,6 +73,19 @@ export function initializeScheduler() {
     }
   });
 
+  // Notification cleanup - every 6 hours, delete notifications older than 48 hours
+  cron.schedule("0 */6 * * *", async () => {
+    try {
+      const { storage } = await import("./storage");
+      const deleted = await storage.deleteOldNotifications(48);
+      if (deleted > 0) {
+        console.log(`🧹 Cleaned up ${deleted} old notifications (>48h)`);
+      }
+    } catch (error) {
+      console.error("Notification cleanup failed:", error);
+    }
+  });
+
   // Start the discovery job processor
   // This runs continuously with its own interval
   console.log("🚀 Starting discovery job processor...");
@@ -113,6 +126,7 @@ export function initializeScheduler() {
   console.log("- Feed request processing: Every day at 2 AM UTC");
   console.log("- Topic migration cleanup: Every day at 3 AM UTC");
   console.log("- Weekly feed health retry: Every Sunday at 4 AM UTC");
+  console.log("- Notification cleanup: Every 6 hours (removes >48h old)");
   console.log("- Discovery processor: Running continuously (checks every 30s)");
   console.log("- Proactive crawler: Building catalog 24/7 (100 feeds/topic limit, 30min cycles)");
 }

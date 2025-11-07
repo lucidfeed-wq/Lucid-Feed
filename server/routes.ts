@@ -219,6 +219,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/notifications/unread', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      
+      // Clean up old notifications (>48h) before fetching
+      await storage.deleteOldNotifications(48);
+      
       const notifications = await storage.getUnreadNotifications(userId);
       res.json(notifications);
     } catch (error) {
