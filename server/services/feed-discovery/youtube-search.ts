@@ -12,22 +12,64 @@ export interface YouTubeChannelInfo {
 
 /**
  * Search for YouTube channels related to a topic
- * Uses web scraping since YouTube Data API requires quota management
+ * Uses YouTube Data API when available, fallback to curated list
  */
 export async function searchYouTubeChannels(query: string): Promise<YouTubeChannelInfo[]> {
   try {
-    // Search using a public YouTube RSS discovery service
-    // YouTube provides RSS feeds at: https://www.youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID
+    const apiKey = process.env.YOUTUBE_API_KEY || process.env.GOOGLE_API_KEY;
     
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search`;
+    // Try real YouTube Data API if key is available
+    if (apiKey) {
+      console.log('[YouTube Search] Using YouTube Data API for:', query);
+      
+      const searchUrl = new URL('https://www.googleapis.com/youtube/v3/search');
+      searchUrl.searchParams.append('part', 'snippet');
+      searchUrl.searchParams.append('q', query);
+      searchUrl.searchParams.append('type', 'channel');
+      searchUrl.searchParams.append('maxResults', '5');
+      searchUrl.searchParams.append('key', apiKey);
+      searchUrl.searchParams.append('fields', 'items(snippet(channelId,channelTitle,title))');
+      
+      const response = await fetch(searchUrl.toString());
+      
+      if (response.ok) {
+        const data = await response.json();
+        const results: YouTubeChannelInfo[] = [];
+        
+        for (const item of data.items || []) {
+          const channelId = item.snippet.channelId;
+          const channelName = item.snippet.channelTitle || item.snippet.title || 'Unknown Channel';
+          
+          results.push({
+            channelId,
+            channelName,
+            rssFeedUrl: `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`,
+            channelUrl: `https://www.youtube.com/channel/${channelId}`,
+          });
+        }
+        
+        console.log(`[YouTube Search] Found ${results.length} channels via API`);
+        if (results.length > 0) {
+          return results;
+        }
+      } else {
+        const errorText = await response.text();
+        console.warn(`[YouTube Search] API error (${response.status}):`, errorText);
+        
+        if (response.status === 403) {
+          console.warn('[YouTube Search] Quota exceeded or invalid key, falling back to curated list');
+        }
+      }
+    } else {
+      console.log('[YouTube Search] No API key found, using fallback list');
+    }
     
-    // For now, we'll use a curated list based on common health/science channels
-    // In production, this would use the YouTube Data API with proper key management
+    // Fallback: Use curated list when API unavailable
     const knownChannels: Record<string, { id: string; name: string }[]> = {
       'health': [
-        { id: 'UCddiUEpeqJcYeBxX1IVBKvQ', name: 'The Infographics Show' },
-        { id: 'UC0uTPqBCFIpZxlz_Lv1tk_g', name: 'Healthline' },
+        { id: 'UC2D2CMWXMOVWx7giW1n3LIg', name: 'Andrew Huberman' },
         { id: 'UCiP6wD_tYlYLYh3agzbByWQ', name: 'Doctor Mike' },
+        { id: 'UC3w193M5tYPJqF0Hi-7U-2g', name: 'Dr. Eric Berg' },
       ],
       'science': [
         { id: 'UC7_gcs09iThXybpVgjHZ_7g', name: 'PBS Space Time' },
@@ -44,12 +86,18 @@ export async function searchYouTubeChannels(query: string): Promise<YouTubeChann
         { id: 'UCbta0n8i6Rljh0obO7HzG9A', name: 'Two Cents' },
         { id: 'UCL8w_A8p8P1HWI3k6PR5Z6w', name: 'Ben Felix' },
       ],
+      'nutrition': [
+        { id: 'UCWF8SqJVNlx-ctXbLswcTcA', name: 'FoundMyFitness' },
+        { id: 'UC70SrI3VkT1MXALRtf0pcHg', name: 'Thomas DeLauer' },
+        { id: 'UCoyL4iGArWn5Hu0V_sAhK2w', name: 'Dr. Jason Fung' },
+      ],
     };
     
-    // Find matching channels based on query
+    // Search fallback list
     const queryLower = query.toLowerCase();
     const results: YouTubeChannelInfo[] = [];
     
+    // Check categories
     for (const [category, channels] of Object.entries(knownChannels)) {
       if (queryLower.includes(category) || category.includes(queryLower)) {
         for (const channel of channels) {
@@ -63,7 +111,7 @@ export async function searchYouTubeChannels(query: string): Promise<YouTubeChann
       }
     }
     
-    // Also check if query matches specific channel names
+    // Check channel names
     for (const channels of Object.values(knownChannels)) {
       for (const channel of channels) {
         if (channel.name.toLowerCase().includes(queryLower) && 
@@ -78,9 +126,10 @@ export async function searchYouTubeChannels(query: string): Promise<YouTubeChann
       }
     }
     
+    console.log(`[YouTube Search] Found ${results.length} channels via fallback`);
     return results.slice(0, 5); // Return top 5 matches
   } catch (error) {
-    console.error('Error searching YouTube channels:', error);
+    console.error('[YouTube Search] Critical error:', error);
     return [];
   }
 }
