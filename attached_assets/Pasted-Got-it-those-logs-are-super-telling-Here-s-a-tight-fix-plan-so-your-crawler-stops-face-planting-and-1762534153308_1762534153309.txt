@@ -1,0 +1,216 @@
+Got it—those logs are super telling. Here’s a tight fix plan so your crawler stops face-planting and your health metrics write correctly.
+
+What’s breaking (and why)
+
+YouTube: “No API key found, using fallback list” → “Found 0 channels via fallback”
+
+Your process isn’t seeing YOUTUBE_API_KEY. In Replit/Cloud Run, that usually means envs aren’t loaded in the running process (or the key isn’t set at all).
+
+The fallback path is either empty or your topic→channels mapping isn’t matching the topics you’re passing (e.g., artificial_intelligence vs artificial-intelligence vs ai).
+
+Reddit: Reddit search failed: 403 (repeated)
+
+Reddit blocks unauthenticated search now. 403 means you’re hitting an endpoint that requires OAuth + a compliant User-Agent. Anonymous requests won’t work for search (and many listing endpoints).
+
+Postgres: stack trace in PostgresStorage.updateFeedHealth but no error text
+
+You’re swallowing the actual SQL error. The failure is likely a constraint/column mismatch or a bad upsert target (e.g., missing unique index for ON CONFLICT).
+
+Repeated “🔍 Checking 10 feeds”
+
+Multiple monitor loops are likely running simultaneously (or an interval firing before the previous cycle finishes). You need a lock/debounce.
+
+Fastest path to green ✅
+A) Config & env sanity (do this first)
+
+Replit: Secrets → add
+
+YOUTUBE_API_KEY
+
+REDDIT_CLIENT_ID, REDDIT_SECRET, REDDIT_USERNAME, REDDIT_PASSWORD (script app)
+
+Cloud Run (if deployed): Service → Edit & deploy new revision → Variables & Secrets → add same env keys.
+
+At app start, log which keys are present without printing values:
+
+const required = ["YOUTUBE_API_KEY","REDDIT_CLIENT_ID","REDDIT_SECRET","REDDIT_USERNAME","REDDIT_PASSWORD"];
+console.log("Config present:", Object.fromEntries(required.map(k => [k, !!process.env[k]])));
+
+
+Ensure your config loader isn’t running before dotenv.config() (if using dotenv) or being tree-shaken in build.
+
+B) YouTube search: move off “fallback” immediately
+
+Use official Data API v3 (search → channels/videos). Minimal Node snippet:
+
+import fetch from "node-fetch";
+
+async function ytSearchChannels(q: string, key = process.env.YOUTUBE_API_KEY) {
+  const url = new URL("https://www.googleapis.com/youtube/v3/search");
+  url.search = new URLSearchParams({
+    part: "snippet",
+    q,
+    type: "channel",
+    maxResults: "25",
+    key
+  }).toString();
+
+  const r = await fetch(url.toString());
+  if (!r.ok) throw new Error(`YouTube ${r.status}: ${await r.text()}`);
+  const j = await r.json();
+  return j.items?.map((i:any) => ({ id: i.id.channelId, title: i.snippet.title })) ?? [];
+}
+
+
+Topic mapping hygiene: normalize topics before mapping.
+
+const normalize = (t:string) => t.toLowerCase().replace(/\s+/g,"_").replace(/[^a-z0-9_]/g,"");
+// Map multiple aliases to one key:
+const TOPIC_ALIASES: Record<string,string> = {
+  ai: "artificial_intelligence",
+  artificial_intelligence: "artificial_intelligence",
+  keto: "keto",
+  carnivore: "carnivore",
+  biohacking: "biohacking",
+  longevity: "longevity",
+  neuroscience: "neuroscience",
+  startups: "startups",
+  investing: "investing",
+};
+
+
+Kill the dead fallback for discovery. Keep a seed list only as a last-resort merge (not the primary source). Make sure it’s actually populated.
+
+C) Reddit 403s: switch to proper OAuth (script app) + compliant User-Agent
+
+Reddit rules now require OAuth + a descriptive UA.
+
+import fetch from "node-fetch";
+const UA = "LucidFeedBot/1.0 by u/<your_username>";
+
+async function redditToken() {
+  const r = await fetch("https://www.reddit.com/api/v1/access_token", {
+    method: "POST",
+    headers: {
+      "Authorization": "Basic " + Buffer
+        .from(`${process.env.REDDIT_CLIENT_ID}:${process.env.REDDIT_SECRET}`).toString("base64"),
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": UA
+    },
+    body: new URLSearchParams({
+      grant_type: "password",
+      username: process.env.REDDIT_USERNAME!,
+      password: process.env.REDDIT_PASSWORD!
+    })
+  });
+  if (!r.ok) throw new Error(`Reddit auth ${r.status}: ${await r.text()}`);
+  return (await r.json()).access_token as string;
+}
+
+async function redditSearch(q:string, token:string) {
+  const url = `https://oauth.reddit.com/search?limit=25&q=${encodeURIComponent(q)}`;
+  const r = await fetch(url, { headers: { Authorization: `bearer ${token}`, "User-Agent": UA }});
+  if (!r.ok) throw new Error(`Reddit ${r.status}: ${await r.text()}`);
+  const j = await r.json();
+  return j.data?.children?.map((c:any)=>c.data) ?? [];
+}
+
+
+Add basic retry/backoff and treat 403 as a hard failure you surface in health metrics instead of spamming logs.
+
+D) Postgres updateFeedHealth error: make it loud + fix upsert target
+
+Log the real SQL error (right now you’re only logging the stack):
+
+try {
+  await storage.updateFeedHealth(...);
+} catch (err:any) {
+  console.error("[DB] updateFeedHealth failed", {
+    message: err?.message,
+    code: err?.code,
+    detail: err?.detail,
+    schema: err?.schema,
+    table: err?.table,
+    constraint: err?.constraint,
+    stack: err?.stack
+  });
+  throw err;
+}
+
+
+Schema check for an upsert:
+
+-- Ensure unique target for ON CONFLICT
+CREATE TABLE IF NOT EXISTS feed_health (
+  feed_id UUID PRIMARY KEY,
+  status TEXT NOT NULL,
+  last_checked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  error TEXT
+);
+
+
+Upsert example:
+
+INSERT INTO feed_health (feed_id, status, last_checked_at, error)
+VALUES ($1, $2, now(), $3)
+ON CONFLICT (feed_id)
+DO UPDATE SET status = EXCLUDED.status,
+              last_checked_at = now(),
+              error = EXCLUDED.error;
+
+
+Common gotchas this will catch:
+
+Missing PRIMARY KEY (or unique) on feed_id → ON CONFLICT fails.
+
+Wrong column type (e.g., writing a JSON object into TEXT).
+
+Null into NOT NULL status.
+
+E) Real-time monitor spam: enforce a single worker
+
+Add a distributed lock so only one monitor runs at a time:
+
+Postgres advisory lock:
+
+// start of monitorCycle
+const lock = await pg.query("SELECT pg_try_advisory_lock(987654321)");
+if (!lock.rows?.[0]?.pg_try_advisory_lock) return; // skip if another worker holds it
+try {
+  await doMonitorWork();
+} finally {
+  await pg.query("SELECT pg_advisory_unlock(987654321)");
+}
+
+
+Or a Redis lock (SET key value NX PX 30000) with renewal.
+
+Also add a guard: if the previous cycle is still running, skip starting a new one.
+
+F) Health signals you actually want
+
+Platform keys present? (boolean flags per platform)
+
+Last success per source (YouTube/Reddit/Substack/etc.)
+
+Last error per source (code + message, not just “failed”)
+
+Queue backlogs for discovery vs. ingestion
+
+Rate-limit budget remaining (Reddit/YouTube)
+
+G) Quick test checklist (run in your current env)
+
+node -e "console.log(process.env.YOUTUBE_API_KEY?.slice(0,4))" → prints first chars (proves presence).
+
+curl -A 'LucidFeedBot/1.0 by u/<user>' -u $REDDIT_CLIENT_ID:$REDDIT_SECRET -d 'grant_type=password&username='$REDDIT_USERNAME'&password='$REDDIT_PASSWORD'' https://www.reddit.com/api/v1/access_token → returns token JSON.
+
+Run a single discovery cycle with logging enabled; confirm:
+
+YouTube path uses API (no “fallback” message).
+
+Reddit path returns 200 with results (no 403).
+
+feed_health row upserts without error.
+
+“🔍 Checking 10 feeds” prints once per cycle.
