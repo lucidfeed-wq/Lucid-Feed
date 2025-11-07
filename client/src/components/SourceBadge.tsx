@@ -1,4 +1,4 @@
-import { Newspaper, MessageSquare, FileText, Video } from "lucide-react";
+import { Newspaper, MessageSquare, FileText, Video, Mic } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { SourceType } from "@shared/schema";
 
@@ -27,6 +27,11 @@ export function SourceBadge({ sourceType, className = "" }: SourceBadgeProps) {
     youtube: {
       icon: Video,
       label: "YouTube",
+      variant: "outline" as const,
+    },
+    podcast: {
+      icon: Mic,
+      label: "Podcast",
       variant: "outline" as const,
     },
   };
