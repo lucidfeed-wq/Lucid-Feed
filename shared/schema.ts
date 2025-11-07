@@ -539,11 +539,19 @@ export const feedNotifications = pgTable("feed_notifications", {
   isRead: boolean("is_read").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   lastNotifiedAt: timestamp("last_notified_at"), // For throttling
+  // Action-related fields for user decisions on feed substitutions
+  actionType: varchar("action_type", { length: 50 }), // 'substitution', 'healing', 'removal'
+  actionRequired: boolean("action_required").notNull().default(false),
+  alternativeFeedId: varchar("alternative_feed_id", { length: 255 }).references(() => feedCatalog.id),
+  alternativeFeedName: varchar("alternative_feed_name", { length: 500 }),
+  userAction: varchar("user_action", { length: 20 }), // 'accepted', 'declined', 'pending'
+  actionTakenAt: timestamp("action_taken_at"),
 }, (table) => ({
   userIdIdx: index("feed_notifications_user_id_idx").on(table.userId),
   feedIdIdx: index("feed_notifications_feed_id_idx").on(table.feedId),
   createdAtIdx: index("feed_notifications_created_at_idx").on(table.createdAt),
   userUnreadIdx: index("feed_notifications_user_unread_idx").on(table.userId, table.isRead),
+  actionRequiredIdx: index("feed_notifications_action_required_idx").on(table.userId, table.actionRequired),
 }));
 
 export const feedNotificationSchema = z.object({
@@ -556,6 +564,12 @@ export const feedNotificationSchema = z.object({
   isRead: z.boolean(),
   createdAt: z.date(),
   lastNotifiedAt: z.date().nullable().optional(),
+  actionType: z.enum(['substitution', 'healing', 'removal']).nullable().optional(),
+  actionRequired: z.boolean(),
+  alternativeFeedId: z.string().nullable().optional(),
+  alternativeFeedName: z.string().nullable().optional(),
+  userAction: z.enum(['accepted', 'declined', 'pending']).nullable().optional(),
+  actionTakenAt: z.date().nullable().optional(),
 });
 
 export const insertFeedNotificationSchema = createInsertSchema(feedNotifications).omit({ id: true, createdAt: true });

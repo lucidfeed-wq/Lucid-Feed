@@ -130,14 +130,22 @@ export class FeedHealthNotifier {
     feedId: string,
     feedName: string,
     action: 'healed' | 'substituted',
-    details?: string
+    details?: string,
+    alternativeFeedId?: string,
+    alternativeFeedName?: string
   ): Promise<void> {
     let message: string;
+    let actionType: 'healing' | 'substitution' | null = null;
+    let actionRequired = false;
     
     if (action === 'healed') {
       message = `Good news! ${feedName} is working again. We've automatically restored it to your digest.`;
+      actionType = 'healing';
     } else {
-      message = `We found a replacement for ${feedName}. ${details || 'Your digest will continue with similar content.'}`;
+      // For substitutions, require user action
+      message = `We found a replacement for ${feedName}. ${alternativeFeedName ? `We suggest "${alternativeFeedName}" as an alternative.` : 'Your digest will continue with similar content.'}`;
+      actionType = 'substitution';
+      actionRequired = true; // User needs to accept or decline the substitution
     }
 
     const notification: InsertFeedNotification = {
@@ -147,10 +155,15 @@ export class FeedHealthNotifier {
       message,
       technicalDetails: `Feed ${action} successfully`,
       isRead: false,
+      actionType,
+      actionRequired,
+      alternativeFeedId: action === 'substituted' ? alternativeFeedId : null,
+      alternativeFeedName: action === 'substituted' ? alternativeFeedName : null,
+      userAction: actionRequired ? 'pending' : null,
     };
 
     await storage.saveFeedNotification(notification);
-    console.log(`[FeedHealthNotifier] Notified user ${userId} about ${action} feed ${feedId}`);
+    console.log(`[FeedHealthNotifier] Notified user ${userId} about ${action} feed ${feedId}${actionRequired ? ' (action required)' : ''}`);
   }
 
   /**

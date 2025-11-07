@@ -256,6 +256,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get action-required notifications
+  app.get('/api/notifications/action-required', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const notifications = await storage.getActionRequiredNotifications(userId);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching action-required notifications:", error);
+      res.status(500).json({ message: "Failed to fetch action-required notifications" });
+    }
+  });
+
+  // Handle notification action (accept/decline)
+  app.post('/api/notifications/:notificationId/action', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { notificationId } = req.params;
+      const { action } = req.body;
+      
+      if (!action || !['accepted', 'declined'].includes(action)) {
+        return res.status(400).json({ message: "Action must be 'accepted' or 'declined'" });
+      }
+      
+      // Verify notification belongs to user
+      const notification = await storage.getNotificationById(notificationId);
+      if (!notification || notification.userId !== userId) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+      
+      await storage.handleNotificationAction(notificationId, userId, action);
+      res.json({ success: true, message: `Feed substitution ${action}` });
+    } catch (error) {
+      console.error("Error handling notification action:", error);
+      res.status(500).json({ message: "Failed to process notification action" });
+    }
+  });
+
   app.delete('/api/saved-items/:itemId', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

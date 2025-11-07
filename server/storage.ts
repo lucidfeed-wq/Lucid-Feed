@@ -129,6 +129,9 @@ export interface IStorage {
   getRecentNotificationForFeed(userId: string, feedId: string, hours?: number): Promise<FeedNotification | undefined>;
   getUserNotifications(userId: string, limit?: number): Promise<FeedNotification[]>;
   markNotificationAsNotified(notificationId: string): Promise<void>;
+  getNotificationById(notificationId: string): Promise<FeedNotification | undefined>;
+  handleNotificationAction(notificationId: string, userId: string, action: 'accepted' | 'declined'): Promise<void>;
+  getActionRequiredNotifications(userId: string): Promise<FeedNotification[]>;
   
   // Discovery Attempts
   saveDiscoveryAttempt(attempt: InsertDiscoveryAttempt): Promise<DiscoveryAttempt>;
@@ -1593,15 +1596,105 @@ export class PostgresStorage implements IStorage {
       .where(eq(feedNotifications.id, notificationId));
   }
 
+  async getNotificationById(notificationId: string): Promise<FeedNotification | undefined> {
+    const [notification] = await db
+      .select()
+      .from(feedNotifications)
+      .where(eq(feedNotifications.id, notificationId))
+      .limit(1);
+    return notification;
+  }
+
+  async handleNotificationAction(notificationId: string, userId: string, action: 'accepted' | 'declined'): Promise<void> {
+    // Update the notification with user action
+    await db
+      .update(feedNotifications)
+      .set({
+        userAction: action,
+        actionTakenAt: new Date(),
+        isRead: true,
+      })
+      .where(
+        and(
+          eq(feedNotifications.id, notificationId),
+          eq(feedNotifications.userId, userId)
+        )
+      );
+    
+    // If the action is accepted and it's a substitution, handle the feed subscription update
+    const notification = await this.getNotificationById(notificationId);
+    if (notification && notification.actionType === 'substitution' && action === 'accepted') {
+      if (notification.alternativeFeedId) {
+        // Unsubscribe from the old feed
+        if (notification.feedId) {
+          await db
+            .delete(userFeedSubscriptions)
+            .where(
+              and(
+                eq(userFeedSubscriptions.userId, userId),
+                eq(userFeedSubscriptions.feedId, notification.feedId)
+              )
+            );
+        }
+        
+        // Subscribe to the new feed
+        const existingSubscription = await db
+          .select()
+          .from(userFeedSubscriptions)
+          .where(
+            and(
+              eq(userFeedSubscriptions.userId, userId),
+              eq(userFeedSubscriptions.feedId, notification.alternativeFeedId)
+            )
+          )
+          .limit(1);
+        
+        if (existingSubscription.length === 0) {
+          await db.insert(userFeedSubscriptions).values({
+            id: nanoid(),
+            userId,
+            feedId: notification.alternativeFeedId,
+          });
+        }
+      }
+    }
+  }
+
+  async getActionRequiredNotifications(userId: string): Promise<FeedNotification[]> {
+    return await db
+      .select()
+      .from(feedNotifications)
+      .where(
+        and(
+          eq(feedNotifications.userId, userId),
+          eq(feedNotifications.actionRequired, true),
+          or(
+            isNull(feedNotifications.userAction),
+            eq(feedNotifications.userAction, 'pending')
+          )
+        )
+      )
+      .orderBy(desc(feedNotifications.createdAt));
+  }
+
   // Discovery Attempts
   async saveDiscoveryAttempt(attempt: InsertDiscoveryAttempt): Promise<DiscoveryAttempt> {
     const id = nanoid();
     const [discoveryAttempt] = await db
       .insert(discoveryAttempts)
       .values({
-        ...attempt,
         id,
-      })
+        originalFeedId: attempt.originalFeedId,
+        candidateFeedId: attempt.candidateFeedId,
+        candidateUrl: attempt.candidateUrl,
+        strategy: attempt.strategy,
+        confidence: attempt.confidence,
+        accepted: attempt.accepted,
+        autoSubscribed: attempt.autoSubscribed,
+        metadata: attempt.metadata,
+        validatedAt: attempt.validatedAt,
+        processedAt: attempt.processedAt,
+      } as any)
       .returning();
     return discoveryAttempt;
   }
