@@ -5,6 +5,7 @@ import { runIngestJob } from "./services/ingest";
 import { generateWeeklyDigest, generatePersonalizedDigest } from "./services/digest";
 import { exportDigestJSON, exportDigestMarkdown, exportDigestRSS } from "./services/exports";
 import { enrichContentBatch } from "./services/content-enrichment";
+import { enqueueDigest, getJobStatus, getUserJobs } from "./jobs/digest-queue";
 import { z } from "zod";
 import { topics, feedDomains, sourceTypes, insertFeedCatalogSchema, insertUserFeedSubmissionSchema, type InsertUserFeedSubmission } from "@shared/schema";
 import { setupAuth, isAuthenticated } from "./replitAuth";
@@ -1366,13 +1367,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Refresh digest - run ingestion and digest generation with healing
+  // Async digest refresh - returns immediately with job ID for polling
+  // Eliminates 300-second timeouts by using background job queue
   app.post("/api/digest/refresh", isAuthenticated, async (req: any, res) => {
-    const startTime = Date.now();
-    
     try {
       const userId = req.user.claims.sub;
-      console.log(`🔄 Starting digest generation for user: ${userId}`);
+      console.log(`🔄 Enqueueing async digest generation for user: ${userId}`);
 
       // 1. Get user and check if test account
       const user = await storage.getUser(userId);
@@ -1417,167 +1417,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // 5a. Initialize healing metadata tracking
-      const healingMetadata = {
-        healedFeeds: [] as string[],
-        fallbackFeeds: [] as string[],
-        healingMessages: [] as string[]
-      };
+      // 6. Increment usage counter before enqueuing
+      await storage.incrementDigestRefresh(userId, today);
 
-      // 5b. Detect and heal failing feeds before ingestion
-      const { HealingOrchestrator } = await import('./services/healing/healing-orchestrator');
-      const healingOrchestrator = new HealingOrchestrator();
+      // 7. Enqueue the job and return immediately
+      const jobId = await enqueueDigest({ userId });
       
-      // Get user's subscribed feeds
-      const userFeedSubscriptions = await storage.getUserFeedSubscriptions(userId);
-      const userFeeds = userFeedSubscriptions.map(sub => sub.feed);
+      console.log(`✅ Digest job enqueued: ${jobId} for user ${userId}`);
       
-      // Detect failing feeds
-      const failingFeeds = userFeeds.filter(feed => 
-        feed.consecutiveFailures > 0 || 
-        (feed.lastFetchStatus && feed.lastFetchStatus !== 'success')
-      );
-      
-      if (failingFeeds.length > 0) {
-        console.log(`🏥 [POST /api/digest/refresh] Detected ${failingFeeds.length} failing feeds, attempting healing...`);
-        
-        try {
-          // Heal feeds in bulk with 2-second timeout per feed
-          const healingResults = await healingOrchestrator.healFeedsBulk(failingFeeds, 3);
-          
-          // Track healing results
-          healingResults.forEach((result, feedId) => {
-            const feed = failingFeeds.find(f => f.id === feedId);
-            if (feed) {
-              if (result.success) {
-                healingMetadata.healedFeeds.push(feed.name);
-                console.log(`✅ Healed feed: ${feed.name}`);
-              } else {
-                healingMetadata.fallbackFeeds.push(feed.name);
-                console.log(`⚠️ Will use cached content for: ${feed.name}`);
-              }
-            }
-          });
-          
-          // Add healing status messages
-          if (healingMetadata.healedFeeds.length > 0) {
-            healingMetadata.healingMessages.push(`${healingMetadata.healedFeeds.length} feeds were automatically recovered`);
-          }
-          if (healingMetadata.fallbackFeeds.length > 0) {
-            healingMetadata.healingMessages.push(`Using cached content for ${healingMetadata.fallbackFeeds.length} temporarily unavailable feeds`);
-          }
-        } catch (healingError) {
-          console.error(`❌ [POST /api/digest/refresh] Healing error:`, healingError);
-          // Continue without healing - ingestion will use existing feeds
-        }
-      }
-
-      // 6. Run ingestion (with error handling)
-      let ingestionSuccess = false;
-      let ingestionError: string | null = null;
-      try {
-        console.log(`[POST /api/digest/refresh] Running ingestion job...`);
-        await runIngestJob({ useSubscribedFeeds: true });
-        ingestionSuccess = true;
-        console.log(`[POST /api/digest/refresh] Ingestion completed successfully`);
-      } catch (error) {
-        ingestionError = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`⚠️  Ingestion failed but continuing to digest generation:`, error);
-        console.error(`Ingestion error details:`, ingestionError);
-        // Continue to digest generation - it will use existing content in the database
-      }
-
-      // 7. Run digest generation (with error handling)
-      let id: string;
-      let slug: string;
-      let digest: any;
-      let digestMetadata: any;
-      try {
-        console.log(`[POST /api/digest/refresh] Generating personalized digest...`);
-        const result = await generatePersonalizedDigest(userId);
-        id = result.id;
-        slug = result.slug;
-        digestMetadata = result.metadata;
-        console.log(`[POST /api/digest/refresh] Digest generated successfully: ${slug}`);
-        
-        // Fetch the digest immediately to ensure we have content
-        digest = await storage.getDigestBySlug(slug);
-        if (!digest) {
-          throw new Error('Digest was created but not found in storage');
-        }
-      } catch (error) {
-        const digestError = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`❌ Digest generation failed:`, error);
-        console.error(`Digest error details:`, digestError);
-        
-        // If digest generation fails, try to return the most recent digest as fallback
-        const fallbackDigest = await storage.getLatestDigest();
-        if (fallbackDigest) {
-          console.log(`⚠️  Returning fallback digest: ${fallbackDigest.slug}`);
-          return res.json({
-            success: true,
-            digestId: fallbackDigest.id,
-            slug: fallbackDigest.slug,
-            digest: fallbackDigest,
-            message: 'Using previous digest (refresh failed)',
-            warnings: [
-              ...healingMetadata.healingMessages,
-              ingestionError ? `Ingestion: ${ingestionError}` : undefined,
-              `Digest generation: ${digestError}`
-            ].filter(Boolean),
-            healingMetadata,
-            usage: {
-              used: refreshCount,
-              limit: limits[tier],
-              tier: isTestAccount ? 'pro (test)' : tier
-            }
-          });
-        }
-        
-        // If no fallback digest, fail completely
-        return res.status(500).json({ 
-          error: 'Failed to generate digest and no fallback available',
-          details: digestError,
-          ingestionSuccess,
-          ingestionError,
-          healingMetadata
-        });
-      }
-
-      // 8. Increment refresh counter (still track for test accounts)
-      try {
-        await storage.incrementDigestRefresh(userId, today);
-      } catch (error) {
-        console.error(`⚠️  Failed to increment refresh counter:`, error);
-        // Non-critical error, continue
-      }
-
-      // 9. Return the digest with metadata
-      const warnings = [
-        ...healingMetadata.healingMessages,
-        ingestionError ? `Ingestion: ${ingestionError}` : undefined
-      ].filter(Boolean);
-      
-      // Merge healing metadata
-      const finalHealingMetadata = {
-        ...healingMetadata,
-        ...(digestMetadata || {})
-      };
-      
-      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(`✅ Digest generated successfully: ${slug} (${duration}s)`);
-      
-      res.json({ 
+      // Return 202 Accepted with job ID for polling
+      res.status(202).json({ 
         success: true,
-        digestId: id,
-        slug,
-        digest,
-        duration: duration,
-        message: ingestionSuccess 
-          ? 'Digest refreshed successfully' 
-          : 'Digest created with existing content (ingestion failed)',
-        warnings: warnings.length > 0 ? warnings : undefined,
-        healingMetadata: finalHealingMetadata,
+        jobId,
+        message: 'Digest generation started. Use the job ID to check status.',
         usage: {
           used: refreshCount + 1,
           limit: limits[tier],
@@ -1585,13 +1437,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error) {
-      console.error('❌ Digest generation failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to generate digest';
+      console.error('❌ Failed to enqueue digest job:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start digest generation';
       res.status(500).json({ 
         success: false, 
-        error: errorMessage,
-        details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
+        error: errorMessage
       });
+    }
+  });
+
+  // Get digest job status for polling
+  app.get("/api/digest/job-status", isAuthenticated, async (req: any, res) => {
+    try {
+      const { jobId } = req.query;
+      
+      if (!jobId || typeof jobId !== 'string') {
+        return res.status(400).json({ error: 'Job ID required' });
+      }
+
+      const status = await getJobStatus(jobId);
+      
+      if (!status) {
+        return res.status(404).json({ error: 'Job not found' });
+      }
+
+      res.json(status);
+    } catch (error) {
+      console.error('Error getting job status:', error);
+      res.status(500).json({ error: 'Failed to get job status' });
+    }
+  });
+
+  // Get user's digest job history (optional, for debugging/admin)
+  app.get("/api/digest/jobs", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      const jobs = await getUserJobs(userId, limit);
+      
+      res.json({ jobs });
+    } catch (error) {
+      console.error('Error getting user jobs:', error);
+      res.status(500).json({ error: 'Failed to get jobs' });
     }
   });
 

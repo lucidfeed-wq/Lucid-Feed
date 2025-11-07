@@ -129,6 +129,11 @@ app.use((req, res, next) => {
     // Initialize cron scheduler
     initializeScheduler();
     
+    // Initialize digest job runner (async digest generation)
+    import('./jobs/digest-queue').then(({ startDigestRunner }) => {
+      startDigestRunner();
+    }).catch(err => console.error("❌ Failed to start digest runner:", err));
+    
     // Initialize real-time feed monitoring
     import('./services/feed-monitoring/real-time-monitor').then(({ startGlobalMonitoring }) => {
       startGlobalMonitoring()
