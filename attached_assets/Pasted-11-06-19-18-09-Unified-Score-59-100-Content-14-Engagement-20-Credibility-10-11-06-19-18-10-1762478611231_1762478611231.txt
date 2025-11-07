@@ -1,0 +1,62 @@
+11-06 19:18:09
+✓ Unified Score: 59/100 (Content: 14, Engagement: 20, Credibility: 10)
+11-06 19:18:10
+✓ Content quality: 17/40 - The content lacks scientific citations and credible sources, limiting its evidence quality. While it offers some insights into the adaptation period of a carnivore diet, it does not provide actionable clinical guidance or address specific patient outcomes.
+11-06 19:18:10
+✓ Unified Score: 62/100 (Content: 17, Engagement: 20, Credibility: 10)
+11-06 19:18:10
+Enriching reddit: Guys I found the best carni snack
+11-06 19:18:10
+Enriching reddit: redditor question - how to tell fat:protein ratio?
+11-06 19:18:10
+Enriching reddit: What makes me cheat on carnivore?
+11-06 19:18:12
+✓ Content quality: 16/40 - The content lacks scientific citations and rigorous evidence to support health claims, but it provides a simple recipe that could be useful for practitioners looking for quick meal ideas. However, it does not address broader clinical implications or patient outcomes.
+11-06 19:18:12
+✓ Unified Score: 61/100 (Content: 16, Engagement: 20, Credibility: 10)
+11-06 19:18:12
+✓ Content quality: 15/40 - The content lacks scientific citations and credible sources, making it difficult to assess the evidence quality. While it presents a personal experience that may resonate with practitioners, it does not provide actionable insights or structured guidance for clinical application.
+11-06 19:18:12
+✓ Unified Score: 60/100 (Content: 15, Engagement: 20, Credibility: 10)
+11-06 19:18:12
+✓ Content quality: 14/40 - The content lacks scientific citations and rigorous sources, making it difficult to assess evidence quality. While it poses a relevant question, it does not provide actionable insights or clear guidelines for practitioners.
+11-06 19:18:12
+✓ Unified Score: 59/100 (Content: 14, Engagement: 20, Credibility: 10)
+11-06 19:18:12
+Enriching podcast: Essentials: Erasing Fears & Traumas Using Modern Neuroscience
+11-06 19:18:12
+Enriching podcast: Using Existing Drugs in New Ways to Treat & Cure Diseases of Brain & Body | Dr. David Fajgenbaum
+11-06 19:18:14
+✓ Content quality: 32/40 - The podcast presents evidence-based approaches and discusses credible therapies, enhancing its clinical value. However, while the content is well-structured and clear, the practical implementation of some recommendations may vary among practitioners.
+11-06 19:18:14
+✓ Unified Score: 63/100 (Content: 32, Engagement: 6, Credibility: 10)
+11-06 19:18:14
+✓ Content quality: 30/40 - The podcast discusses drug repurposing and shares personal experiences, which provide valuable insights, but may lack extensive citations and rigorous scientific backing. The content is actionable and relevant for practitioners, addressing real clinical challenges effectively.
+11-06 19:18:14
+✓ Unified Score: 61/100 (Content: 30, Engagement: 6, Credibility: 10)
+11-06 19:18:14
+Progress: 29/29
+11-06 19:18:14
+✓ Enrichment complete: 29 items processed
+11-06 19:18:16
+Saved/retrieved 29 enriched items
+11-06 19:18:16
+Quality filtered: 29 items (from 29)
+11-06 19:18:16
+Topic matches - Journals: 0/0, YouTube: 0/0, Community: 28/29
+11-06 19:18:16
+⚠ Too few journal matches (0), using all quality journals
+11-06 19:18:16
+⚠ Too few YouTube matches (0), using all quality videos
+11-06 19:18:16
+✓ Using topic-filtered community (28 items)
+11-06 19:18:16
+Final source breakdown: 0 journals, 0 youtube, 28 community
+11-06 19:18:16
+Final selection: 10 items (0 research, 10 community, 0 expert)
+11-06 19:18:19
+Personalized digest created: 9Jn3Fdw6DQ0Ul-gdxjLqo (personal-41556120-1762478298)
+11-06 19:18:19
+[POST /api/digest/refresh] Digest generated successfully: personal-41556120-1762478298
+11-06 19:18:19
+1:18:19 AM [express] POST /api/digest/refresh 200 in 271674ms :: {"success":true,"digestId":"9Jn3Fdw…
