@@ -58,6 +58,10 @@ export interface IStorage {
   
   // Feed Catalog
   getFeedById(feedId: string): Promise<FeedCatalog | undefined>;
+  getFeedByUrl(url: string): Promise<FeedCatalog | undefined>;
+  createFeed(feed: InsertFeedCatalog): Promise<FeedCatalog>;
+  getActiveFeeds(): Promise<FeedCatalog[]>;
+  updateFeedUrl(feedId: string, newUrl: string): Promise<void>;
   getItemsByFeedUrl(feedUrl: string, limit?: number): Promise<Item[]>;
   getFeedCatalog(filters?: { domain?: string; sourceType?: string; search?: string; featured?: boolean }): Promise<FeedCatalog[]>;
   getFeaturedFeeds(): Promise<FeedCatalog[]>;
@@ -66,7 +70,13 @@ export interface IStorage {
   getUserFeedSubmissions(userId: string): Promise<UserFeedSubmission[]>;
   getPendingFeedSubmissions(): Promise<UserFeedSubmission[]>;
   reviewFeedSubmission(id: string, reviewerId: string, status: 'approved' | 'rejected', reviewNotes?: string): Promise<UserFeedSubmission>;
-  updateFeedHealth(feedId: string, health: { lastFetchStatus: 'success' | 'permanent_error' | 'transient_error'; consecutiveFailures?: number; lastErrorMessage?: string | null }): Promise<void>;
+  updateFeedHealth(feedId: string, health: { 
+    lastFetchStatus?: 'success' | 'permanent_error' | 'transient_error'; 
+    consecutiveFailures?: number; 
+    lastErrorMessage?: string | null;
+    lastHealthCheck?: Date;
+    healthStatus?: 'healthy' | 'degraded' | 'failing' | 'dead';
+  }): Promise<void>;
   deactivateFeed(feedId: string): Promise<void>;
   reactivateFeed(feedId: string): Promise<void>;
   
@@ -572,6 +582,43 @@ export class PostgresStorage implements IStorage {
     return result[0];
   }
 
+  async getFeedByUrl(url: string): Promise<FeedCatalog | undefined> {
+    const result = await db
+      .select()
+      .from(feedCatalog)
+      .where(eq(feedCatalog.url, url))
+      .limit(1);
+    
+    return result[0];
+  }
+
+  async createFeed(feed: InsertFeedCatalog): Promise<FeedCatalog> {
+    const [created] = await db
+      .insert(feedCatalog)
+      .values(feed)
+      .returning();
+    
+    return created;
+  }
+
+  async getActiveFeeds(): Promise<FeedCatalog[]> {
+    return await db
+      .select()
+      .from(feedCatalog)
+      .where(eq(feedCatalog.isActive, true));
+  }
+
+  async updateFeedUrl(feedId: string, newUrl: string): Promise<void> {
+    await db
+      .update(feedCatalog)
+      .set({ 
+        url: newUrl,
+        lastSuccessfulFetch: new Date(),
+        consecutiveFailures: 0
+      })
+      .where(eq(feedCatalog.id, feedId));
+  }
+
   async getItemsByFeedUrl(feedUrl: string, limit: number = 5): Promise<Item[]> {
     // Extract domain from feed URL to match items
     const feedDomain = new URL(feedUrl).hostname.replace(/^www\./, '');
@@ -792,7 +839,13 @@ export class PostgresStorage implements IStorage {
 
   async updateFeedHealth(
     feedId: string,
-    health: { lastFetchStatus: 'success' | 'permanent_error' | 'transient_error'; consecutiveFailures?: number; lastErrorMessage?: string | null }
+    health: { 
+      lastFetchStatus?: 'success' | 'permanent_error' | 'transient_error'; 
+      consecutiveFailures?: number; 
+      lastErrorMessage?: string | null;
+      lastHealthCheck?: Date;
+      healthStatus?: 'healthy' | 'degraded' | 'failing' | 'dead';
+    }
   ): Promise<void> {
     const now = new Date();
     await db
